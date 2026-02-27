@@ -121,6 +121,12 @@ AUDIT SUMMARY - KEY CHANGES DETECTED:
 # NOW INCLUDES 12 TOOLS (ORIGINAL 8 + 4 NEW)
 # ============================================================================
 
+COMPARISONS = []
+
+BLOG_POSTS = []
+
+LEAD_MAGNET = {}
+
 ROLES = []
 
 
