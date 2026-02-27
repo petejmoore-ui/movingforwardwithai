@@ -1105,7 +1105,8 @@ def tool_card(t, delay=0):
 
 def email_capture():
     lm = LEAD_MAGNET
-    items_html = '\n'.join(f'<div class="email-item">{i}</div>' for i in lm['items'])
+    items = lm.get('items', [])  # Use an empty list if 'items' is not found
+    items_html = '\n'.join(f'<div class="email-item">{i}</div>' for i in items)
     card_items = '\n'.join(f'<div class="eci"><span class="eci-num">{str(i+1).zfill(2)}</span>{item}</div>'
                            for i,item in enumerate(lm['items']))
     return f"""<section class="email-sec">
