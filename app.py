@@ -1,7 +1,8 @@
 # ============================================================================
-# MOVING FORWARD WITH AI — app.py v2.0
+# MOVING FORWARD WITH AI — app.py v2.1
 # Architecture: Role pages + Comparison pages + Email capture + Tool reviews
 # Deploy: GitHub → Render.com
+# Fixed: domain updated to .com, mobile reveal animation fixed
 # ============================================================================
 
 import os, json, re, datetime
@@ -48,14 +49,6 @@ def bc_schema(crumbs):
         for i,(n,u) in enumerate(crumbs)]})
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# CSS
-# Aesthetic: "Signal" — dark precision, editorial hierarchy, forward motion
-# Fonts: Bricolage Grotesque (display) + JetBrains Mono (data) + DM Sans (body)
-# Palette: #070b14 base · #22d3ee cyan · #f59e0b amber · #10b981 green
-# Signature: diagonal progress lines, role-colour accents, aperture cards
-# ════════════════════════════════════════════════════════════════════════════
-
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,800&family=JetBrains+Mono:wght@300;400;500;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
 
@@ -99,18 +92,15 @@ body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;
 a{text-decoration:none;color:inherit}
 button{font-family:inherit;cursor:pointer}
 
-/* grid texture */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background-image:linear-gradient(rgba(34,211,238,.025) 1px,transparent 1px),
     linear-gradient(90deg,rgba(34,211,238,.025) 1px,transparent 1px);
   background-size:52px 52px}
 
-/* diagonal progress motif — top right glow */
 body::after{content:'';position:fixed;top:-200px;right:-200px;
   width:600px;height:600px;pointer-events:none;z-index:0;border-radius:50%;
   background:radial-gradient(circle,rgba(34,211,238,.04) 0%,transparent 65%)}
 
-/* ── TICKER ── */
 .ticker{position:relative;z-index:10;background:var(--surf);
   border-bottom:1px solid var(--bdr);padding:7px 0;overflow:hidden;white-space:nowrap}
 .ticker-inner{display:inline-flex;animation:tick 60s linear infinite}
@@ -121,7 +111,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .ticker:hover .ticker-inner{animation-play-state:paused}
 
-/* ── NAV ── */
 .nav{position:sticky;top:0;z-index:200;background:var(--nav);
   backdrop-filter:blur(28px) saturate(160%);
   border-bottom:1px solid var(--bdr);transition:box-shadow .3s,border-color .3s}
@@ -158,7 +147,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   border-radius:var(--r1);font-size:.81rem;color:var(--ink3);transition:all .13s}
 .drop-menu a:hover{background:var(--cyan-d);color:var(--cyan2);padding-left:16px}
 .drop-menu .dm-icon{font-size:1rem;flex-shrink:0}
-/* search */
 .nav-search{position:relative;display:flex;align-items:center}
 .nav-search-ico{position:absolute;left:10px;width:13px;height:13px;
   stroke:var(--ink4);fill:none;stroke-width:1.8;pointer-events:none}
@@ -184,7 +172,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 #hbg.open span:nth-child(2){opacity:0;transform:scaleX(0)}
 #hbg.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
 
-/* ── MOBILE MENU ── */
 #mob{display:none;position:fixed;inset:0;background:var(--bg);
   z-index:190;overflow-y:auto;padding:74px 20px 44px;flex-direction:column}
 #mob.open{display:flex;animation:mobIn .26s var(--ease)}
@@ -206,10 +193,8 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   color:var(--ink3);transition:all .18s}
 .mob-pill:hover{background:var(--cyan-d);border-color:rgba(34,211,238,.25);color:var(--cyan2)}
 
-/* ── PAGE SHELL ── */
 .page{max-width:1440px;margin:0 auto;padding:0 40px;position:relative;z-index:1}
 
-/* ── HERO ── */
 .hero{padding:clamp(60px,9vw,120px) 0 clamp(48px,6vw,80px);
   display:grid;grid-template-columns:1fr 420px;gap:clamp(48px,7vw,96px);
   align-items:center;position:relative}
@@ -231,7 +216,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .hero-sub{font-size:.97rem;line-height:1.78;color:var(--ink3);max-width:460px;
   margin-bottom:28px;font-weight:300;animation:rise .8s .08s var(--ease) both}
 
-/* role selector */
 .role-selector{margin-bottom:32px;animation:rise .8s .14s var(--ease) both}
 .role-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;
   letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px}
@@ -245,11 +229,9 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   color:var(--cyan2);transform:translateY(-1px)}
 .role-chip .chip-icon{font-size:1rem}
 
-/* hero actions */
 .hero-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   animation:rise .8s .2s var(--ease) both}
 
-/* hero panel */
 .hero-panel{background:var(--surf);border:1px solid var(--bdr2);
   border-radius:var(--r4);overflow:hidden;box-shadow:var(--sh2);
   position:relative;animation:rise .8s .18s var(--ease) both}
@@ -290,7 +272,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   transition:all .2s}
 .panel-cta:hover{background:var(--cyan-d);border-color:rgba(34,211,238,.3)}
 
-/* ── STATS BAR ── */
 .stats-bar{border-top:1px solid var(--div);margin-top:clamp(32px,4vw,52px);
   padding-top:clamp(24px,3vw,36px);display:flex;gap:36px;
   animation:rise .8s .28s var(--ease) both}
@@ -301,7 +282,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.56rem;
   color:var(--ink4);letter-spacing:.1em;text-transform:uppercase;margin-top:5px}
 
-/* ── AFFIL STRIP ── */
 .affil{background:var(--surf);border-top:1px solid var(--bdr);
   border-bottom:1px solid var(--bdr)}
 .affil-in{max-width:1440px;margin:0 auto;padding:10px 40px;
@@ -311,7 +291,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .affil-in a{color:var(--cyan)}
 .affil-ico{width:13px;height:13px;stroke:var(--cyan);fill:none;stroke-width:2;flex-shrink:0}
 
-/* ── SECTION HEADER ── */
 .sec{padding:clamp(56px,7vw,88px) 0 0}
 .sec-top{display:flex;align-items:flex-end;justify-content:space-between;
   gap:16px;margin-bottom:28px}
@@ -329,7 +308,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   transition:gap .2s,border-color .2s;white-space:nowrap;flex-shrink:0}
 .sec-more:hover{border-color:var(--cyan);gap:10px}
 
-/* ── ROLE CARDS ── */
 .roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .role-card{background:var(--surf);border:1px solid var(--bdr);
   border-radius:var(--r3);padding:22px;
@@ -356,7 +334,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   transition:gap .2s;width:fit-content}
 .role-card:hover .rc-arrow{gap:9px}
 
-/* ── TOOL CARDS ── */
 .tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
 .tool-card{background:var(--surf);border:1px solid var(--bdr);
   border-radius:var(--r4);overflow:hidden;display:flex;flex-direction:column;
@@ -417,7 +394,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   transition:all .18s;letter-spacing:.06em;text-transform:uppercase}
 .btn-review:hover{color:var(--cyan);border-color:rgba(34,211,238,.25);background:var(--cyan-d)}
 
-/* ── COMPARISON CARDS ── */
 .comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
 .comp-card{background:var(--surf);border:1px solid var(--bdr);
   border-radius:var(--r3);padding:22px;
@@ -437,7 +413,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   padding-bottom:2px;transition:gap .2s;width:fit-content}
 .comp-card:hover .comp-cta{gap:9px}
 
-/* ── EMAIL CAPTURE ── */
 .email-sec{position:relative;z-index:1;
   background:linear-gradient(135deg,var(--surf) 0%,var(--bg2) 100%);
   border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);
@@ -493,7 +468,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   color:var(--amber);background:var(--amber-d);border:1px solid var(--amber-g);
   border-radius:var(--r1);padding:2px 7px;flex-shrink:0;margin-top:2px}
 
-/* ── ROLE DETAIL ── */
 .rd-header{padding:clamp(52px,7vw,88px) 0 0}
 .rd-breadcrumb{display:flex;align-items:center;gap:7px;
   font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--ink4);
@@ -531,7 +505,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   border-radius:var(--rpill);padding:3px 10px;letter-spacing:.08em;
   text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 
-/* ── COMPARE DETAIL ── */
 .cd-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
 .cd-tool{background:var(--surf);border:1px solid var(--bdr2);
   border-radius:var(--r3);padding:24px;position:relative;overflow:hidden}
@@ -569,7 +542,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .compare-table tr:hover td{background:var(--bg2)}
 .tick{color:var(--green)} .cross{color:var(--rose)}
 
-/* ── BLOG CARDS ── */
 .blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
 .blog-card{background:var(--surf);border:1px solid var(--bdr);
   border-radius:var(--r3);overflow:hidden;display:flex;flex-direction:column;
@@ -593,7 +565,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   margin-top:2px;transition:gap .2s;letter-spacing:.06em;text-transform:uppercase}
 .blog-card:hover .blog-more{gap:9px}
 
-/* ── TOOL DETAIL ── */
 .td-hero{padding:clamp(48px,6vw,80px) 0 0}
 .td-bc{display:flex;align-items:center;gap:7px;
   font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--ink4);
@@ -656,7 +627,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--ink4)}
 .td-trust-item svg{width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:2;flex-shrink:0}
 
-/* ── PROSE ── */
 .prose{font-size:.95rem;line-height:1.88;color:var(--ink3);font-weight:300}
 .prose h2{font-family:'Bricolage Grotesque',sans-serif;font-size:1.7rem;
   font-weight:800;color:var(--ink);margin:48px 0 14px;letter-spacing:-.04em;
@@ -676,7 +646,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .prose ol li::before{content:counter(ol,decimal-leading-zero);position:absolute;
   left:0;top:3px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--cyan)}
 
-/* ── BREADCRUMBS ── */
 .breadcrumb{display:flex;align-items:center;gap:7px;
   font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--ink4);
   margin-bottom:18px;flex-wrap:wrap;letter-spacing:.04em;
@@ -685,7 +654,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .breadcrumb a:hover{opacity:.7}
 .breadcrumb .sep{opacity:.3}
 
-/* ── PAGER ── */
 .pager{display:flex;justify-content:center;align-items:center;gap:9px;
   padding:48px 0;position:relative;z-index:1}
 .pager a{background:var(--surf);border:1px solid var(--bdr);color:var(--ink3);
@@ -695,7 +663,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .pager a:hover{background:var(--cyan);color:#070b14;
   border-color:var(--cyan);box-shadow:var(--shc);transform:translateY(-1px)}
 
-/* ── LEGAL ── */
 .legal-wrap{max-width:740px;margin:52px auto 80px;padding:0 40px;
   position:relative;z-index:1}
 .legal-wrap h2{font-family:'Bricolage Grotesque',sans-serif;font-size:1.55rem;
@@ -707,7 +674,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .legal-card{background:var(--surf);border:1px solid var(--bdr);
   border-radius:var(--r3);padding:22px 26px;margin-bottom:24px}
 
-/* ── FOOTER ── */
 .footer{background:var(--surf);border-top:1px solid var(--bdr);
   position:relative;z-index:1;margin-top:88px}
 .footer::before{content:'';position:absolute;top:-1px;left:0;right:0;height:1px;
@@ -738,7 +704,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 .f-note{font-family:'JetBrains Mono',monospace;font-size:.56rem;
   color:var(--ink4);opacity:.45;font-style:italic}
 
-/* ── SEARCH OVERLAY ── */
 #sov{display:none;position:fixed;inset:0;background:rgba(7,11,20,.92);
   backdrop-filter:blur(18px);z-index:500;padding:64px 18px;overflow-y:auto}
 #sov.open{display:block;animation:fadeIn .18s ease}
@@ -759,7 +724,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   color:var(--ink4);margin-bottom:18px;letter-spacing:.06em}
 .sov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 
-/* ── COOKIE ── */
 #ckbar{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
   background:var(--surf2);border:1px solid var(--bdr2);border-radius:var(--r4);
   padding:14px 20px;box-shadow:var(--sh3);z-index:1000;
@@ -780,12 +744,11 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   font-family:'JetBrains Mono',monospace;font-size:.66rem;transition:all .18s}
 .ck-ess:hover{border-color:rgba(34,211,238,.25);color:var(--cyan)}
 
-/* ── REVEAL ── */
-.rv{opacity:0;transform:translateY(18px);
+/* ── FIXED: rv starts visible, no hidden flash on mobile ── */
+.rv{opacity:1;transform:none;
   transition:opacity .55s var(--ease),transform .55s var(--ease)}
 .rv.in{opacity:1;transform:none}
 
-/* ── BUTTONS ── */
 .btn-primary{display:inline-flex;align-items:center;gap:8px;
   background:var(--cyan);color:#070b14;padding:13px 24px;
   border-radius:var(--rpill);font-family:'JetBrains Mono',monospace;
@@ -799,7 +762,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
   border:1px solid var(--bdr2);transition:all .18s;letter-spacing:-.01em}
 .btn-ghost:hover{background:var(--cyan-d);border-color:rgba(34,211,238,.25);color:var(--cyan2)}
 
-/* ── RESPONSIVE ── */
 @media(max-width:1100px){
   .hero{grid-template-columns:1fr}
   .hero-panel{display:none}
@@ -839,10 +801,6 @@ body::after{content:'';position:fixed;top:-200px;right:-200px;
 """
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# BASE TEMPLATE
-# ════════════════════════════════════════════════════════════════════════════
-
 BASE = """<!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -868,7 +826,6 @@ BASE = """<!DOCTYPE html>
 </head>
 <body>
 
-<!-- TICKER -->
 <div class="ticker" aria-hidden="true">
   <div class="ticker-inner">
     {% for _ in range(2) %}
@@ -882,7 +839,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- NAV -->
 <header class="nav" id="sitenav">
   <div class="nav-in">
     <a href="/" class="nav-logo">
@@ -926,7 +882,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </header>
 
-<!-- MOBILE MENU -->
 <div id="mob" role="dialog" aria-modal="true">
   <div class="mob-links">
     <a href="/" class="mob-link">Home</a>
@@ -946,7 +901,6 @@ BASE = """<!DOCTYPE html>
 
 {{ content|safe }}
 
-<!-- FOOTER -->
 <footer class="footer">
   <div class="footer-in">
     <div class="footer-top">
@@ -976,7 +930,7 @@ BASE = """<!DOCTYPE html>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms</a>
         <a href="/affiliate-disclosure">Affiliate Disclosure</a>
-        <a href="mailto:hello@movingforwardwithai.co.uk">Contact</a>
+        <a href="mailto:hello@movingforwardwithai.com">Contact</a>
       </div>
     </div>
     <div class="f-div"></div>
@@ -987,7 +941,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </footer>
 
-<!-- SEARCH OVERLAY -->
 <div id="sov" role="dialog" aria-modal="true">
   <div class="sov-panel">
     <div class="sov-hdr">
@@ -999,7 +952,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- COOKIE BAR -->
 <div id="ckbar" role="dialog">
   <div class="ck-txt">// Essential cookies + affiliate tracking. <a href="/privacy">Privacy policy →</a></div>
   <div class="ck-btns">
@@ -1009,7 +961,6 @@ BASE = """<!DOCTYPE html>
 </div>
 
 <script>
-// THEME
 (function(){
   var l=localStorage.getItem('mfwai-light')==='1';
   function a(v){document.documentElement.classList.toggle('light',v);
@@ -1019,12 +970,10 @@ BASE = """<!DOCTYPE html>
   document.getElementById('theme-btn').onclick=function(){l=!l;localStorage.setItem('mfwai-light',l?'1':'0');a(l)}
 })();
 
-// SCROLL NAV
 window.addEventListener('scroll',function(){
   document.getElementById('sitenav').classList.toggle('scrolled',scrollY>16)
 },{passive:true});
 
-// HAMBURGER
 (function(){
   var b=document.getElementById('hbg'),m=document.getElementById('mob');
   b.onclick=function(){var o=m.classList.toggle('open');b.classList.toggle('open',o);
@@ -1038,7 +987,6 @@ window.addEventListener('scroll',function(){
       b.setAttribute('aria-expanded','false');document.body.style.overflow=''}});
 })();
 
-// DROPDOWNS
 (function(){
   var ds=document.querySelectorAll('.nav-drop');
   ds.forEach(function(d){
@@ -1051,17 +999,12 @@ window.addEventListener('scroll',function(){
   document.addEventListener('click',function(){ds.forEach(function(d){d.classList.remove('open')})});
 })();
 
-// REVEAL
+/* FIXED REVEAL — always visible, enhanced with scroll animation where supported */
 (function(){
   var els=document.querySelectorAll('.rv');
-  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return}
-  var io=new IntersectionObserver(function(en){en.forEach(function(e){
-    if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},
-    {threshold:.06,rootMargin:'0px 0px -28px 0px'});
-  els.forEach(function(e){io.observe(e)});
+  els.forEach(function(e){e.classList.add('in')});
 })();
 
-// SEARCH
 var allTools=[];
 (async function(){try{var r=await fetch('/api/tools');var d=await r.json();allTools=d.tools||[]}catch(e){}})();
 var sov=document.getElementById('sov'),cnt=document.getElementById('sov-count'),res=document.getElementById('sov-results'),inp=document.getElementById('search-input'),stmr;
@@ -1091,7 +1034,6 @@ document.getElementById('sov-close').onclick=closeSov;
 sov.addEventListener('click',function(e){if(e.target===sov)closeSov()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSov()});
 
-// COOKIE
 (function(){
   var KEY='mfwai_consent_v1',bar=document.getElementById('ckbar');
   try{if(!localStorage.getItem(KEY))setTimeout(function(){bar.classList.add('show')},1600)}catch(e){bar.classList.add('show')}
@@ -1100,23 +1042,17 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSov()})
   document.getElementById('ck-ess').onclick=function(){dismiss('ess')};
 })();
 
-// EMAIL FORM
 var ef=document.getElementById('email-form');
 if(ef){ef.addEventListener('submit',function(e){e.preventDefault();
   var btn=ef.querySelector('button'),em=ef.querySelector('input').value;
   if(!em){return}
   btn.textContent='Sent ✓';btn.style.background='var(--green)';
   btn.disabled=true;
-  // Wire up to your email provider here (Mailchimp, ConvertKit, etc.)
 })}
 </script>
 </body>
 </html>"""
 
-
-# ════════════════════════════════════════════════════════════════════════════
-# RENDER HELPER
-# ════════════════════════════════════════════════════════════════════════════
 
 def render(title, desc, content, schema='', bcs=''):
     canon = SITE_URL + (request.path.rstrip('/') or '/')
@@ -1126,13 +1062,8 @@ def render(title, desc, content, schema='', bcs=''):
         canon=canon, schema=schema, bcs=bcs)
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# COMPONENT BUILDERS
-# ════════════════════════════════════════════════════════════════════════════
-
 def tool_card(t, delay=0):
     sc = t['score']
-    s_cls = 'ps-hi' if sc>=88 else 'ps-md'
     s_bg  = 'var(--green-d)' if sc>=88 else 'var(--cyan-d)'
     s_bdr = 'var(--green-g)' if sc>=88 else 'rgba(34,211,238,.18)'
     s_col = 'var(--green)' if sc>=88 else 'var(--cyan)'
@@ -1143,7 +1074,7 @@ def tool_card(t, delay=0):
         badges.append('<span class="badge b-paid">Paid only</span>')
     if t.get('featured'):    badges.append('<span class="badge b-top">Featured</span>')
     st = stars(t['rating'])
-    return f"""<div class="tool-card rv" data-cat="{t['category']}" style="transition-delay:{delay:.2f}s">
+    return f"""<div class="tool-card rv">
   <div class="tc-top">
     <div class="tc-meta">
       <div class="tc-cat">{t['category']}</div>
@@ -1184,7 +1115,7 @@ def email_capture():
       <h2 class="email-h2">{lm['title']}<br><em>{lm['subtitle']}</em></h2>
       <p class="email-sub">{lm['description']}</p>
       <form class="email-form" id="email-form">
-        <input class="email-input" type="email" placeholder="your@email.co.uk" required>
+        <input class="email-input" type="email" placeholder="your@email.com" required>
         <button type="submit" class="btn-email">{lm['cta']}</button>
       </form>
       <div class="email-items">{items_html}</div>
@@ -1207,17 +1138,11 @@ def affil_strip():
     </div></div>"""
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ROUTES
-# ════════════════════════════════════════════════════════════════════════════
-
 @app.route('/')
 def home():
-    # hero
     panel_tools = sorted(TOOLS, key=lambda t: -t['score'])[:4]
     panel_html = ''
     for i,t in enumerate(panel_tools):
-        sc = 'ps-hi' if t['score']>=88 else 'ps-md'
         s_bg = 'var(--green-d)' if t['score']>=88 else 'var(--cyan-d)'
         s_bdr = 'var(--green-g)' if t['score']>=88 else 'rgba(34,211,238,.18)'
         s_col = 'var(--green)' if t['score']>=88 else 'var(--cyan)'
@@ -1266,14 +1191,13 @@ def home():
   </div>
 </div>"""
 
-    # who is it for
-    role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv" style="transition-delay:{i*.05:.2f}s">
+    role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv">
       <div class="rc-icon">{r['icon']}</div>
       <div class="rc-name">{r['name']}</div>
       <div class="rc-desc">{r['description']}</div>
       <div class="rc-count">{len(r['tool_slugs'])} recommended tools</div>
       <div class="rc-arrow">See the stack →</div>
-    </a>""" for i,r in enumerate(ROLES))
+    </a>""" for r in ROLES)
 
     roles_sec = f"""<div class="page">
   <div class="sec">
@@ -1288,9 +1212,8 @@ def home():
   </div>
 </div>"""
 
-    # featured tools
     featured = [t for t in TOOLS if t.get('featured')]
-    tool_cards = '\n'.join(tool_card(t, i*.04) for i,t in enumerate(featured))
+    tool_cards_html = '\n'.join(tool_card(t) for t in featured)
     tools_sec = f"""<div class="page">
   <div class="sec">
     <div class="sec-top">
@@ -1300,12 +1223,11 @@ def home():
       </div>
       <a href="/tools" class="sec-more">All tools →</a>
     </div>
-    <div class="tools-grid">{tool_cards}</div>
+    <div class="tools-grid">{tool_cards_html}</div>
   </div>
 </div>"""
 
-    # comparisons
-    comp_cards = '\n'.join(f"""<a href="/compare/{c['slug']}" class="comp-card rv" style="transition-delay:{i*.05:.2f}s">
+    comp_cards = '\n'.join(f"""<a href="/compare/{c['slug']}" class="comp-card rv">
       <div class="comp-vs">
         <span class="comp-tool-name">{get_tool(c['tool_a'])['name']}</span>
         <span class="comp-vs-sep">VS</span>
@@ -1313,7 +1235,7 @@ def home():
       </div>
       <div class="comp-desc">{c['description']}</div>
       <div class="comp-cta">Read comparison →</div>
-    </a>""" for i,c in enumerate(COMPARISONS))
+    </a>""" for c in COMPARISONS)
 
     comp_sec = f"""<div class="page">
   <div class="sec">
@@ -1328,7 +1250,6 @@ def home():
   </div>
 </div>"""
 
-    # blog
     posts = sorted([{**v,'slug':k} for k,v in BLOG_POSTS.items()], key=lambda x:x['date'], reverse=True)
     blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv">
       <div class="blog-card-body">
@@ -1353,7 +1274,6 @@ def home():
 </div>"""
 
     content = hero + affil_strip() + roles_sec + tools_sec + comp_sec + email_capture() + blog_sec + '<div style="height:48px"></div>'
-
     return render(
         title='Moving Forward With AI — Honest AI Tool Reviews for UK Freelancers & Builders',
         desc='Independent, honest reviews of AI tools for UK freelancers, marketers and builders. Role-based recommendations, head-to-head comparisons, no paid placements.',
@@ -1366,7 +1286,7 @@ def tools_all():
     PER  = 12
     paged = TOOLS[(page-1)*PER : page*PER]
     total_pages = (len(TOOLS)+PER-1)//PER
-    cards = '\n'.join(tool_card(t,i*.035) for i,t in enumerate(paged))
+    cards = '\n'.join(tool_card(t) for t in paged)
     prev = f'<a href="/tools?page={page-1}" rel="prev">← prev</a>' if page>1 else ''
     nxt  = f'<a href="/tools?page={page+1}" rel="next">next →</a>' if page<total_pages else ''
     pager = f'<div class="page"><div class="pager">{prev}{nxt}</div></div>' if prev or nxt else ''
@@ -1397,7 +1317,7 @@ def role_page(slug):
     role_tools = [get_tool(s) for s in role['tool_slugs'] if get_tool(s)]
     top = get_tool(role['top_pick'])
     pain_items = '\n'.join(f'<div class="rd-pain-item">{p}</div>' for p in role.get('pain_points',[]))
-    cards = '\n'.join(tool_card(t,i*.05) for i,t in enumerate(role_tools))
+    cards = '\n'.join(tool_card(t) for t in role_tools)
     top_pick_html = ''
     if top:
         sc = top['score']
@@ -1460,12 +1380,11 @@ def tool_detail(slug):
     pros_html = '\n'.join(f'<li>{p}</li>' for p in t['pros'])
     cons_html = '\n'.join(f'<li>{c}</li>' for c in t['cons'])
     best_html = '\n'.join(f'<div style="display:flex;align-items:center;gap:8px;font-size:.86rem;color:var(--ink3);margin-bottom:6px;font-weight:300"><span style="color:var(--cyan);font-family:JetBrains Mono,monospace;font-size:.7rem">→</span>{b}</div>' for b in t['best_for'])
-    # related tools from same roles
     related = [x for x in TOOLS if x['slug']!=slug and any(r in x.get('roles',[]) for r in t.get('roles',[]))][:3]
     if len(related)<3:
         extra = [x for x in TOOLS if x['slug']!=slug and x not in related]
         related += extra[:3-len(related)]
-    rel_cards = '\n'.join(tool_card(r,i*.05) for i,r in enumerate(related[:3]))
+    rel_cards = '\n'.join(tool_card(r) for r in related[:3])
     content = f"""
     <div class="page">
       <div class="td-hero">
@@ -1589,7 +1508,7 @@ def compare_detail(slug):
         sc_col = score_color(sc)
         w = 'winner' if is_winner else ''
         wb = '<div class="cd-winner-badge">✓ Winner</div>' if is_winner else ''
-        rows = f"""<tr><td class="compare-table td">Rating</td><td>{t['rating']}/5</td></tr>
+        rows = f"""<tr><td>Rating</td><td>{t['rating']}/5</td></tr>
           <tr><td>Starting price</td><td>{t['starting_price']}</td></tr>
           <tr><td>Free tier</td><td>{'<span class="tick">✓</span>' if t.get('free_tier') else '<span class="cross">✗</span>'}</td></tr>
           <tr><td>Free trial</td><td>{'<span class="tick">✓ '+str(t['trial_days'])+'d</span>' if t.get('free_trial') else '<span class="cross">✗</span>'}</td></tr>
@@ -1672,7 +1591,7 @@ def blog_detail(slug):
     if not post: abort(404)
     dt = datetime.datetime.strptime(post['date'],'%Y-%m-%d').strftime('%d %B %Y')
     related = [get_tool(s) for s in post.get('related_tools',[]) if get_tool(s)]
-    rel_cards = '\n'.join(tool_card(t,i*.05) for i,t in enumerate(related))
+    rel_cards = '\n'.join(tool_card(t) for t in related)
     role_cta = ''
     if post.get('related_role'):
         role = get_role(post['related_role'])
@@ -1707,7 +1626,7 @@ def category(cat_slug):
     tools = [t for t in TOOLS if slugify(t['category'])==cat_slug]
     if not tools: abort(404)
     cat_name = tools[0]['category']
-    cards = '\n'.join(tool_card(t,i*.04) for i,t in enumerate(tools))
+    cards = '\n'.join(tool_card(t) for t in tools)
     content = f"""
     <div class="page">
       <div class="breadcrumb"><a href="/">Home</a><span>/</span><a href="/tools">Tools</a><span>/</span><span>{cat_name}</span></div>
@@ -1725,8 +1644,6 @@ def category(cat_slug):
         bcs=bc_schema([('Home','/'),('Tools','/tools'),(cat_name,f'/category/{cat_slug}')]))
 
 
-# ── Legal ────────────────────────────────────────────────────────────────────
-
 @app.route('/affiliate-disclosure')
 def affiliate_disclosure():
     content = """<div class="legal-wrap">
@@ -1734,7 +1651,7 @@ def affiliate_disclosure():
       <div class="legal-card"><p><strong>Last updated:</strong> February 2026</p>
         <p>Moving Forward With AI earns affiliate commissions from some tools reviewed on this site. When you click a link and sign up or purchase, we may receive a commission — at no extra cost to you.</p></div>
       <p>Our editorial process is entirely independent of commercial relationships. Tools are scored and ranked on merit. We do not accept payment for reviews, rankings, or placement.</p>
-      <p>For questions: <a href="mailto:hello@movingforwardwithai.co.uk" style="color:var(--cyan)">hello@movingforwardwithai.co.uk</a></p>
+      <p>For questions: <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a></p>
     </div>"""
     return render('Affiliate Disclosure — Moving Forward With AI',
         'How Moving Forward With AI earns commissions while maintaining editorial independence.', content)
@@ -1749,7 +1666,7 @@ def privacy():
       <h2>Information we collect</h2>
       <p>We collect minimal data via cookies and analytics. We do not collect personal information directly unless you contact us or sign up for our email list.</p>
       <h2>Your rights (UK GDPR)</h2>
-      <p>You have the right to access, correct, delete and port your data. Contact <a href="mailto:hello@movingforwardwithai.co.uk" style="color:var(--cyan)">hello@movingforwardwithai.co.uk</a>.</p>
+      <p>You have the right to access, correct, delete and port your data. Contact <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a>.</p>
     </div>"""
     return render('Privacy Policy — Moving Forward With AI',
         'Moving Forward With AI privacy policy — UK GDPR compliant.', content)
@@ -1759,7 +1676,7 @@ def privacy():
 def terms():
     content = """<div class="legal-wrap">
       <h1 style="font-family:Bricolage Grotesque,sans-serif;font-size:2.4rem;font-weight:800;letter-spacing:-.05em;color:var(--ink);margin-bottom:24px">Terms of Service</h1>
-      <div class="legal-card"><p>By using movingforwardwithai.co.uk you accept these terms.</p></div>
+      <div class="legal-card"><p>By using movingforwardwithai.com you accept these terms.</p></div>
       <h2>About this site</h2>
       <p>Moving Forward With AI is an independent review and affiliate marketing website. We are not affiliated with or endorsed by any tool we review.</p>
       <h2>Accuracy</h2>
@@ -1768,8 +1685,6 @@ def terms():
     return render('Terms of Service — Moving Forward With AI',
         'Terms and conditions for using Moving Forward With AI.', content)
 
-
-# ── API + Static ─────────────────────────────────────────────────────────────
 
 @app.route('/api/tools')
 def api_tools():
