@@ -121,7 +121,7 @@ AUDIT SUMMARY - KEY CHANGES DETECTED:
 # NOW INCLUDES 12 TOOLS (ORIGINAL 8 + 4 NEW)
 # ============================================================================
 
-TOOLS_UPDATED = [
+TOOLS = [
     # ========== ORIGINAL 8 TOOLS (UPDATED) ==========
     {
         "slug": "jasper-ai",
