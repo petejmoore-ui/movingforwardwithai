@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app        = Flask(__name__)
-SITE_URL   = "https://www.movingforwardwithai.co.uk"
+SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
