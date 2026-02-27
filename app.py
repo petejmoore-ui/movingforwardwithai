@@ -6,7 +6,7 @@
 # ============================================================================
 
 import os, json, re, datetime
-from data import TOOLS, ROLES, COMPARISONS, BLOG_POSTS, LEAD_MAGNET
+from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET
 from flask import Flask, render_template_string, request, abort, Response, jsonify
 from dotenv import load_dotenv
 
