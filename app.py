@@ -6,7 +6,7 @@
 # ============================================================================
 
 import os, json, re, datetime
-from data import TOOLS,
+from data import TOOLS
 from flask import Flask, render_template_string, request, abort, Response, jsonify
 from dotenv import load_dotenv
 
