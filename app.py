@@ -128,6 +128,7 @@ CSS = """
 }
 
 /* Light Mode */
+html.light,
 .light {
   --bg:       #fafbff;
   --bg2:      #f4f6fd;
@@ -2220,18 +2221,24 @@ body::after {
 }
 
 /* ── Reveal Animations ──────────────────────────────────────────────────────── */
+/* Default: ALWAYS visible. JS adds .rv-ready to <body> before animating */
 .rv {
-  opacity:0;
-  transform:translateY(20px);
+  opacity:1;
+  transform:none;
   transition:opacity .55s var(--ease), transform .55s var(--ease);
 }
-.rv.visible {
+/* Only hide/animate when JS has confirmed IntersectionObserver support */
+body.rv-ready .rv {
+  opacity:0;
+  transform:translateY(20px);
+}
+body.rv-ready .rv.visible {
   opacity:1;
   transform:translateY(0);
 }
-/* Fallback: always show if no JS or reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .rv { opacity:1; transform:none; transition:none }
+  body.rv-ready .rv,
+  body.rv-ready .rv.visible { opacity:1; transform:none; transition:none }
 }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
@@ -2318,7 +2325,10 @@ BASE = """<!DOCTYPE html>
   var saved=localStorage.getItem('mfwai-theme');
   var preferLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
   var isLight=saved==='light'||(saved===null&&preferLight);
-  if(isLight)document.documentElement.classList.add('light');
+  if(isLight){
+    document.documentElement.classList.add('light');
+    document.body&&document.body.classList.add('light');
+  }
 })();
 </script>
 
@@ -2496,74 +2506,114 @@ BASE = """<!DOCTYPE html>
 <script>
 /* ─ Theme Toggle ─ */
 (function(){
-  function apply(isLight){
+  var btn=document.getElementById('theme-btn');
+  var sun=document.getElementById('ico-sun');
+  var moon=document.getElementById('ico-moon');
+
+  function applyTheme(isLight){
+    /* Apply to both html and body so CSS vars cascade correctly */
     document.documentElement.classList.toggle('light',isLight);
-    document.getElementById('ico-sun').style.display=isLight?'none':'block';
-    document.getElementById('ico-moon').style.display=isLight?'block':'none';
+    document.body.classList.toggle('light',isLight);
+    if(sun)  sun.style.display =isLight?'none':'block';
+    if(moon) moon.style.display=isLight?'block':'none';
   }
+
+  /* Read current state from html element (set by inline script in <head>) */
   var current=document.documentElement.classList.contains('light');
-  apply(current);
-  document.getElementById('theme-btn').addEventListener('click',function(){
-    current=!current;
-    localStorage.setItem('mfwai-theme',current?'light':'dark');
-    apply(current);
-  });
+  applyTheme(current);
+
+  if(btn){
+    btn.addEventListener('click',function(){
+      current=!current;
+      localStorage.setItem('mfwai-theme',current?'light':'dark');
+      applyTheme(current);
+    });
+  }
 })();
 
 /* ─ Sticky nav shadow ─ */
 window.addEventListener('scroll',function(){
-  document.getElementById('sitenav').classList.toggle('scrolled',scrollY>24);
+  var nav=document.getElementById('sitenav');
+  if(nav) nav.classList.toggle('scrolled',window.scrollY>24);
 },{passive:true});
 
-/* ─ Mobile menu ─ */
+/* ─ Mobile hamburger menu ─ */
 (function(){
   var btn=document.getElementById('hbg');
   var menu=document.getElementById('mob');
-  function toggle(force){
-    var open=typeof force!=='undefined'?force:!menu.classList.contains('open');
-    menu.classList.toggle('open',open);
-    btn.classList.toggle('open',open);
-    btn.setAttribute('aria-expanded',String(open));
-    document.body.style.overflow=open?'hidden':'';
+  if(!btn||!menu) return;
+
+  function openMenu(){
+    menu.classList.add('open');
+    btn.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+    document.body.style.overflow='hidden';
   }
-  btn.addEventListener('click',function(){toggle()});
-  menu.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){toggle(false)})});
+  function closeMenu(){
+    menu.classList.remove('open');
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded','false');
+    document.body.style.overflow='';
+  }
+
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(menu.classList.contains('open')){closeMenu();}else{openMenu();}
+  });
+
+  /* Close when a nav link is tapped */
+  menu.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click',function(){closeMenu();});
+  });
+
+  /* Close on Escape */
   document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'&&menu.classList.contains('open'))toggle(false);
+    if(e.key==='Escape') closeMenu();
   });
 })();
 
-/* ─ Dropdown menus ─ */
+/* ─ Desktop dropdown menus ─ */
 (function(){
   var drops=document.querySelectorAll('.nav-drop');
   drops.forEach(function(d){
-    d.querySelector('.nav-drop-btn').addEventListener('click',function(e){
+    var btn=d.querySelector('.nav-drop-btn');
+    if(!btn) return;
+    btn.addEventListener('click',function(e){
       e.stopPropagation();
       var isOpen=d.classList.contains('open');
+      /* Close all */
       drops.forEach(function(x){
         x.classList.remove('open');
-        x.querySelector('.nav-drop-btn').setAttribute('aria-expanded','false');
+        var xb=x.querySelector('.nav-drop-btn');
+        if(xb) xb.setAttribute('aria-expanded','false');
       });
+      /* Open this one if it wasn't open */
       if(!isOpen){
         d.classList.add('open');
-        d.querySelector('.nav-drop-btn').setAttribute('aria-expanded','true');
+        btn.setAttribute('aria-expanded','true');
       }
     });
   });
   document.addEventListener('click',function(){
-    drops.forEach(function(d){d.classList.remove('open')});
+    drops.forEach(function(d){
+      d.classList.remove('open');
+      var b=d.querySelector('.nav-drop-btn');
+      if(b) b.setAttribute('aria-expanded','false');
+    });
   });
 })();
 
 /* ─ Scroll reveal ─ */
 (function(){
+  /* Only animate if IntersectionObserver is available */
+  if(!('IntersectionObserver' in window)) return;
+
+  /* Mark body so CSS can hide .rv elements */
+  document.body.classList.add('rv-ready');
+
   var els=document.querySelectorAll('.rv');
-  if(!els.length)return;
-  // Immediately show elements if IntersectionObserver not supported
-  if(!('IntersectionObserver' in window)){
-    els.forEach(function(e){e.classList.add('visible')});
-    return;
-  }
+  if(!els.length) return;
+
   var io=new IntersectionObserver(function(entries){
     entries.forEach(function(entry){
       if(entry.isIntersecting){
@@ -2571,9 +2621,11 @@ window.addEventListener('scroll',function(){
         io.unobserve(entry.target);
       }
     });
-  },{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+  },{threshold:0.08, rootMargin:'0px 0px -30px 0px'});
+
   els.forEach(function(el,i){
-    el.style.transitionDelay=(i%4*.08)+'s';
+    /* Stagger in groups of 4 */
+    el.style.transitionDelay=(i%4*0.07)+'s';
     io.observe(el);
   });
 })();
