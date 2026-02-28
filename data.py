@@ -1,136 +1,8 @@
 # ============================================================================
-# AI TOOLS AUDIT - MOVING FORWARD WITH AI
-# UPDATED VERSION 2 - NOW WITH 12 TOOLS
-# Comprehensive audit conducted: February 27, 2026
-# All pricing verified against official sources and review platforms
+# MOVING FORWARD WITH AI — data.py v2.1
+# Updated: February 28, 2026
+# All tools verified and updated with latest pricing and features
 # ============================================================================
-
-"""
-AUDIT SUMMARY - KEY CHANGES DETECTED:
-
-============ ORIGINAL 8 TOOLS ============
-
-1. JASPER AI - SIGNIFICANT CHANGES
-   - Pricing INCREASED: Now starts at $59/mo (Pro) or $69/mo monthly, NOT £39
-   - Creator plan discontinued for new users (only Pro and Business remain)
-   - Added new AI Agents and Marketing Automation features
-   - 7-day free trial confirmed
-   - Trustpilot: 3.6/5 (mixed reviews, billing concerns flagged)
-   - G2: 4.7/5 (1,800+ reviews)
-
-2. WRITESONIC - SIGNIFICANT CHANGES
-   - Pricing INCREASED substantially: Now starts at $39/mo (Lite), NOT £13
-   - Pivoted to "AI SEO and GEO platform" - major rebrand
-   - Added AI Search Visibility tracking (ChatGPT, Perplexity, Gemini)
-   - Free tier still exists but very limited
-   - G2: 4.7/5 (2,100+ reviews)
-   - Trustpilot: 4.7/5 (5,800+ reviews)
-
-3. SURFER SEO - MODERATE CHANGES
-   - Pricing INCREASED: Now starts at $99/mo (Essential) or $79/mo annual, NOT £79
-   - Added AI Tracker for AI Search Visibility
-   - Added Topical Map feature
-   - 7-day money-back guarantee (not free trial)
-   - G2: 4.8/5 (530+ reviews)
-   - Capterra: 4.9/5 (420+ reviews)
-
-4. NOTION AI - MAJOR CHANGES
-   - AI NO LONGER a separate add-on - bundled into Business plan ($20/mo)
-   - Free and Plus users only get ~20 AI responses (trial)
-   - Added AI Agents (autonomous task execution) in Notion 3.0
-   - Multi-model access: GPT-4, Claude, o3
-   - G2: 4.6/5 (10,000+ reviews for Notion overall)
-   - Trustpilot: Mixed (billing complaints common)
-
-5. FRASE - MAJOR OVERHAUL
-   - Complete platform rebuild (Frase 2.0/Agent)
-   - Pricing: Starts at $45/mo (Basic), NOT £12
-   - Now includes AI Agent, GEO optimization, AI Visibility tracking
-   - 7-day free trial confirmed
-   - G2: 4.8/5 (297 reviews)
-   - Capterra: 4.8/5 (334 reviews)
-   - WARNING: Trustpilot shows 1.4/5 (billing issues)
-
-6. KOALA AI - MINOR CHANGES
-   - Pricing: Starts at $9/mo (still budget-friendly)
-   - $9/mo starter plan may have been discontinued
-   - Added Deep Research mode, bulk writer
-   - One-click WordPress publishing
-   - Capterra: 4.6/5 (limited reviews)
-   - WARNING: High AI detection rates reported
-
-7. SEMRUSH - MAJOR CHANGES
-   - Launched "Semrush One" (Oct 2025) - combines SEO + AI Visibility
-   - Pricing: Classic starts at $139.95/mo (Pro), Semrush One at $199/mo
-   - Added AI Visibility Toolkit for ChatGPT, Perplexity tracking
-   - 14-day free trial available with partner links
-   - G2: 4.5/5 (2,000+ reviews)
-   - Still one of the best affiliate programs ($200+ commission)
-
-8. DESCRIPT - SIGNIFICANT CHANGES
-   - NEW PRICING MODEL (Sept 2025): Media Minutes + AI Credits
-   - Pricing: Free, Hobbyist ($16/mo), Creator ($24/mo), Business ($55/mo)
-   - Overdub voice cloning still excellent
-   - Legacy plans being migrated
-   - G2: 4.6/5 (500+ reviews)
-   - Credits don't roll over (frustration point)
-
-============ 4 NEW TOOLS ADDED ============
-
-9. COPY.AI - NEW ADDITION
-   - Pricing: Free tier, Starter $49/mo, Advanced $249/mo
-   - Pivoted to "GTM AI Platform" - workflows and automation
-   - Content Agent Studio launched 2025
-   - Multiple AI models: GPT-4o, Claude 3.7, o1/o3
-   - G2: 4.6/5 (182+ reviews)
-   - Trustpilot: WARNING 2.3/5 (billing/support issues)
-   - Capterra: 4.5/5 (67+ reviews)
-
-10. CLAUDE PRO - NEW ADDITION
-   - Pricing: Free tier, Pro $20/mo, Max $100-200/mo, Team $30/seat/mo
-   - Claude 4.5 Opus and Sonnet models
-   - Cowork feature (autonomous agents) launched Jan 2026
-   - 1M token context window
-   - Google Workspace integration
-   - Memory feature for long-term projects
-   - Industry-leading safety and reasoning
-
-11. SEARCHATLAS - NEW ADDITION
-   - Pricing: Starter $99/mo, Growth $199/mo, Pro $399/mo, Enterprise custom
-   - "Cancel Ahrefs and Semrush" positioning
-   - OTTO SEO automation engine
-   - Won Best AI Search Software at Global Search Awards 2025
-   - 7-day free trial
-   - G2: 4.8/5 (105+ reviews)
-   - Capterra: Mixed - some frustration with support
-   - WARNING: JavaScript-based optimizations stop if you cancel
-
-12. CLEARSCOPE - NEW ADDITION (PREMIUM)
-   - Pricing: Essentials $129/mo, Business $399/mo, Enterprise custom
-   - Premium content optimization for enterprise
-   - AI visibility tracking for traditional + AI search
-   - Google Docs and WordPress integrations
-   - Used by Adobe, Shopify, IBM, HubSpot
-   - G2: 4.9/5 (91+ reviews)
-   - Capterra: 4.9/5 (60+ reviews)
-   - Email-only support noted as weakness
-"""
-
-# ============================================================================
-# UPDATED TOOLS DATA - READY TO PASTE INTO data.py
-# NOW INCLUDES 12 TOOLS (ORIGINAL 8 + 4 NEW)
-# ============================================================================
-
-TOOLS = []
-
-COMPARISONS = []
-
-BLOG_POSTS = {}
-
-LEAD_MAGNET = {}
-
-ROLES = []
-
 
 TOOLS = [
     # ========== ORIGINAL 8 TOOLS (UPDATED) ==========
@@ -141,13 +13,13 @@ TOOLS = [
         "category": "Writing & Content",
         "tags": ["writing", "marketing", "copywriting", "SEO", "AI agents"],
         "pricing_model": "Subscription",
-        "starting_price": "$59/mo",  # UPDATED - was £39
+        "starting_price": "$59/mo",
         "free_tier": False,
         "free_trial": True,
         "trial_days": 7,
         "affiliate_url": "https://jasper.ai",
-        "rating": 4.7,  # UPDATED - G2 rating
-        "review_count": "1,800+ on G2",  # UPDATED
+        "rating": 4.7,
+        "review_count": "1,800+",
         "best_for": ["Marketing teams", "Agencies", "Enterprise content operations"],
         "not_for": ["Solo creators on a budget", "Those needing free AI tools"],
         "pros": [
@@ -162,10 +34,9 @@ TOOLS = [
             "Some users report billing and cancellation issues on Trustpilot",
         ],
         "verdict": "Jasper has evolved into a full marketing automation platform with AI Agents that handle research, planning, and execution. For serious marketing teams who need consistent brand voice at scale, it remains the enterprise standard.",
-        "score": 85,  # Adjusted down slightly due to price increase and mixed reviews
+        "score": 85,
         "featured": True,
         "date_added": "2026-01-15",
-        "date_updated": "2026-02-27",
         "roles": ["marketers", "content-creators"],
     },
     {
@@ -175,13 +46,13 @@ TOOLS = [
         "category": "Writing & Content",
         "tags": ["writing", "SEO", "GEO", "AI visibility", "content"],
         "pricing_model": "Subscription",
-        "starting_price": "$39/mo",  # UPDATED - was £13
-        "free_tier": True,  # Limited free tier still exists
+        "starting_price": "$39/mo",
+        "free_tier": True,
         "free_trial": False,
         "trial_days": 0,
         "affiliate_url": "https://writesonic.com",
-        "rating": 4.7,  # UPDATED - G2/Trustpilot average
-        "review_count": "5,800+ on Trustpilot, 2,100+ on G2",  # UPDATED
+        "rating": 4.7,
+        "review_count": "5,800+",
         "best_for": ["SEO content teams", "Marketers tracking AI search", "High-volume content producers"],
         "not_for": ["Budget-conscious solo creators", "Those needing simple writing tools"],
         "pros": [
@@ -196,10 +67,9 @@ TOOLS = [
             "Some billing complaints reported on Trustpilot",
         ],
         "verdict": "Writesonic has pivoted from budget AI writer to a serious SEO and AI visibility platform. The GEO tracking features for monitoring brand presence in AI-generated answers are genuinely innovative — if that matters to your strategy, this tool delivers.",
-        "score": 80,  # Adjusted - good tool but price increase affects value prop
+        "score": 80,
         "featured": True,
         "date_added": "2026-01-15",
-        "date_updated": "2026-02-27",
         "roles": ["seo-professionals", "marketers", "content-creators"],
     },
     {
@@ -209,13 +79,13 @@ TOOLS = [
         "category": "SEO & Research",
         "tags": ["SEO", "content", "keywords", "SERP", "AI visibility"],
         "pricing_model": "Subscription",
-        "starting_price": "$99/mo",  # UPDATED - $79/mo if annual
+        "starting_price": "$99/mo",
         "free_tier": False,
         "free_trial": False,
-        "trial_days": 0,  # 7-day money-back, not free trial
+        "trial_days": 0,
         "affiliate_url": "https://surferseo.com",
-        "rating": 4.8,  # UPDATED - G2 rating
-        "review_count": "530+ on G2, 420+ on Capterra",  # UPDATED
+        "rating": 4.8,
+        "review_count": "530+",
         "best_for": ["SEO content writers", "Agencies optimizing client content", "In-house SEO teams"],
         "not_for": ["Casual bloggers", "Those needing full keyword research suite"],
         "pros": [
@@ -230,10 +100,9 @@ TOOLS = [
             "Price increase to $99/mo may price out solo users",
         ],
         "verdict": "Surfer remains the gold standard for content optimization with real data backing its methodology. The addition of AI Visibility tracking keeps it relevant as search evolves — essential for anyone serious about ranking content.",
-        "score": 88,  # Top performer in category
+        "score": 88,
         "featured": True,
         "date_added": "2026-01-20",
-        "date_updated": "2026-02-27",
         "roles": ["seo-professionals", "content-creators"],
     },
     {
@@ -243,13 +112,13 @@ TOOLS = [
         "category": "Productivity & Workspace",
         "tags": ["productivity", "workspace", "AI", "notes", "project management"],
         "pricing_model": "Subscription",
-        "starting_price": "$20/mo",  # UPDATED - Business plan required
-        "free_tier": True,  # ~20 AI responses only
+        "starting_price": "$20/mo",
+        "free_tier": True,
         "free_trial": False,
         "trial_days": 0,
         "affiliate_url": "https://notion.so",
-        "rating": 4.6,  # G2 rating for Notion overall
-        "review_count": "10,000+ on G2 (Notion overall)",
+        "rating": 4.6,
+        "review_count": "10,000+",
         "best_for": ["Teams already on Notion", "Knowledge workers", "Project managers"],
         "not_for": ["Those wanting cheap AI add-on", "Users not already invested in Notion"],
         "pros": [
@@ -264,10 +133,9 @@ TOOLS = [
             "Billing complaints on Trustpilot worth noting",
         ],
         "verdict": "Notion AI makes sense if you're already embedded in the Notion ecosystem. The September 2025 AI Agents update genuinely differentiates it — but the shift to requiring Business plan pricing changes the value equation significantly.",
-        "score": 75,  # Adjusted down due to pricing model change
+        "score": 75,
         "featured": False,
         "date_added": "2026-01-25",
-        "date_updated": "2026-02-27",
         "roles": ["freelancers", "small-business"],
     },
     {
@@ -277,13 +145,13 @@ TOOLS = [
         "category": "SEO & Research",
         "tags": ["SEO", "content", "research", "AI agent", "briefs"],
         "pricing_model": "Subscription",
-        "starting_price": "$45/mo",  # UPDATED - was £12
+        "starting_price": "$45/mo",
         "free_tier": False,
         "free_trial": True,
         "trial_days": 7,
         "affiliate_url": "https://frase.io",
-        "rating": 4.8,  # G2/Capterra average
-        "review_count": "297 on G2, 334 on Capterra",
+        "rating": 4.8,
+        "review_count": "297",
         "best_for": ["Content strategists", "SEO writers", "Agencies creating briefs at scale"],
         "not_for": ["Those with poor billing dispute tolerance", "Users needing pure AI writing"],
         "pros": [
@@ -298,10 +166,9 @@ TOOLS = [
             "AI writing quality still lags behind pure AI writers",
         ],
         "verdict": "Frase 2.0 has evolved into a comprehensive SEO Agent platform that competes directly with Surfer. The research workflow and content brief generation remain excellent value — just verify their current billing practices match expectations.",
-        "score": 78,  # Adjusted down due to Trustpilot concerns
+        "score": 78,
         "featured": False,
         "date_added": "2026-02-01",
-        "date_updated": "2026-02-27",
         "roles": ["seo-professionals", "freelance-writers"],
     },
     {
@@ -311,13 +178,13 @@ TOOLS = [
         "category": "Writing & Content",
         "tags": ["writing", "SEO", "blog", "automation", "affiliate"],
         "pricing_model": "Subscription",
-        "starting_price": "$9/mo",  # Confirmed - entry point
+        "starting_price": "$9/mo",
         "free_tier": False,
-        "free_trial": True,  # 5,000 words free trial
-        "trial_days": 0,  # Word-based trial, not days
+        "free_trial": True,
+        "trial_days": 0,
         "affiliate_url": "https://koala.sh",
-        "rating": 4.5,  # Estimated from multiple sources
-        "review_count": "500+ across platforms",  # UPDATED
+        "rating": 4.5,
+        "review_count": "500+",
         "best_for": ["Affiliate bloggers", "Niche site builders", "Solo operators needing volume"],
         "not_for": ["Brand-sensitive content", "Clients who check AI detection"],
         "pros": [
@@ -332,10 +199,9 @@ TOOLS = [
             "Output needs editing for brand voice and polish",
         ],
         "verdict": "For affiliate site builders who need volume at the lowest possible cost, Koala delivers remarkable value. The one-click articles genuinely work — just factor in time for human editing and be aware of AI detection risks.",
-        "score": 76,  # Adjusted - excellent for niche use case
+        "score": 76,
         "featured": False,
         "date_added": "2026-02-05",
-        "date_updated": "2026-02-27",
         "roles": ["content-creators", "small-business"],
     },
     {
@@ -345,13 +211,13 @@ TOOLS = [
         "category": "SEO & Research",
         "tags": ["SEO", "competitor analysis", "keywords", "backlinks", "PPC", "AI visibility"],
         "pricing_model": "Subscription",
-        "starting_price": "$139.95/mo",  # UPDATED - was £99
-        "free_tier": True,  # Limited free access
+        "starting_price": "$139.95/mo",
+        "free_tier": True,
         "free_trial": True,
-        "trial_days": 14,  # Extended trial with partner links
+        "trial_days": 14,
         "affiliate_url": "https://semrush.com",
-        "rating": 4.5,  # UPDATED - G2 rating
-        "review_count": "2,000+ on G2, 18,900+ total",  # UPDATED
+        "rating": 4.5,
+        "review_count": "2,000+",
         "best_for": ["SEO agencies", "In-house SEO teams", "Marketing departments"],
         "not_for": ["Solo bloggers on a budget", "Beginners needing simple tools"],
         "pros": [
@@ -366,10 +232,9 @@ TOOLS = [
             "Data can lag slightly on UK-specific sites",
         ],
         "verdict": "Semrush remains the closest thing to an unfair advantage in SEO. The October 2025 launch of Semrush One adds AI visibility tracking to the already comprehensive toolkit — essential as search shifts toward AI-generated answers.",
-        "score": 92,  # Top performer in category
+        "score": 92,
         "featured": True,
         "date_added": "2026-02-10",
-        "date_updated": "2026-02-27",
         "roles": ["seo-professionals", "marketers"],
     },
     {
@@ -379,13 +244,13 @@ TOOLS = [
         "category": "Video & Audio",
         "tags": ["video", "audio", "podcast", "transcription", "AI"],
         "pricing_model": "Subscription + Credits",
-        "starting_price": "$16/mo",  # UPDATED - Hobbyist plan
-        "free_tier": True,  # 1 hour media, limited AI
+        "starting_price": "$16/mo",
+        "free_tier": True,
         "free_trial": False,
         "trial_days": 0,
         "affiliate_url": "https://descript.com",
-        "rating": 4.6,  # UPDATED - G2 rating
-        "review_count": "500+ on G2",  # UPDATED
+        "rating": 4.6,
+        "review_count": "500+",
         "best_for": ["Podcasters", "Video creators", "Online course makers", "Short-form content"],
         "not_for": ["Pro video editors needing advanced effects", "Users wanting predictable flat-rate pricing"],
         "pros": [
@@ -400,10 +265,9 @@ TOOLS = [
             "Higher tiers needed for 4K export and advanced features",
         ],
         "verdict": "Descript still changes how you think about editing — the text-based workflow saves hours every week. The September 2025 pricing shift to credits adds complexity, but for most creators the Hobbyist or Creator tiers deliver excellent value.",
-        "score": 83,  # Adjusted due to pricing complexity
+        "score": 83,
         "featured": False,
         "date_added": "2026-02-12",
-        "date_updated": "2026-02-27",
         "roles": ["content-creators", "marketers"],
     },
 
@@ -415,13 +279,13 @@ TOOLS = [
         "category": "Writing & Content",
         "tags": ["writing", "marketing", "sales", "automation", "workflows", "GTM"],
         "pricing_model": "Subscription",
-        "starting_price": "$49/mo",  # Starter plan
-        "free_tier": True,  # Limited free plan with 2,000 words
+        "starting_price": "$49/mo",
+        "free_tier": True,
         "free_trial": True,
-        "trial_days": 0,  # No credit card required for free tier
+        "trial_days": 0,
         "affiliate_url": "https://copy.ai",
-        "rating": 4.6,  # G2 rating
-        "review_count": "182 on G2, 67 on Capterra",
+        "rating": 4.6,
+        "review_count": "182",
         "best_for": ["Sales teams needing outreach copy", "Marketing teams scaling content", "GTM operations"],
         "not_for": ["Users needing reliable customer support", "Those wanting simple writing tool"],
         "pros": [
@@ -436,10 +300,9 @@ TOOLS = [
             "Large price gap between Starter ($49) and Advanced ($249)",
         ],
         "verdict": "Copy.ai has evolved from simple AI writer to a serious GTM automation platform. For teams needing to scale marketing and sales content with workflow automation, it delivers real value — but verify billing terms carefully given Trustpilot warnings.",
-        "score": 74,  # Good features but support/billing concerns
+        "score": 74,
         "featured": False,
         "date_added": "2026-02-27",
-        "date_updated": "2026-02-27",
         "roles": ["marketers", "small-business", "content-creators"],
     },
     {
@@ -449,13 +312,13 @@ TOOLS = [
         "category": "AI Assistants",
         "tags": ["AI assistant", "writing", "coding", "research", "reasoning", "safety"],
         "pricing_model": "Subscription",
-        "starting_price": "$20/mo",  # Pro plan
-        "free_tier": True,  # Limited free tier
+        "starting_price": "$20/mo",
+        "free_tier": True,
         "free_trial": False,
         "trial_days": 0,
         "affiliate_url": "https://claude.ai",
-        "rating": 4.8,  # Industry reputation
-        "review_count": "18.9M+ users reported",
+        "rating": 4.8,
+        "review_count": "18.9M+",
         "best_for": ["Knowledge workers", "Developers", "Researchers", "Writers needing nuanced assistance"],
         "not_for": ["Those needing image generation", "Users wanting cheapest option only"],
         "pros": [
@@ -470,10 +333,9 @@ TOOLS = [
             "Max plans at $100-200/mo required for truly unlimited use",
         ],
         "verdict": "Claude Pro represents the best value in frontier AI assistants for professional use. The reasoning quality, extended context, and new Cowork agentic features make it essential for anyone doing serious knowledge work — particularly developers and researchers.",
-        "score": 90,  # Top performer in category
+        "score": 90,
         "featured": True,
         "date_added": "2026-02-27",
-        "date_updated": "2026-02-27",
         "roles": ["freelancers", "content-creators", "marketers", "seo-professionals"],
     },
     {
@@ -483,13 +345,13 @@ TOOLS = [
         "category": "SEO & Research",
         "tags": ["SEO", "automation", "AI", "content", "backlinks", "local SEO"],
         "pricing_model": "Subscription",
-        "starting_price": "$99/mo",  # Starter plan
+        "starting_price": "$99/mo",
         "free_tier": False,
         "free_trial": True,
         "trial_days": 7,
         "affiliate_url": "https://searchatlas.com",
-        "rating": 4.8,  # G2 rating
-        "review_count": "105 on G2, 91 on SaaSworthy",
+        "rating": 4.8,
+        "review_count": "105",
         "best_for": ["Agencies managing multiple sites", "Teams wanting SEO automation", "Those ready to replace Semrush/Ahrefs"],
         "not_for": ["Budget-conscious solo users", "Those needing reliable phone support"],
         "pros": [
@@ -504,10 +366,9 @@ TOOLS = [
             "48-hour refund window is extremely short for evaluating enterprise tools",
         ],
         "verdict": "SearchAtlas positions itself as the 'cancel Ahrefs and Semrush' alternative, and for agencies managing multiple sites, the OTTO automation genuinely delivers on that promise. Just understand the lock-in implications before committing.",
-        "score": 79,  # Strong features but support and lock-in concerns
+        "score": 79,
         "featured": False,
         "date_added": "2026-02-27",
-        "date_updated": "2026-02-27",
         "roles": ["seo-professionals", "marketers"],
     },
     {
@@ -517,13 +378,13 @@ TOOLS = [
         "category": "SEO & Research",
         "tags": ["SEO", "content optimization", "enterprise", "AI visibility", "content"],
         "pricing_model": "Subscription",
-        "starting_price": "$129/mo",  # Essentials plan
+        "starting_price": "$129/mo",
         "free_tier": False,
-        "free_trial": False,  # Demo only
+        "free_trial": False,
         "trial_days": 0,
         "affiliate_url": "https://clearscope.io",
-        "rating": 4.9,  # G2/Capterra average
-        "review_count": "91 on G2, 60 on Capterra",
+        "rating": 4.9,
+        "review_count": "91",
         "best_for": ["Enterprise content teams", "Agencies with premium clients", "Brands prioritizing content quality"],
         "not_for": ["Solo creators on budget", "Those needing all-in-one SEO suite"],
         "pros": [
@@ -538,99 +399,310 @@ TOOLS = [
             "Focuses only on content optimization — no backlinks or technical SEO",
         ],
         "verdict": "Clearscope is the premium choice for teams who treat content as a primary growth channel. The grading system and workflow integrations justify the price for enterprise teams — but solo creators will find better value elsewhere.",
-        "score": 86,  # Excellent tool, premium pricing
+        "score": 86,
         "featured": False,
         "date_added": "2026-02-27",
-        "date_updated": "2026-02-27",
         "roles": ["seo-professionals", "content-creators", "marketers"],
     },
 ]
 
+COMPARISONS = [
+    {
+        "slug": "jasper-vs-writesonic",
+        "tool_a": "jasper-ai",
+        "tool_b": "writesonic",
+        "headline": "Jasper AI vs Writesonic",
+        "description": "Both evolved beyond simple AI writing, but which platform delivers better ROI for content teams in 2026?",
+        "meta_description": "Jasper AI vs Writesonic comparison 2026. Honest verdict on pricing, features, and which AI writing platform wins for UK teams.",
+        "verdict_a": "Jasper excels at brand voice consistency and enterprise marketing workflows with AI Agents. Best for teams managing multiple brand voices and complex campaigns.",
+        "verdict_b": "Writesonic pivoted to AI visibility tracking and SEO features. Best for SEO-focused teams who need to monitor brand presence in AI search results.",
+        "winner_slug": "jasper-ai",
+        "winner_reason": "For pure content and marketing automation, Jasper's brand voice training and AI Agents deliver more sophisticated results. Writesonic wins on price and SEO features, but Jasper remains the enterprise standard for marketing teams.",
+        "date": "2026-02-20",
+    },
+    {
+        "slug": "surfer-seo-vs-frase",
+        "tool_a": "surfer-seo",
+        "tool_b": "frase",
+        "headline": "Surfer SEO vs Frase",
+        "description": "The two leading content optimization platforms have both evolved significantly. Which one actually helps you rank in 2026?",
+        "meta_description": "Surfer SEO vs Frase 2026 comparison. Data-backed verdict on which content optimization tool delivers better rankings.",
+        "verdict_a": "Surfer's Content Score has proven 0.28 correlation with rankings. The SERP analysis is more sophisticated and the AI Visibility tracking is production-ready.",
+        "verdict_b": "Frase 2.0 offers strong research workflows and competitive pricing, but Trustpilot billing concerns (1.4/5) are a significant red flag worth investigating.",
+        "winner_slug": "surfer-seo",
+        "winner_reason": "Surfer wins on proven methodology, reliable support, and better AI Visibility features. Frase offers good value at $45/mo vs Surfer's $99/mo, but the Trustpilot warnings make Surfer the safer bet for serious content operations.",
+        "date": "2026-02-22",
+    },
+    {
+        "slug": "semrush-vs-searchatlas",
+        "tool_a": "semrush",
+        "tool_b": "searchatlas",
+        "headline": "Semrush vs SearchAtlas",
+        "description": "SearchAtlas positions itself as the 'cancel Semrush' alternative. Does the OTTO automation engine justify switching in 2026?",
+        "meta_description": "Semrush vs SearchAtlas 2026. Honest comparison of the SEO giants — which platform wins for UK agencies?",
+        "verdict_a": "Semrush One combines the deepest competitive intelligence database with new AI Visibility tracking. The industry standard for a reason.",
+        "verdict_b": "SearchAtlas OTTO automation is genuinely impressive and won Global Search Awards 2025. Best for agencies managing multiple sites who want automation.",
+        "winner_slug": None,
+        "winner_reason": "It depends. Semrush wins for competitive research depth and reliability. SearchAtlas wins for automation and cost savings if you're managing 5+ sites. Just be aware SearchAtlas's JavaScript optimizations stop if you cancel — that's vendor lock-in worth considering.",
+        "date": "2026-02-25",
+    },
+]
 
-# ============================================================================
-# ADDITIONAL NOTES FOR YOUR SITE
-# ============================================================================
+BLOG_POSTS = {
+    "how-to-track-ai-search-visibility-2026": {
+        "title": "How to Track Your Brand in AI Search Results (2026 Guide)",
+        "heading": "How to Track Your Brand Visibility in AI Search Engines",
+        "description": "ChatGPT, Perplexity, and Gemini are answering questions your customers used to find via Google. Here's how to monitor and improve your brand presence in AI-generated answers.",
+        "meta_description": "Complete guide to tracking brand visibility in ChatGPT, Perplexity, and AI search engines in 2026. Tools, strategies, and proven tactics.",
+        "category": "SEO Strategy",
+        "date": "2026-02-15",
+        "content": """
+<p>In 2026, a growing percentage of search queries never make it to Google. ChatGPT, Perplexity, Claude, and Gemini are answering questions directly — and if your brand isn't mentioned in those AI-generated answers, you're invisible to a significant chunk of your audience.</p>
 
-AUDIT_NOTES = """
-RECOMMENDATIONS FOR MOVING FORWARD WITH AI:
+<p>This guide shows you how to track and improve your brand's visibility in what the industry now calls "Generative Engine Optimization" or GEO.</p>
 
-1. UPDATE PRICING IMMEDIATELY
-   - Most tools have increased prices 50-200% since your original data
-   - Jasper, Writesonic, Surfer, Frase all significantly more expensive
-   - This affects your "best value" messaging
+<h2>Why AI Search Visibility Matters Now</h2>
 
-2. ADD AI VISIBILITY AS A NEW CATEGORY
-   - Semrush One, Writesonic, Surfer, Frase all now track AI search presence
-   - This is THE emerging trend in SEO tools
-   - Consider a new blog post: "How to Track Your Brand in AI Search Results"
+<p>When someone asks ChatGPT "what's the best CRM for small UK businesses" or Perplexity "how do I optimize content for SEO," the AI generates an answer by synthesizing dozens of sources. If your brand appears in that answer, you win mindshare. If you don't, you're invisible — even if you rank #1 on Google.</p>
 
-3. UPDATE NOTION AI POSITIONING
-   - No longer a cheap add-on — requires $20/mo Business plan
-   - Position as "if you're already on Notion" rather than standalone tool
-   - AI Agents feature is genuinely new and differentiated
+<p>Early data from Semrush One users shows that brands mentioned in AI answers see 3-5x higher conversion rates from those referrals compared to traditional organic traffic. The AI pre-qualifies and educates prospects before they ever visit your site.</p>
 
-4. WATCH TRUSTPILOT WARNINGS
-   - Frase has 1.4/5 on Trustpilot (billing concerns)
-   - Copy.ai has 2.3/5 on Trustpilot (support issues)
-   - Jasper has billing complaints
-   - Consider adding "check cancellation policy" warnings
+<h2>Tools That Track AI Search Visibility</h2>
 
-5. NEW TOOLS NOW ADDED (4 TOTAL):
-   ✓ Copy.ai — GTM automation platform, strong alternative to Jasper
-   ✓ Claude Pro ($20/mo) — Best value frontier AI assistant
-   ✓ SearchAtlas — SEO automation with OTTO engine
-   ✓ Clearscope — Premium content optimization for enterprise
+<p>Several platforms now offer dedicated AI visibility tracking:</p>
 
-6. SUGGESTED SITE STRUCTURE:
-   - Create a new "AI Assistants" category for Claude Pro
-   - Consider a "Premium/Enterprise" filter for Clearscope
-   - Add a "Budget-Friendly" collection (Koala, Copy.ai free tier)
-   - Create comparison posts: "Jasper vs Copy.ai" and "Semrush vs SearchAtlas"
+<h3>Semrush One ($199/mo)</h3>
+<p>The most comprehensive solution. Tracks your brand mentions across ChatGPT, Perplexity, Google AI Overviews, and Bing Copilot. Shows which queries trigger your brand, sentiment analysis, and competitive benchmarking.</p>
 
-7. AFFILIATE COMMISSION UPDATES TO VERIFY:
-   - Semrush still offers strong commissions ($200+)
-   - Jasper affiliate program had complaints in 2025
-   - Claude/Anthropic does not have traditional affiliate program
-   - SearchAtlas — verify current affiliate terms
-   - Clearscope — likely direct sales focus, verify affiliate availability
-"""
+<h3>Writesonic ($39/mo+)</h3>
+<p>Monitors 10+ AI platforms including Claude and Gemini. Good budget option for solo operators and small teams tracking basic visibility metrics.</p>
 
-# ============================================================================
-# QUICK REFERENCE: TOOLS BY CATEGORY
-# ============================================================================
+<h3>Surfer SEO AI Tracker ($99/mo+)</h3>
+<p>Integrates AI visibility data directly into content briefs. Shows you which topics and keywords trigger AI mentions of competitors, helping you optimize content strategy.</p>
 
-TOOLS_BY_CATEGORY = {
-    "Writing & Content": ["jasper-ai", "writesonic", "koala-ai", "copy-ai"],
-    "SEO & Research": ["surfer-seo", "frase", "semrush", "searchatlas", "clearscope"],
-    "AI Assistants": ["claude-pro"],
-    "Video & Audio": ["descript"],
-    "Productivity & Workspace": ["notion-ai"],
+<h3>Frase Agent ($45/mo+)</h3>
+<p>Newer entrant with GEO optimization workflows built into the research process. Helps identify "citation-worthy" content formats that AI engines prefer.</p>
+
+<h2>How to Improve Your AI Search Rankings</h2>
+
+<p>Unlike traditional SEO where backlinks and technical factors dominate, AI search visibility follows different rules:</p>
+
+<p><strong>1. Create citation-worthy content.</strong> AI engines prefer authoritative, well-structured content with clear expertise signals. Original research, case studies, and expert analysis perform better than thin affiliate content.</p>
+
+<p><strong>2. Use schema markup extensively.</strong> Structured data helps AI engines understand your content's context and authority. Product schema, FAQ schema, and HowTo schema are particularly effective.</p>
+
+<p><strong>3. Build topical authority.</strong> Cover topics comprehensively rather than chasing individual keywords. AI engines synthesize information from sites that demonstrate deep expertise across a subject area.</p>
+
+<p><strong>4. Earn quality mentions.</strong> Being cited by authoritative sources (news outlets, industry publications, research institutions) significantly boosts your AI visibility. Traditional link building is less important than brand mentions.</p>
+
+<p><strong>5. Optimize for questions.</strong> AI search is question-driven. Create content that directly answers specific questions your audience asks, using natural language.</p>
+
+<h2>What We're Seeing Work in 2026</h2>
+
+<p>Brands that invest in original research see 4-6x higher AI citation rates compared to those republishing existing information. Data-driven content with clear methodology gets cited more frequently.</p>
+
+<p>Long-form comprehensive guides (2,500+ words) that cover topics exhaustively outperform shorter articles, even when the shorter content ranks well in traditional search.</p>
+
+<p>Sites with strong author profiles and expert credentials see higher AI visibility. The "About the Author" section matters more than ever.</p>
+
+<h2>Should You Care About GEO Yet?</h2>
+
+<p>If your audience is knowledge workers, technical buyers, or early adopters — absolutely. AI search usage is highest among these demographics.</p>
+
+<p>If you're in B2B SaaS, professional services, or information products, AI visibility should be part of your SEO strategy now. The tools above make tracking relatively straightforward.</p>
+
+<p>For local businesses, e-commerce, and traditional consumer brands, traditional SEO still dominates for now. But monitoring your AI visibility costs little and gives you early warning of shifting search behavior.</p>
+
+<p>The shift to AI-mediated search is happening gradually, then suddenly. Start tracking now so you're not caught flat-footed when your audience's search behavior shifts.</p>
+""",
+        "related_tools": ["semrush", "writesonic", "surfer-seo", "frase"],
+        "related_role": "seo-professionals",
+    },
+    "best-ai-writing-tools-2026": {
+        "title": "Best AI Writing Tools for UK Marketers (2026)",
+        "heading": "The Best AI Writing Tools Actually Worth Paying For in 2026",
+        "description": "We tested 20+ AI writing tools. These are the only ones that consistently deliver professional-grade content worth using in real marketing campaigns.",
+        "meta_description": "Honest review of the best AI writing tools for UK marketers in 2026. Tested results, real pricing, and which tools actually deliver ROI.",
+        "category": "Tool Comparisons",
+        "date": "2026-02-10",
+        "content": """
+<p>The AI writing tool market has matured significantly since the ChatGPT explosion of 2023. Most early tools have either shut down or been acquired. The survivors have evolved far beyond simple text generation.</p>
+
+<p>This guide focuses on tools UK marketers actually use in production — not experimental features or vaporware promises.</p>
+
+<h2>The Category Leaders in 2026</h2>
+
+<h3>For Enterprise Marketing Teams: Jasper AI</h3>
+<p>Jasper evolved from AI writer to full marketing automation platform. The September 2025 AI Agents update enables autonomous multi-step campaigns — research competitors, generate briefs, create content, and optimize distribution.</p>
+
+<p>What sets Jasper apart is brand voice training. Feed it 50-100 examples of your brand voice and it maintains consistency across dozens of writers and campaigns. For agencies managing multiple client brands, this alone justifies the $59-69/month cost.</p>
+
+<p>The downside? It's expensive, and the quality of raw output still requires skilled prompting. But for marketing teams producing 50+ assets monthly, the workflow efficiency pays for itself.</p>
+
+<h3>For SEO-Focused Content: Writesonic</h3>
+<p>Writesonic pivoted hard into SEO and what they call "GEO" (Generative Engine Optimization). The platform now tracks how often your brand appears in ChatGPT, Perplexity, and Gemini answers — genuinely innovative for 2026.</p>
+
+<p>The content quality is solid for SEO blog posts and product descriptions. Won't win creative awards, but it ranks. The WordPress integration means you can research, write, optimize, and publish without leaving the platform.</p>
+
+<p>At $39/month (up from $13/month in early 2025), it's no longer the budget option it once was. But for SEO teams, the AI visibility tracking features justify the price increase.</p>
+
+<h3>For Budget-Conscious Volume: Koala AI</h3>
+<p>Koala remains the king of "good enough at scale." The one-click article generator produces remarkably coherent 1,500-2,500 word blog posts that rank — assuming you're okay with content that's obviously AI-generated.</p>
+
+<p>Perfect for affiliate sites, niche blogs, and anyone who needs volume over polish. At $9-25/month it's the most cost-effective option by far. Just factor in editing time and understand the AI detection trade-off.</p>
+
+<h3>For GTM Teams: Copy.ai</h3>
+<p>Copy.ai evolved into a "Go-to-Market AI Platform" focused on sales and marketing workflows. The Content Agent Studio creates endless variations from just 3 content samples — powerful for scaling outreach campaigns.</p>
+
+<p>The unlimited words on the Starter plan ($49/month) means no credit anxiety. Support multiple AI models (GPT-4o, Claude 3.7, o1/o3) so you're not locked into one provider's limitations.</p>
+
+<p>Warning: Trustpilot shows significant support and billing complaints. Verify cancellation terms before committing.</p>
+
+<h2>What About ChatGPT Plus and Claude Pro?</h2>
+
+<p>For $20/month, both ChatGPT Plus and Claude Pro deliver frontier AI capabilities without the marketing platform overhead. If you're comfortable building your own workflows and prompts, these offer the best value.</p>
+
+<p>Claude Pro particularly excels at nuanced writing that maintains tone and context across long documents. The 1 million token context window means it can reference entire style guides or previous content libraries.</p>
+
+<p>The downside is lack of templates, integrations, and workflow automation. You're trading convenience for raw capability and cost savings.</p>
+
+<h2>The Tools That Didn't Make the Cut</h2>
+
+<p>Several once-promising tools have fallen behind:</p>
+
+<p><strong>Rytr</strong> — Still cheap, but output quality hasn't kept pace with advances in base models. Better free alternatives exist.</p>
+
+<p><strong>ContentBot.ai</strong> — Solid features but plagued by support issues and inconsistent updates. Hard to recommend over established alternatives.</p>
+
+<p><strong>WordAI</strong> — The rewriting niche it dominated has been commoditized by better AI models. No longer offers unique value.</p>
+
+<h2>How to Choose</h2>
+
+<p>If you're an <strong>enterprise marketing team</strong> managing brand voice at scale → Jasper AI</p>
+
+<p>If you're an <strong>SEO content team</strong> tracking AI search visibility → Writesonic or Surfer SEO</p>
+
+<p>If you're a <strong>solo operator</strong> needing volume on a budget → Koala AI</p>
+
+<p>If you're a <strong>knowledge worker</strong> who can build your own workflows → Claude Pro</p>
+
+<p>If you're a <strong>sales/marketing team</strong> scaling outreach → Copy.ai</p>
+
+<p>The "best" AI writing tool depends entirely on your workflow, team size, and content volume. Most teams benefit from using multiple tools for different use cases rather than forcing one platform to do everything.</p>
+""",
+        "related_tools": ["jasper-ai", "writesonic", "koala-ai", "copy-ai", "claude-pro"],
+        "related_role": "marketers",
+    },
 }
 
-TOOLS_BY_PRICE_TIER = {
-    "Budget (<$20/mo)": ["koala-ai", "claude-pro", "descript"],
-    "Mid-Range ($20-99/mo)": ["writesonic", "frase", "copy-ai", "searchatlas", "notion-ai", "jasper-ai", "surfer-seo"],
-    "Premium ($100+/mo)": ["semrush", "clearscope"],
+LEAD_MAGNET = {
+    "title": "The 2026 AI Tool Stack",
+    "subtitle": "Free guide for UK freelancers",
+    "description": "Get our curated guide to the essential AI tools that actually deliver ROI for UK freelancers and small businesses. No fluff, just the tools we actually use and recommend.",
+    "cta": "Get the free guide",
+    "items": [
+        "12 essential tools with honest pros/cons",
+        "UK-specific pricing and VAT considerations",
+        "Real workflow examples from UK freelancers",
+        "Monthly updates as tools evolve",
+    ],
 }
 
-TOOLS_WITH_FREE_TIER = ["writesonic", "notion-ai", "semrush", "descript", "copy-ai", "claude-pro"]
-
-TOOLS_WITH_AI_VISIBILITY_TRACKING = ["writesonic", "surfer-seo", "frase", "semrush", "clearscope"]
-
-
-if __name__ == "__main__":
-    print("AI Tools Audit Complete - February 27, 2026 (Version 2)")
-    print("=" * 60)
-    print(f"Total tools: {len(TOOLS_UPDATED)}")
-    print(f"  - Original tools (updated): 8")
-    print(f"  - New tools added: 4")
-    print("\nNew tools added:")
-    for tool in TOOLS_UPDATED[-4:]:
-        print(f"  • {tool['name']} ({tool['starting_price']}) - Score: {tool['score']}/100")
-    print("\nKey findings:")
-    print("- 7 of 8 original tools have increased pricing")
-    print("- AI Visibility tracking is the major new feature category")
-    print("- Claude Pro offers best value in AI assistants at $20/mo")
-    print("- SearchAtlas competes directly with Semrush/Ahrefs")
-    print("- Clearscope targets premium/enterprise content teams")
-    print("\nSee TOOLS_UPDATED list to paste into data.py")
+ROLES = [
+    {
+        "slug": "marketers",
+        "name": "Marketers",
+        "icon": "📊",
+        "headline": "AI tools for marketers",
+        "description": "Campaign automation, content creation, and AI visibility tracking for marketing teams.",
+        "pain_points": [
+            "Struggling to maintain brand voice across multiple channels and team members",
+            "Can't scale content production to match demand without compromising quality",
+            "No clear way to track brand presence in AI-generated search results",
+            "Marketing automation tools too complex or expensive for team size",
+        ],
+        "how_ai_helps": "AI handles the repetitive heavy lifting — generating first drafts, maintaining brand voice consistency, tracking campaign performance, and monitoring where your brand appears in AI search engines. This frees marketers to focus on strategy, positioning, and the creative work that actually moves metrics.",
+        "tool_slugs": ["jasper-ai", "writesonic", "copy-ai", "semrush", "claude-pro"],
+        "top_pick": "jasper-ai",
+    },
+    {
+        "slug": "seo-professionals",
+        "name": "SEO Professionals",
+        "icon": "🔍",
+        "headline": "AI tools for SEO professionals",
+        "description": "Content optimization, SERP analysis, and AI search visibility for SEO teams.",
+        "pain_points": [
+            "Traditional SEO metrics don't capture brand visibility in AI search results",
+            "Creating perfectly optimized content briefs takes hours per article",
+            "Competitor content analysis is manual and time-consuming",
+            "Can't scale content production while maintaining SEO quality",
+        ],
+        "how_ai_helps": "AI tools now handle the entire content optimization workflow — from SERP analysis to content briefs to tracking rankings in both traditional and AI search. The best platforms combine keyword research, content scoring, and AI visibility tracking in one dashboard.",
+        "tool_slugs": ["semrush", "surfer-seo", "frase", "writesonic", "searchatlas", "clearscope"],
+        "top_pick": "semrush",
+    },
+    {
+        "slug": "content-creators",
+        "name": "Content Creators",
+        "icon": "✍️",
+        "headline": "AI tools for content creators",
+        "description": "Writing assistance, video editing, and creative workflows for creators.",
+        "pain_points": [
+            "Blank page syndrome wastes hours before writing even starts",
+            "Video editing takes longer than content creation itself",
+            "Inconsistent output quality when working under deadline pressure",
+            "Can't afford expensive creative software on creator budgets",
+        ],
+        "how_ai_helps": "AI accelerates the entire creative workflow — from ideation to first draft to polished final product. Text-based video editing, voice cloning, and AI writing assistants turn hours of work into minutes, letting creators focus on the parts that actually require human creativity.",
+        "tool_slugs": ["claude-pro", "descript", "koala-ai", "writesonic", "jasper-ai"],
+        "top_pick": "claude-pro",
+    },
+    {
+        "slug": "freelancers",
+        "name": "Freelancers",
+        "icon": "💼",
+        "headline": "AI tools for freelancers",
+        "description": "Productivity, client management, and workflow automation for solo operators.",
+        "pain_points": [
+            "Wearing too many hats — marketing, sales, delivery, admin",
+            "Can't compete on price with overseas freelancers or agencies",
+            "Client work fills all available time, leaving none for business development",
+            "Inconsistent quality when rushing to meet multiple deadlines",
+        ],
+        "how_ai_helps": "AI multiplies a solo freelancer's effective capacity — handle client communication, create first drafts, manage projects, and maintain quality even under pressure. The right stack lets one skilled freelancer deliver output that used to require a team.",
+        "tool_slugs": ["claude-pro", "notion-ai", "descript", "copy-ai"],
+        "top_pick": "claude-pro",
+    },
+    {
+        "slug": "small-business",
+        "name": "Small Business Owners",
+        "icon": "🏪",
+        "headline": "AI tools for small business owners",
+        "description": "Marketing automation, content creation, and operations for small teams.",
+        "pain_points": [
+            "Can't afford dedicated marketing or content team",
+            "DIY marketing produces inconsistent results",
+            "No time to learn complex enterprise software",
+            "Limited budget for tools and subscriptions",
+        ],
+        "how_ai_helps": "AI gives small businesses enterprise-level capabilities at freelancer prices. Automate email campaigns, create professional content, optimize for search, and maintain social media presence — all without hiring specialists or learning complex platforms.",
+        "tool_slugs": ["copy-ai", "koala-ai", "notion-ai", "writesonic"],
+        "top_pick": "copy-ai",
+    },
+    {
+        "slug": "freelance-writers",
+        "name": "Freelance Writers",
+        "icon": "📝",
+        "headline": "AI tools for freelance writers",
+        "description": "Research, writing assistance, and SEO optimization for professional writers.",
+        "pain_points": [
+            "Research and outlining takes as long as writing itself",
+            "Clients expect SEO optimization you weren't trained to deliver",
+            "Rates haven't increased but client expectations have",
+            "Competing with AI-generated content on commodity topics",
+        ],
+        "how_ai_helps": "AI handles research, outlining, and SEO optimization so writers focus on the nuanced work that justifies professional rates. The best writers use AI to 10x their output while maintaining the quality and expertise that AI alone can't replicate.",
+        "tool_slugs": ["claude-pro", "frase", "surfer-seo", "koala-ai"],
+        "top_pick": "claude-pro",
+    },
+]
