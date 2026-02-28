@@ -193,6 +193,17 @@ body {
   -moz-osx-font-smoothing:grayscale;
   transition:background .3s var(--slide), color .3s var(--slide);
 }
+/* ── Global theme transition — every surface animates ── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.25s;
+  transition-timing-function: cubic-bezier(.25,.46,.45,.94);
+}
+/* Cards need their own rule because they override with transform/box-shadow */
+.tool-card, .role-card, .comp-card, .blog-card {
+  transition: transform .35s var(--spring), box-shadow .35s,
+              border-color .25s, background-color .25s !important;
+}
 a { text-decoration:none; color:inherit }
 button { font-family:inherit; cursor:pointer; border:none; background:none }
 img { display:block; max-width:100% }
@@ -211,8 +222,19 @@ body::before {
 }
 html.light body::before {
   background-image:
-    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(37,99,235,.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 120%, rgba(139,92,246,.025) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(37,99,235,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 120%, rgba(139,92,246,.04) 0%, transparent 60%);
+}
+
+/* Light mode: unmistakable visual signals */
+html.light #sitenav {
+  border-bottom: 1px solid rgba(37,99,235,.18);
+}
+html.light .tool-card,
+html.light .role-card,
+html.light .comp-card,
+html.light .blog-card {
+  box-shadow: 0 1px 12px rgba(37,99,235,.06), 0 0 0 1px rgba(37,99,235,.07);
 }
 
 body::after {
@@ -2314,11 +2336,17 @@ BASE = """<!DOCTYPE html>
 <!-- Theme: applied before paint to prevent flash -->
 <script>
 (function(){
-  var saved = localStorage.getItem('mfwai-theme');
-  var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-  var isLight = saved === 'light' || (saved === null && preferLight);
-  if (isLight) {
-    document.documentElement.classList.add('light');
+  try {
+    var saved = localStorage.getItem('mfwai-theme');
+    var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    var isLight = saved === 'light' || (saved === null && preferLight);
+    if (isLight) {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+  } catch(e) {
+    /* Private/restricted browsing — default dark, no action */
   }
 })();
 </script>
@@ -2499,31 +2527,50 @@ BASE = """<!DOCTYPE html>
 
 <script>
 /* ══════════════════════════════════════════════════════
-   THEME TOGGLE
-   Reads from html.light class (set by inline <head> script).
-   Clicking toggles the class, updates icons, saves to localStorage.
+   THEME TOGGLE — v2 (bulletproof)
+   • Reads html.light class applied by the <head> inline script
+   • Clicking cleanly toggles, persists, and updates icons
+   • Forces a reflow so CSS variables flush on Safari/Firefox
 ══════════════════════════════════════════════════════ */
 (function () {
-  var html  = document.documentElement;
-  var btn   = document.getElementById('theme-btn');
-  var sun   = document.getElementById('ico-sun');
-  var moon  = document.getElementById('ico-moon');
+  var html = document.documentElement;
+  var btn  = document.getElementById('theme-btn');
+  var sun  = document.getElementById('ico-sun');
+  var moon = document.getElementById('ico-moon');
 
   function syncIcons(isLight) {
-    if (sun)  sun.style.display  = isLight ? 'none'  : 'block';
-    if (moon) moon.style.display = isLight ? 'block' : 'none';
-    if (btn)  btn.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
+    if (sun)  { sun.style.display  = isLight ? 'none'  : 'block'; }
+    if (moon) { moon.style.display = isLight ? 'block' : 'none';  }
+    if (btn)  {
+      btn.setAttribute('aria-label',
+        isLight ? 'Switch to dark mode' : 'Switch to light mode');
+    }
   }
 
-  /* Sync icons on page load to match whatever the <head> script applied */
+  function applyTheme(isLight) {
+    /* 1. Toggle class */
+    if (isLight) {
+      html.classList.add('light');
+    } else {
+      html.classList.remove('light');
+    }
+    /* 2. Persist */
+    try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
+    /* 3. Update icons */
+    syncIcons(isLight);
+    /* 4. Force browser reflow — critical for Safari + older Firefox.
+          Without this, CSS custom property changes can be silently ignored. */
+    html.style.display = 'none';
+    void html.offsetHeight; /* triggers synchronous reflow */
+    html.style.display = '';
+  }
+
+  /* Sync icons to match whatever the <head> script applied */
   syncIcons(html.classList.contains('light'));
 
   if (btn) {
     btn.addEventListener('click', function () {
-      var nowLight = !html.classList.contains('light');
-      html.classList.toggle('light', nowLight);
-      localStorage.setItem('mfwai-theme', nowLight ? 'light' : 'dark');
-      syncIcons(nowLight);
+      applyTheme(!html.classList.contains('light'));
     });
   }
 })();
