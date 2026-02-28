@@ -3107,7 +3107,7 @@ def home():
 
     return render(
         title='Moving Forward With AI — Independent AI Tool Reviews 2026',
-#     desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders. Role-based recommendations, head-to-head comparisons, and GEO optimization guides.',
+      desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders. Role-based recommendations, head-to-head comparisons, and GEO optimization guides.',
         content=content)
 
 
