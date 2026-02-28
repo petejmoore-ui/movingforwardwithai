@@ -2469,7 +2469,7 @@ BASE = """<!DOCTYPE html>
           <div class="f-logo-icon" aria-hidden="true">AI</div>
           Moving Forward With AI
         </div>
-        <p class="f-desc">Independent, transparent reviews of AI tools for freelancers, marketers and builders worldwide. No paid placements. Ever.</p>
+        <p class="f-desc">Independent, transparent reviews of AI tools for freelancers, marketers, and builders. No paid placements. Clear verdicts. Updated weekly.</p>
         <div class="f-affil">Affiliate commissions fund this site</div>
       </div>
       <div class="f-col">
@@ -2979,7 +2979,7 @@ def home():
         Cutting through<br>the <em>AI noise</em>
         <span class="serif-accent">Clear verdicts. Real results.</span>
       </h1>
-      <p class="hero-sub">We test, score, and rank AI tools so freelancers, marketers and business owners find what actually works — and skip what doesn't.</p>
+      <p class="hero-sub">Independent reviews, transparent scores, and clear verdicts — helping freelancers, marketers, and business owners find AI tools that actually work.</p>
       <div class="role-selector" aria-label="Browse by role">
         <div class="role-label" id="role-label">// I am a</div>
         <div class="role-chips" role="list" aria-labelledby="role-label">{role_chips}</div>
@@ -2998,7 +2998,7 @@ def home():
           <div class="stat-lbl">role guides</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num"><em>£0</em></div>
+          <div class="stat-num"><em>$0</em></div>
           <div class="stat-lbl">paid placements</div>
         </div>
         <div class="stat-item">
@@ -3106,8 +3106,8 @@ def home():
                + email_capture() + blog_sec + '<div style="height:56px"></div>')
 
     return render(
-        title='Moving Forward With AI — Independent AI Tool Reviews for Freelancers & Builders',
-        desc='Independent, transparent reviews of AI tools for freelancers, marketers and builders. Role-based recommendations, head-to-head comparisons, no paid placements.',
+        title='Moving Forward With AI — Independent AI Tool Reviews 2026',
+#     desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders. Role-based recommendations, head-to-head comparisons, and GEO optimization guides.',
         content=content)
 
 
