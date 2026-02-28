@@ -1843,7 +1843,7 @@ body::after {
 .comp-table td {
   padding:10px 0;
   border-bottom:1px solid var(--div);
-  font-size:.87px;
+  font-size:.87rem;
   color:var(--ink3);
   vertical-align:middle;
 }
@@ -3322,25 +3322,43 @@ def compare_detail(slug):
         sc = t['score']
         sc_col = score_color(sc)
         verdict = c['verdict_a'] if t['slug'] == c['tool_a'] else c['verdict_b']
-        win_badge = '<div class="cd-winner-tag">✓ Winner</div>' if is_winner else ''
-        rows = f"""<tr><td>MFWAI Score</td><td style="color:{sc_col};font-family:var(--font-mono);font-weight:600">{sc}/100</td></tr>
-          <tr><td>Rating</td><td>{t['rating']}/5</td></tr>
-          <tr><td>Starting price</td><td>{t['starting_price']}</td></tr>
-          <tr><td>Free tier</td><td>{'<span class="tick">✓</span>' if t.get('free_tier') else '<span class="cross">✗</span>'}</td></tr>
-          <tr><td>Free trial</td><td>{'<span class="tick">✓ '+str(t["trial_days"])+'d</span>' if t.get('free_trial') else '<span class="cross">✗</span>'}</td></tr>
-          <tr><td>Pricing</td><td>{t['pricing_model']}</td></tr>"""
-        return f"""<div class="cd-card {'winner' if is_winner else ''}">
-          {win_badge}
-          <div class="cd-name">{t['name']}</div>
-          <div class="cd-score" style="color:{sc_col}">{sc}</div>
-          <p class="cd-tagline">{t['tagline']}</p>
-          <table class="comp-table" aria-label="Specs for {t['name']}"><tbody>{rows}</tbody></table>
-          <p class="cd-verdict">{verdict}</p>
-          <a href="{t['affiliate_url']}" target="_blank" rel="nofollow sponsored noopener noreferrer"
-             class="btn-try" style="margin-top:16px;width:100%;justify-content:center">
-            Try {t['name']} →
-          </a>
-        </div>"""
+        win_badge = '<div class="cd-winner-tag">&#10003; Winner</div>' if is_winner else ''
+        card_class = 'cd-card winner' if is_winner else 'cd-card'
+
+        # Build free tier cell
+        free_tier_cell = '<span class="tick">&#10003;</span>' if t.get('free_tier') else '<span class="cross">&#10007;</span>'
+
+        # Build free trial cell
+        if t.get('free_trial'):
+            trial_days = t.get('trial_days', '')
+            free_trial_cell = '<span class="tick">&#10003; ' + str(trial_days) + 'd</span>'
+        else:
+            free_trial_cell = '<span class="cross">&#10007;</span>'
+
+        rows = (
+            '<tr><td>MFWAI Score</td>'
+            '<td style="color:' + sc_col + ';font-family:var(--font-mono);font-weight:600">' + str(sc) + '/100</td></tr>'
+            '<tr><td>Rating</td><td>' + str(t['rating']) + '/5</td></tr>'
+            '<tr><td>Starting price</td><td>' + str(t['starting_price']) + '</td></tr>'
+            '<tr><td>Free tier</td><td>' + free_tier_cell + '</td></tr>'
+            '<tr><td>Free trial</td><td>' + free_trial_cell + '</td></tr>'
+            '<tr><td>Pricing</td><td>' + str(t['pricing_model']) + '</td></tr>'
+        )
+
+        return (
+            '<div class="' + card_class + '">'
+            + win_badge
+            + '<div class="cd-name">' + t['name'] + '</div>'
+            + '<div class="cd-score" style="color:' + sc_col + '">' + str(sc) + '</div>'
+            + '<p class="cd-tagline">' + t['tagline'] + '</p>'
+            + '<table class="comp-table"><tbody>' + rows + '</tbody></table>'
+            + '<p class="cd-verdict">' + verdict + '</p>'
+            + '<a href="' + t['affiliate_url'] + '" target="_blank" rel="nofollow sponsored noopener noreferrer"'
+            + ' class="btn-try" style="margin-top:16px;width:100%;justify-content:center">'
+            + 'Try ' + t['name'] + ' &rarr;'
+            + '</a>'
+            + '</div>'
+        )
 
     winner_block = ''
     if c.get('winner_reason'):
