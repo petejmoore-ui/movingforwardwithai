@@ -1,7 +1,9 @@
-# MOVING FORWARD WITH AI — app.py v3.0 (Elite Redesign)
-# Architecture: Role pages + Comparison pages + Email capture + Tool reviews
-# Deploy: GitHub → Render.com
-# Redesign: Premium 2026 aesthetic — dark/light, refined typography, elite UX
+# MOVING FORWARD WITH AI — app.py v3.1
+# Changes v3.1:
+#   1. Light/dark theme toggle — fully working, localStorage persisted
+#   2. Hamburger menu fix — robust open/close, closes on link tap + Escape
+#   3. Removed all instances of "honest/honestly/honesty" → replaced contextually
+#   4. Removed all UK-specific references → globally neutral language
 # ============================================================================
 
 import os, json, re, datetime
@@ -43,7 +45,7 @@ def tool_schema(t):
     return json.dumps({"@context":"https://schema.org","@type":"SoftwareApplication",
         "name":t['name'],"description":t['tagline'],
         "applicationCategory":"BusinessApplication",
-        "offers":{"@type":"Offer","priceCurrency":"GBP"},
+        "offers":{"@type":"Offer","priceCurrency":"USD"},
         "aggregateRating":{"@type":"AggregateRating","ratingValue":str(t['rating']),
             "reviewCount":t['review_count'].replace('+','').replace(',',''),
             "bestRating":"5","worstRating":"1"}})
@@ -63,7 +65,7 @@ CSS = """
 
 /* ── Design Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  /* Dark Mode (default) — deep navy/slate inspired by Linear */
+  /* Dark Mode (default) — deep navy/slate */
   --bg:       #060810;
   --bg2:      #090c16;
   --bg3:      #0d1120;
@@ -127,9 +129,8 @@ CSS = """
   --font-serif:   'Instrument Serif', Georgia, serif;
 }
 
-/* Light Mode */
-html.light,
-.light {
+/* ── Light Mode ─────────────────────────────────────────────────────────────── */
+html.light {
   --bg:       #fafbff;
   --bg2:      #f4f6fd;
   --bg3:      #edf0f9;
@@ -208,13 +209,12 @@ body::before {
     radial-gradient(ellipse 80% 60% at 20% -10%, rgba(79,156,249,.06) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 80% 120%, rgba(139,92,246,.04) 0%, transparent 60%);
 }
-.light body::before {
+html.light body::before {
   background-image:
     radial-gradient(ellipse 80% 60% at 20% -10%, rgba(37,99,235,.04) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 80% 120%, rgba(139,92,246,.025) 0%, transparent 60%);
 }
 
-/* Subtle grid pattern */
 body::after {
   content:'';
   position:fixed;
@@ -303,11 +303,6 @@ body::after {
   transition:opacity .2s;
 }
 .nav-logo:hover { opacity:.75 }
-.logo-mark {
-  display:flex;
-  align-items:center;
-  gap:5px;
-}
 .logo-icon {
   width:28px;
   height:28px;
@@ -451,6 +446,7 @@ body::after {
   border-radius:var(--r2);
   background:var(--surf);
   flex-shrink:0;
+  cursor:pointer;
 }
 #hbg span {
   display:block;
@@ -713,7 +709,6 @@ body::after {
   border-top:1px solid var(--div);
   flex-wrap:wrap;
 }
-.stat-item {}
 .stat-num {
   font-family:var(--font-display);
   font-size:2rem;
@@ -2144,7 +2139,6 @@ body::after {
   gap:48px;
   margin-bottom:40px;
 }
-.f-brand {}
 .f-logo {
   font-family:var(--font-display);
   font-size:1.05rem;
@@ -2221,13 +2215,11 @@ body::after {
 }
 
 /* ── Reveal Animations ──────────────────────────────────────────────────────── */
-/* Default: ALWAYS visible. JS adds .rv-ready to <body> before animating */
 .rv {
   opacity:1;
   transform:none;
   transition:opacity .55s var(--ease), transform .55s var(--ease);
 }
-/* Only hide/animate when JS has confirmed IntersectionObserver support */
 body.rv-ready .rv {
   opacity:0;
   transform:translateY(20px);
@@ -2297,7 +2289,7 @@ body.rv-ready .rv.visible {
 # BASE HTML TEMPLATE
 # ═══════════════════════════════════════════════════════════════════════════════
 BASE = """<!DOCTYPE html>
-<html lang="en-GB" class="">
+<html lang="en" class="">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2311,7 +2303,7 @@ BASE = """<!DOCTYPE html>
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ canon }}">
 <meta property="og:site_name" content="Moving Forward With AI">
-<meta property="og:locale" content="en_GB">
+<meta property="og:locale" content="en">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#060810">
 {% if schema %}<script type="application/ld+json">{{ schema|safe }}</script>{% endif %}
@@ -2322,12 +2314,11 @@ BASE = """<!DOCTYPE html>
 <!-- Theme: applied before paint to prevent flash -->
 <script>
 (function(){
-  var saved=localStorage.getItem('mfwai-theme');
-  var preferLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
-  var isLight=saved==='light'||(saved===null&&preferLight);
-  if(isLight){
+  var saved = localStorage.getItem('mfwai-theme');
+  var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var isLight = saved === 'light' || (saved === null && preferLight);
+  if (isLight) {
     document.documentElement.classList.add('light');
-    document.body&&document.body.classList.add('light');
   }
 })();
 </script>
@@ -2342,11 +2333,11 @@ BASE = """<!DOCTYPE html>
     {% for _ in range(2) %}
     <span class="ticker-item">Independent AI Reviews</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item accent">UK-Focused · Updated Weekly</span>
+    <span class="ticker-item accent">Updated Weekly</span>
     <span class="ticker-sep">◆</span>
     <span class="ticker-item">No Paid Placements</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">Honest Verdicts</span>
+    <span class="ticker-item">Transparent Verdicts</span>
     <span class="ticker-sep">◆</span>
     <span class="ticker-item accent">Moving Forward With AI</span>
     <span class="ticker-sep">◆</span>
@@ -2394,12 +2385,15 @@ BASE = """<!DOCTYPE html>
           aria-label="Search AI tools" aria-controls="sov" aria-expanded="false">
       </div>
 
+      <!-- Theme Toggle Button -->
       <button class="nav-icon-btn" id="theme-btn" aria-label="Toggle light/dark theme" type="button">
+        <!-- Sun icon: shown in dark mode -->
         <svg id="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
         </svg>
-        <svg id="ico-moon" viewBox="0 0 24 24" style="display:none" aria-hidden="true">
+        <!-- Moon icon: shown in light mode -->
+        <svg id="ico-moon" viewBox="0 0 24 24" aria-hidden="true" style="display:none">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
@@ -2447,7 +2441,7 @@ BASE = """<!DOCTYPE html>
           <div class="f-logo-icon" aria-hidden="true">AI</div>
           Moving Forward With AI
         </div>
-        <p class="f-desc">Independent, honest reviews of AI tools for UK freelancers, marketers and builders. No paid placements. Ever.</p>
+        <p class="f-desc">Independent, transparent reviews of AI tools for freelancers, marketers and builders worldwide. No paid placements. Ever.</p>
         <div class="f-affil">Affiliate commissions fund this site</div>
       </div>
       <div class="f-col">
@@ -2473,7 +2467,7 @@ BASE = """<!DOCTYPE html>
     </div>
     <div class="footer-divider"></div>
     <div class="footer-bottom">
-      <p class="f-copy">© 2026 Moving Forward With AI. All rights reserved. Prices verified at time of writing — always confirm on the tool's website.</p>
+      <p class="f-copy">© 2026 Moving Forward With AI. All rights reserved. Prices verified at time of writing — always confirm on the tool's website before purchasing.</p>
       <p class="f-disclaimer">// This site earns affiliate commissions. <a href="/affiliate-disclosure" style="color:var(--cyan)">Full disclosure →</a></p>
     </div>
   </div>
@@ -2504,247 +2498,277 @@ BASE = """<!DOCTYPE html>
 </div>
 
 <script>
-/* ─ Theme Toggle ─ */
-(function(){
-  var btn=document.getElementById('theme-btn');
-  var sun=document.getElementById('ico-sun');
-  var moon=document.getElementById('ico-moon');
+/* ══════════════════════════════════════════════════════
+   THEME TOGGLE
+   Reads from html.light class (set by inline <head> script).
+   Clicking toggles the class, updates icons, saves to localStorage.
+══════════════════════════════════════════════════════ */
+(function () {
+  var html  = document.documentElement;
+  var btn   = document.getElementById('theme-btn');
+  var sun   = document.getElementById('ico-sun');
+  var moon  = document.getElementById('ico-moon');
 
-  function applyTheme(isLight){
-    /* Apply to both html and body so CSS vars cascade correctly */
-    document.documentElement.classList.toggle('light',isLight);
-    document.body.classList.toggle('light',isLight);
-    if(sun)  sun.style.display =isLight?'none':'block';
-    if(moon) moon.style.display=isLight?'block':'none';
+  function syncIcons(isLight) {
+    if (sun)  sun.style.display  = isLight ? 'none'  : 'block';
+    if (moon) moon.style.display = isLight ? 'block' : 'none';
+    if (btn)  btn.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
   }
 
-  /* Read current state from html element (set by inline script in <head>) */
-  var current=document.documentElement.classList.contains('light');
-  applyTheme(current);
+  /* Sync icons on page load to match whatever the <head> script applied */
+  syncIcons(html.classList.contains('light'));
 
-  if(btn){
-    btn.addEventListener('click',function(){
-      current=!current;
-      localStorage.setItem('mfwai-theme',current?'light':'dark');
-      applyTheme(current);
+  if (btn) {
+    btn.addEventListener('click', function () {
+      var nowLight = !html.classList.contains('light');
+      html.classList.toggle('light', nowLight);
+      localStorage.setItem('mfwai-theme', nowLight ? 'light' : 'dark');
+      syncIcons(nowLight);
     });
   }
 })();
 
-/* ─ Sticky nav shadow ─ */
-window.addEventListener('scroll',function(){
-  var nav=document.getElementById('sitenav');
-  if(nav) nav.classList.toggle('scrolled',window.scrollY>24);
-},{passive:true});
+/* ══════════════════════════════════════════════════════
+   STICKY NAV SHADOW
+══════════════════════════════════════════════════════ */
+window.addEventListener('scroll', function () {
+  var nav = document.getElementById('sitenav');
+  if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
+}, { passive: true });
 
-/* ─ Mobile hamburger menu ─ */
-(function(){
-  var btn=document.getElementById('hbg');
-  var menu=document.getElementById('mob');
-  if(!btn||!menu) return;
+/* ══════════════════════════════════════════════════════
+   HAMBURGER MENU
+   - Clicking the button toggles #mob open/closed
+   - Clicking any link inside #mob closes it
+   - Pressing Escape closes it
+   - Body scroll is locked while menu is open
+══════════════════════════════════════════════════════ */
+(function () {
+  var btn  = document.getElementById('hbg');
+  var menu = document.getElementById('mob');
+  if (!btn || !menu) return;
 
-  function openMenu(){
+  function openMenu() {
     menu.classList.add('open');
     btn.classList.add('open');
-    btn.setAttribute('aria-expanded','true');
-    document.body.style.overflow='hidden';
+    btn.setAttribute('aria-expanded', 'true');
+    btn.setAttribute('aria-label', 'Close navigation menu');
+    document.body.style.overflow = 'hidden';
   }
-  function closeMenu(){
+
+  function closeMenu() {
     menu.classList.remove('open');
     btn.classList.remove('open');
-    btn.setAttribute('aria-expanded','false');
-    document.body.style.overflow='';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', 'Open navigation menu');
+    document.body.style.overflow = '';
   }
 
-  btn.addEventListener('click',function(e){
+  function toggleMenu() {
+    if (menu.classList.contains('open')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }
+
+  btn.addEventListener('click', function (e) {
     e.stopPropagation();
-    if(menu.classList.contains('open')){closeMenu();}else{openMenu();}
+    toggleMenu();
   });
 
-  /* Close when a nav link is tapped */
-  menu.querySelectorAll('a').forEach(function(a){
-    a.addEventListener('click',function(){closeMenu();});
+  /* Close when any link inside the mobile menu is tapped */
+  menu.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      closeMenu();
+    });
   });
 
-  /* Close on Escape */
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape') closeMenu();
+  /* Escape key closes the menu */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && menu.classList.contains('open')) {
+      closeMenu();
+      btn.focus();
+    }
+  });
+
+  /* Tapping outside the menu (on the dimmed body area) closes it */
+  document.addEventListener('click', function (e) {
+    if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) {
+      closeMenu();
+    }
   });
 })();
 
-/* ─ Desktop dropdown menus ─ */
-(function(){
-  var drops=document.querySelectorAll('.nav-drop');
-  drops.forEach(function(d){
-    var btn=d.querySelector('.nav-drop-btn');
-    if(!btn) return;
-    btn.addEventListener('click',function(e){
+/* ══════════════════════════════════════════════════════
+   DESKTOP DROPDOWN MENUS
+══════════════════════════════════════════════════════ */
+(function () {
+  var drops = document.querySelectorAll('.nav-drop');
+  drops.forEach(function (d) {
+    var b = d.querySelector('.nav-drop-btn');
+    if (!b) return;
+    b.addEventListener('click', function (e) {
       e.stopPropagation();
-      var isOpen=d.classList.contains('open');
-      /* Close all */
-      drops.forEach(function(x){
+      var isOpen = d.classList.contains('open');
+      drops.forEach(function (x) {
         x.classList.remove('open');
-        var xb=x.querySelector('.nav-drop-btn');
-        if(xb) xb.setAttribute('aria-expanded','false');
+        var xb = x.querySelector('.nav-drop-btn');
+        if (xb) xb.setAttribute('aria-expanded', 'false');
       });
-      /* Open this one if it wasn't open */
-      if(!isOpen){
+      if (!isOpen) {
         d.classList.add('open');
-        btn.setAttribute('aria-expanded','true');
+        b.setAttribute('aria-expanded', 'true');
       }
     });
   });
-  document.addEventListener('click',function(){
-    drops.forEach(function(d){
+  document.addEventListener('click', function () {
+    drops.forEach(function (d) {
       d.classList.remove('open');
-      var b=d.querySelector('.nav-drop-btn');
-      if(b) b.setAttribute('aria-expanded','false');
+      var b = d.querySelector('.nav-drop-btn');
+      if (b) b.setAttribute('aria-expanded', 'false');
     });
   });
 })();
 
-/* ─ Scroll reveal ─ */
-(function(){
-  /* Only animate if IntersectionObserver is available */
-  if(!('IntersectionObserver' in window)) return;
-
-  /* Mark body so CSS can hide .rv elements */
+/* ══════════════════════════════════════════════════════
+   SCROLL REVEAL
+══════════════════════════════════════════════════════ */
+(function () {
+  if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
-
-  var els=document.querySelectorAll('.rv');
-  if(!els.length) return;
-
-  var io=new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if(entry.isIntersecting){
+  var els = document.querySelectorAll('.rv');
+  if (!els.length) return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
         entry.target.classList.add('visible');
         io.unobserve(entry.target);
       }
     });
-  },{threshold:0.08, rootMargin:'0px 0px -30px 0px'});
-
-  els.forEach(function(el,i){
-    /* Stagger in groups of 4 */
-    el.style.transitionDelay=(i%4*0.07)+'s';
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+  els.forEach(function (el, i) {
+    el.style.transitionDelay = (i % 4 * 0.07) + 's';
     io.observe(el);
   });
 })();
 
-/* ─ Search overlay ─ */
-var allTools=[];
-(async function(){
-  try{
-    var r=await fetch('/api/tools');
-    var d=await r.json();
-    allTools=d.tools||[];
-  }catch(e){}
+/* ══════════════════════════════════════════════════════
+   SEARCH OVERLAY
+══════════════════════════════════════════════════════ */
+var allTools = [];
+(async function () {
+  try {
+    var r = await fetch('/api/tools');
+    var d = await r.json();
+    allTools = d.tools || [];
+  } catch (e) {}
 })();
 
-var sov=document.getElementById('sov');
-var sovCount=document.getElementById('sov-count');
-var sovRes=document.getElementById('sov-results');
-var searchInput=document.getElementById('search-input');
+var sov         = document.getElementById('sov');
+var sovCount    = document.getElementById('sov-count');
+var sovRes      = document.getElementById('sov-results');
+var searchInput = document.getElementById('search-input');
 var searchTimer;
 
-function closeSov(){
+function closeSov() {
   sov.classList.remove('open');
-  document.body.style.overflow='';
-  searchInput.setAttribute('aria-expanded','false');
+  document.body.style.overflow = '';
+  searchInput.setAttribute('aria-expanded', 'false');
 }
 
-function miniCard(t){
-  var sc=t.score;
-  var isShi=sc>=88;
-  var bg=isShi?'var(--green-d)':'var(--cyan-d)';
-  var bdr=isShi?'var(--green-g)':'var(--cyan-g)';
-  var col=isShi?'var(--green)':'var(--cyan)';
-  return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'\'">'
-    +'<div class="tc-accent-bar"></div>'
-    +'<div class="tc-body">'
-    +'<div class="tc-meta">'
-    +'<div class="tc-cat">'+t.category+'</div>'
-    +'<div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div>'
-    +'</div>'
-    +'<a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a>'
-    +'<p class="tc-tagline">'+t.tagline+'</p>'
-    +'</div>'
-    +'<div class="tc-footer">'
-    +'<div class="tc-pricing"><span class="tc-price">'+t.starting_price+'</span></div>'
-    +'</div>'
-    +'</div>';
+function miniCard(t) {
+  var sc    = t.score;
+  var isHi  = sc >= 88;
+  var bg    = isHi ? 'var(--green-d)' : 'var(--cyan-d)';
+  var bdr   = isHi ? 'var(--green-g)' : 'var(--cyan-g)';
+  var col   = isHi ? 'var(--green)'   : 'var(--cyan)';
+  return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/' + t.slug + '\'">'
+    + '<div class="tc-accent-bar"></div>'
+    + '<div class="tc-body">'
+    + '<div class="tc-meta">'
+    + '<div class="tc-cat">' + t.category + '</div>'
+    + '<div class="tc-score" style="background:' + bg + ';border:1px solid ' + bdr + ';color:' + col + '">' + sc + '</div>'
+    + '</div>'
+    + '<a href="/tool/' + t.slug + '" class="tc-name">' + t.name + '</a>'
+    + '<p class="tc-tagline">' + t.tagline + '</p>'
+    + '</div>'
+    + '<div class="tc-footer">'
+    + '<div class="tc-pricing"><span class="tc-price">' + t.starting_price + '</span></div>'
+    + '</div>'
+    + '</div>';
 }
 
-searchInput.addEventListener('input',function(e){
+searchInput.addEventListener('input', function (e) {
   clearTimeout(searchTimer);
-  var q=e.target.value.trim();
-  if(q.length<2){
-    if(sov.classList.contains('open'))closeSov();
+  var q = e.target.value.trim();
+  if (q.length < 2) {
+    if (sov.classList.contains('open')) closeSov();
     return;
   }
-  searchTimer=setTimeout(function(){
-    var ql=q.toLowerCase();
-    var hits=allTools.filter(function(t){
-      return (t.name||'').toLowerCase().includes(ql)
-          ||(t.category||'').toLowerCase().includes(ql)
-          ||(t.tagline||'').toLowerCase().includes(ql)
-          ||(t.tags||[]).join(' ').toLowerCase().includes(ql);
+  searchTimer = setTimeout(function () {
+    var ql   = q.toLowerCase();
+    var hits = allTools.filter(function (t) {
+      return (t.name     || '').toLowerCase().includes(ql)
+          || (t.category || '').toLowerCase().includes(ql)
+          || (t.tagline  || '').toLowerCase().includes(ql)
+          || (t.tags     || []).join(' ').toLowerCase().includes(ql);
     });
-    sovCount.textContent='// '+hits.length+' result'+(hits.length!==1?'s':'')+' for "'+q+'"';
-    sovRes.innerHTML=hits.length
-      ?hits.map(miniCard).join('')
-      :'<div class="sov-empty">// No tools found for "'+q+'"</div>';
+    sovCount.textContent = '// ' + hits.length + ' result' + (hits.length !== 1 ? 's' : '') + ' for "' + q + '"';
+    sovRes.innerHTML = hits.length
+      ? hits.map(miniCard).join('')
+      : '<div class="sov-empty">// No tools found for "' + q + '"</div>';
     sov.classList.add('open');
-    document.body.style.overflow='hidden';
-    searchInput.setAttribute('aria-expanded','true');
-  },160);
+    document.body.style.overflow = 'hidden';
+    searchInput.setAttribute('aria-expanded', 'true');
+  }, 160);
 });
 
-searchInput.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){closeSov();searchInput.value=''}
+searchInput.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') { closeSov(); searchInput.value = ''; }
 });
-document.getElementById('sov-close').addEventListener('click',closeSov);
-sov.addEventListener('click',function(e){if(e.target===sov)closeSov()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSov()});
+document.getElementById('sov-close').addEventListener('click', closeSov);
+sov.addEventListener('click', function (e) { if (e.target === sov) closeSov(); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') closeSov();
+});
 
-/* ─ Cookie banner ─ */
-(function(){
-  var KEY='mfwai_consent_v2';
-  var bar=document.getElementById('ckbar');
-  try{
-    if(!localStorage.getItem(KEY)){
-      setTimeout(function(){bar.classList.add('show')},1800);
+/* ══════════════════════════════════════════════════════
+   COOKIE BANNER
+══════════════════════════════════════════════════════ */
+(function () {
+  var KEY = 'mfwai_consent_v2';
+  var bar = document.getElementById('ckbar');
+  try {
+    if (!localStorage.getItem(KEY)) {
+      setTimeout(function () { bar.classList.add('show'); }, 1800);
     }
-  }catch(e){bar.classList.add('show')}
-  function dismiss(v){
-    try{localStorage.setItem(KEY,v)}catch(e){}
+  } catch (e) { bar.classList.add('show'); }
+
+  function dismiss(v) {
+    try { localStorage.setItem(KEY, v); } catch (e) {}
     bar.classList.remove('show');
   }
-  document.getElementById('ck-ok').addEventListener('click',function(){dismiss('all')});
-  document.getElementById('ck-ess').addEventListener('click',function(){dismiss('ess')});
+  document.getElementById('ck-ok').addEventListener('click',  function () { dismiss('all'); });
+  document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
 })();
 
-/* ─ Email form ─ */
-var ef=document.getElementById('email-form');
-if(ef){
-  ef.addEventListener('submit',function(e){
+/* ══════════════════════════════════════════════════════
+   EMAIL FORM
+══════════════════════════════════════════════════════ */
+var ef = document.getElementById('email-form');
+if (ef) {
+  ef.addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn=ef.querySelector('button[type="submit"]');
-    var em=ef.querySelector('input[type="email"]');
-    if(!em||!em.value)return;
-    btn.textContent='Sent ✓';
-    btn.style.background='var(--green)';
-    btn.disabled=true;
-    em.disabled=true;
+    var btn = ef.querySelector('button[type="submit"]');
+    var em  = ef.querySelector('input[type="email"]');
+    if (!em || !em.value) return;
+    btn.textContent  = 'Sent ✓';
+    btn.style.background = 'var(--green)';
+    btn.disabled = true;
+    em.disabled  = true;
   });
 }
-
-/* ─ Skip to content ─ */
-document.addEventListener('keydown',function(e){
-  if(e.key==='Tab'&&!e.shiftKey){
-    var skip=document.querySelector('.skip-link');
-    if(skip)skip.focus();
-  }
-});
 </script>
 
 </body>
@@ -2764,7 +2788,6 @@ def render(title, desc, content, schema='', bcs=''):
 
 
 def breadcrumb_html(crumbs):
-    """Crumbs: list of (label, url) pairs, last item has no link"""
     parts = []
     sep = '<svg class="sep" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     for i, (label, url) in enumerate(crumbs):
@@ -2776,19 +2799,19 @@ def breadcrumb_html(crumbs):
 
 
 def score_badge(score, size='normal'):
-    bg = 'var(--green-d)' if score>=88 else 'var(--cyan-d)' if score>=78 else 'var(--amber-d)'
+    bg  = 'var(--green-d)' if score>=88 else 'var(--cyan-d)' if score>=78 else 'var(--amber-d)'
     bdr = 'var(--green-g)' if score>=88 else 'var(--cyan-g)' if score>=78 else 'var(--amber-g)'
-    col = 'var(--green)' if score>=88 else 'var(--cyan)' if score>=78 else 'var(--amber)'
+    col = 'var(--green)'   if score>=88 else 'var(--cyan)'   if score>=78 else 'var(--amber)'
     font = '.72rem' if size == 'large' else '.67rem'
-    pad = '4px 12px' if size == 'large' else '3px 10px'
+    pad  = '4px 12px' if size == 'large' else '3px 10px'
     return f'<div class="tc-score" style="background:{bg};border:1px solid {bdr};color:{col};font-size:{font};padding:{pad}">{score}</div>'
 
 
 def tool_card(t, delay=0):
-    sc = t['score']
+    sc   = t['score']
     sbg  = 'var(--green-d)' if sc>=88 else 'var(--cyan-d)'
     sbdr = 'var(--green-g)' if sc>=88 else 'var(--cyan-g)'
-    scol = 'var(--green)' if sc>=88 else 'var(--cyan)'
+    scol = 'var(--green)'   if sc>=88 else 'var(--cyan)'
     badges = []
     if t.get('free_tier'):  badges.append('<span class="badge b-free">Free tier</span>')
     if t.get('free_trial'): badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
@@ -2850,7 +2873,7 @@ def email_capture():
         <button type="submit" class="btn-email">{lm['cta']}</button>
       </form>
       <div class="email-benefits" aria-label="What you'll get">{benefits}</div>
-      <p class="email-notice">// No spam. Unsubscribe any time. UK GDPR compliant.</p>
+      <p class="email-notice">// No spam. Unsubscribe any time. Privacy compliant.</p>
     </div>
     <div class="email-visual" aria-hidden="true">
       <div class="ev-title">{lm['title']}</div>
@@ -2880,11 +2903,10 @@ def affil_strip():
 
 @app.route('/')
 def home():
-    # Hero panel — top 4 tools
     panel_tools = sorted(TOOLS, key=lambda t: -t['score'])[:4]
     panel_items = ''
     for i, t in enumerate(panel_tools):
-        sc = t['score']
+        sc     = t['score']
         sc_cls = 'ps-hi' if sc >= 88 else 'ps-md'
         panel_items += f"""<a href="/tool/{t['slug']}" class="ptool">
           <span class="ptool-rank">{str(i+1).zfill(2)}</span>
@@ -2904,13 +2926,13 @@ def home():
     <div>
       <div class="hero-eyebrow">
         <div class="hero-eyebrow-dot" aria-hidden="true"></div>
-        UK AI Tool Reviews · Independent · 2026
+        Independent AI Tool Reviews · Updated 2026
       </div>
       <h1 class="hero-h1" id="hero-heading">
         Cutting through<br>the <em>AI noise</em>
-        <span class="serif-accent">Honest reviews. Real results.</span>
+        <span class="serif-accent">Clear verdicts. Real results.</span>
       </h1>
-      <p class="hero-sub">We test, score, and rank AI tools so UK freelancers, marketers and business owners find what actually works — and skip what doesn't.</p>
+      <p class="hero-sub">We test, score, and rank AI tools so freelancers, marketers and business owners find what actually works — and skip what doesn't.</p>
       <div class="role-selector" aria-label="Browse by role">
         <div class="role-label" id="role-label">// I am a</div>
         <div class="role-chips" role="list" aria-labelledby="role-label">{role_chips}</div>
@@ -2950,7 +2972,6 @@ def home():
   </section>
 </div>"""
 
-    # Roles section
     role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv" aria-label="{r['name']} — {len(r['tool_slugs'])} recommended tools">
       <span class="rc-icon" aria-hidden="true">{r['icon']}</span>
       <div class="rc-name">{r['name']}</div>
@@ -2972,8 +2993,7 @@ def home():
   </section>
 </div>"""
 
-    # Featured tools
-    featured = [t for t in TOOLS if t.get('featured')]
+    featured  = [t for t in TOOLS if t.get('featured')]
     cards_html = '\n'.join(tool_card(t) for t in featured)
     tools_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="featured-heading">
@@ -2988,7 +3008,6 @@ def home():
   </section>
 </div>"""
 
-    # Comparisons
     comp_cards = '\n'.join(f"""<a href="/compare/{c['slug']}" class="comp-card rv">
       <div class="comp-vs">
         <span class="comp-tool-name">{get_tool(c['tool_a'])['name']}</span>
@@ -3012,7 +3031,6 @@ def home():
   </section>
 </div>"""
 
-    # Blog
     posts = sorted([{**v, 'slug': k} for k, v in BLOG_POSTS.items()], key=lambda x: x['date'], reverse=True)
     blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv">
       <div class="blog-card-accent"></div>
@@ -3041,20 +3059,20 @@ def home():
                + email_capture() + blog_sec + '<div style="height:56px"></div>')
 
     return render(
-        title='Moving Forward With AI — Honest AI Tool Reviews for UK Freelancers & Builders',
-        desc='Independent, honest reviews of AI tools for UK freelancers, marketers and builders. Role-based recommendations, head-to-head comparisons, no paid placements.',
+        title='Moving Forward With AI — Independent AI Tool Reviews for Freelancers & Builders',
+        desc='Independent, transparent reviews of AI tools for freelancers, marketers and builders. Role-based recommendations, head-to-head comparisons, no paid placements.',
         content=content)
 
 
 @app.route('/tools')
 def tools_all():
-    page = int(request.args.get('page', 1))
-    PER = 12
+    page  = int(request.args.get('page', 1))
+    PER   = 12
     paged = TOOLS[(page-1)*PER: page*PER]
     total_pages = (len(TOOLS)+PER-1)//PER
     cards = '\n'.join(tool_card(t) for t in paged)
-    prev = f'<a href="/tools?page={page-1}" rel="prev">← Previous</a>' if page > 1 else ''
-    nxt  = f'<a href="/tools?page={page+1}" rel="next">Next →</a>' if page < total_pages else ''
+    prev  = f'<a href="/tools?page={page-1}" rel="prev">← Previous</a>' if page > 1 else ''
+    nxt   = f'<a href="/tools?page={page+1}" rel="next">Next →</a>'    if page < total_pages else ''
     pager = f'<div class="page"><div class="pager">{prev}{nxt}</div></div>' if prev or nxt else ''
 
     content = f"""
@@ -3062,7 +3080,7 @@ def tools_all():
     <div class="page" style="padding-top:32px;padding-bottom:24px">
       <div class="sec-eyebrow">All tools · {len(TOOLS)} reviewed</div>
       <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3.2rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px">
-        Every AI tool, <em style="color:var(--cyan);font-style:normal">honestly reviewed</em>
+        Every AI tool, <em style="color:var(--cyan);font-style:normal">independently reviewed</em>
       </h1>
       <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:500px;line-height:1.75">
         No sponsored rankings. No paid placements. Just thorough, independent reviews scored on merit.
@@ -3073,17 +3091,17 @@ def tools_all():
     {pager}"""
     return render(
         title='All AI Tools Reviewed — Moving Forward With AI',
-        desc=f'Browse all {len(TOOLS)} AI tools reviewed on Moving Forward With AI. Honest scores, pricing, pros and cons for UK users.',
+        desc=f'Browse all {len(TOOLS)} AI tools reviewed on Moving Forward With AI. Transparent scores, pricing, pros and cons for users worldwide.',
         content=content,
         bcs=bc_schema([('Home', '/'), ('All Tools', '/tools')]))
 
 
 @app.route('/for/<slug>')
 def role_page(slug):
-    role = get_role(slug)
+    role       = get_role(slug)
     if not role: abort(404)
     role_tools = [get_tool(s) for s in role['tool_slugs'] if get_tool(s)]
-    top = get_tool(role['top_pick']) if role.get('top_pick') else None
+    top        = get_tool(role['top_pick']) if role.get('top_pick') else None
 
     pain_items = '\n'.join(
         f'<div class="pain-item"><span class="pain-x" aria-hidden="true">✗</span>{p}</div>'
@@ -3091,8 +3109,8 @@ def role_page(slug):
 
     top_pick_html = ''
     if top:
-        sc = top['score']
-        sc_col = score_color(sc)
+        sc      = top['score']
+        sc_col  = score_color(sc)
         top_pick_html = f"""<div class="top-pick-bar rv">
           <div class="top-pick-badge">★ Top pick</div>
           <div class="top-pick-info">
@@ -3104,8 +3122,7 @@ def role_page(slug):
              class="btn-primary">Try it →</a>
         </div>"""
 
-    cards = '\n'.join(tool_card(t) for t in role_tools)
-
+    cards   = '\n'.join(tool_card(t) for t in role_tools)
     content = f"""
     {breadcrumb_html([('Home','/'),('Tools','/tools'),(role['name'],f'/for/{slug}')])}
     <div class="page">
@@ -3138,7 +3155,7 @@ def role_page(slug):
 
     return render(
         title=f'Best AI Tools for {role["name"]} 2026 — Moving Forward With AI',
-        desc=f'{role["description"]} Honest reviews of the best AI tools for {role["name"].lower()} in 2026.',
+        desc=f'{role["description"]} Independent reviews of the best AI tools for {role["name"].lower()} in 2026.',
         content=content,
         bcs=bc_schema([('Home','/'), ('Tools','/tools'), (role['name'], f'/for/{slug}')]))
 
@@ -3147,10 +3164,10 @@ def role_page(slug):
 def tool_detail(slug):
     t = get_tool(slug)
     if not t: abort(404)
-    sc = t['score']
+    sc     = t['score']
     sc_col = score_color(sc)
     sc_lbl = score_label(sc)
-    st = stars(t['rating'])
+    st     = stars(t['rating'])
     badges = []
     if t.get('free_tier'):  badges.append('<span class="badge b-free">Free tier</span>')
     if t.get('free_trial'): badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
@@ -3272,8 +3289,8 @@ def tool_detail(slug):
     </div>"""
 
     return render(
-        title=f'{t["name"]} Review 2026 — Honest Score & Verdict | Moving Forward With AI',
-        desc=f'{t["name"]}: {t["tagline"]}. MFWAI score: {sc}/100. From {t["starting_price"]}. Honest pros, cons and verdict for UK users.',
+        title=f'{t["name"]} Review 2026 — Score & Verdict | Moving Forward With AI',
+        desc=f'{t["name"]}: {t["tagline"]}. MFWAI score: {sc}/100. From {t["starting_price"]}. Detailed pros, cons and verdict.',
         content=content,
         schema=tool_schema(t),
         bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]))
@@ -3299,13 +3316,13 @@ def compare_index():
         Compare AI tools <em style="color:var(--cyan);font-style:normal">side by side</em>
       </h1>
       <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:520px;line-height:1.75">
-        When you're deciding between two tools, our head-to-head comparisons give you the honest verdict.
+        When you're deciding between two tools, our head-to-head comparisons give you the clearest verdict.
       </p>
     </div>
     <div class="page"><div class="comp-grid">{cards}</div></div>"""
     return render(
         'Compare AI Tools Side by Side — Moving Forward With AI',
-        'Head-to-head AI tool comparisons for UK users. Honest verdicts on which tool wins and why.',
+        'Head-to-head AI tool comparisons. Clear verdicts on which tool wins and why.',
         content)
 
 
@@ -3319,19 +3336,14 @@ def compare_detail(slug):
     winner = get_tool(c['winner_slug']) if c.get('winner_slug') else None
 
     def cd_card(t, is_winner):
-        sc = t['score']
+        sc     = t['score']
         sc_col = score_color(sc)
         verdict = c['verdict_a'] if t['slug'] == c['tool_a'] else c['verdict_b']
-        win_badge = '<div class="cd-winner-tag">&#10003; Winner</div>' if is_winner else ''
+        win_badge  = '<div class="cd-winner-tag">&#10003; Winner</div>' if is_winner else ''
         card_class = 'cd-card winner' if is_winner else 'cd-card'
-
-        # Build free tier cell
-        free_tier_cell = '<span class="tick">&#10003;</span>' if t.get('free_tier') else '<span class="cross">&#10007;</span>'
-
-        # Build free trial cell
+        free_tier_cell  = '<span class="tick">&#10003;</span>' if t.get('free_tier') else '<span class="cross">&#10007;</span>'
         if t.get('free_trial'):
-            trial_days = t.get('trial_days', '')
-            free_trial_cell = '<span class="tick">&#10003; ' + str(trial_days) + 'd</span>'
+            free_trial_cell = '<span class="tick">&#10003; ' + str(t.get('trial_days','')) + 'd</span>'
         else:
             free_trial_cell = '<span class="cross">&#10007;</span>'
 
@@ -3344,7 +3356,6 @@ def compare_detail(slug):
             '<tr><td>Free trial</td><td>' + free_trial_cell + '</td></tr>'
             '<tr><td>Pricing</td><td>' + str(t['pricing_model']) + '</td></tr>'
         )
-
         return (
             '<div class="' + card_class + '">'
             + win_badge
@@ -3362,7 +3373,7 @@ def compare_detail(slug):
 
     winner_block = ''
     if c.get('winner_reason'):
-        winner_name = winner['name'] if winner else 'Our verdict'
+        winner_name  = winner['name'] if winner else 'Our verdict'
         winner_block = f"""<div class="winner-block rv">
           <div class="winner-label">// Winner: {winner_name}</div>
           <p class="winner-text">{c['winner_reason']}</p>
@@ -3416,8 +3427,8 @@ def blog():
     </div>
     <div class="page"><div class="blog-grid">{cards}</div></div>"""
     return render(
-        'AI Tool Guides for UK Freelancers — Moving Forward With AI',
-        'In-depth guides, comparisons and how-tos for AI tools. Honest, independent, updated regularly.',
+        'AI Tool Guides for Freelancers & Marketers — Moving Forward With AI',
+        'In-depth guides, comparisons and how-tos for AI tools. Independent, updated regularly.',
         content)
 
 
@@ -3425,7 +3436,7 @@ def blog():
 def blog_detail(slug):
     post = BLOG_POSTS.get(slug)
     if not post: abort(404)
-    dt = datetime.datetime.strptime(post['date'], '%Y-%m-%d').strftime('%d %B %Y')
+    dt      = datetime.datetime.strptime(post['date'], '%Y-%m-%d').strftime('%d %B %Y')
     related = [get_tool(s) for s in post.get('related_tools', []) if get_tool(s)]
     rel_cards = '\n'.join(tool_card(t) for t in related)
 
@@ -3470,8 +3481,8 @@ def category(cat_slug):
     tools = [t for t in TOOLS if slugify(t['category']) == cat_slug]
     if not tools: abort(404)
     cat_name = tools[0]['category']
-    cards = '\n'.join(tool_card(t) for t in tools)
-    content = f"""
+    cards    = '\n'.join(tool_card(t) for t in tools)
+    content  = f"""
     {breadcrumb_html([('Home','/'),('Tools','/tools'),(cat_name,f'/category/{cat_slug}')])}
     <div class="page" style="padding-top:32px;padding-bottom:28px">
       <div class="sec-eyebrow">{cat_name} · {len(tools)} tools</div>
@@ -3482,7 +3493,7 @@ def category(cat_slug):
     <div class="page"><div class="tools-grid">{cards}</div></div>"""
     return render(
         f'Best {cat_name} AI Tools 2026 | Moving Forward With AI',
-        f'Honest reviews of the best {cat_name.lower()} AI tools for UK users in 2026.',
+        f'Independent reviews of the best {cat_name.lower()} AI tools in 2026.',
         content,
         bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (cat_name, f'/category/{cat_slug}')]))
 
@@ -3514,18 +3525,18 @@ def privacy():
       <h1>Privacy Policy</h1>
       <div class="legal-note">
         <p><strong>Last updated:</strong> February 2026</p>
-        <p>Moving Forward With AI is committed to protecting your privacy in accordance with UK GDPR.</p>
+        <p>Moving Forward With AI is committed to protecting your privacy.</p>
       </div>
       <h2>Information we collect</h2>
       <p>We collect minimal data via cookies and analytics. We do not collect personal information directly unless you contact us or sign up for our email list.</p>
       <h2>Cookies</h2>
       <p>We use essential cookies for site functionality and analytics cookies (with your consent) to understand how visitors use the site. Affiliate links may use tracking cookies from third-party services.</p>
-      <h2>Your rights (UK GDPR)</h2>
+      <h2>Your rights</h2>
       <p>You have the right to access, correct, delete and port your data. To exercise these rights, contact <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a>.</p>
     </div>"""
     return render(
         'Privacy Policy — Moving Forward With AI',
-        'Moving Forward With AI privacy policy — UK GDPR compliant.',
+        'Moving Forward With AI privacy policy.',
         content)
 
 
@@ -3568,23 +3579,23 @@ def robots():
 @app.route('/sitemap.xml')
 def sitemap():
     today = datetime.date.today().isoformat()
-    urls = [
+    urls  = [
         (SITE_URL + '/',        today, '1.0', 'weekly'),
         (SITE_URL + '/tools',   today, '0.9', 'weekly'),
         (SITE_URL + '/compare', today, '0.9', 'weekly'),
         (SITE_URL + '/blog',    today, '0.8', 'weekly'),
     ]
     for t in TOOLS:
-        urls.append((f'{SITE_URL}/tool/{t["slug"]}', t.get('date_added', today), '0.8', 'monthly'))
+        urls.append((f'{SITE_URL}/tool/{t["slug"]}',    t.get('date_added', today), '0.8', 'monthly'))
     for r in ROLES:
-        urls.append((f'{SITE_URL}/for/{r["slug"]}', today, '0.8', 'weekly'))
+        urls.append((f'{SITE_URL}/for/{r["slug"]}',     today, '0.8', 'weekly'))
     for c in COMPARISONS:
         urls.append((f'{SITE_URL}/compare/{c["slug"]}', c.get('date', today), '0.8', 'monthly'))
     for slug, post in BLOG_POSTS.items():
-        urls.append((f'{SITE_URL}/blog/{slug}', post.get('date', today), '0.7', 'monthly'))
+        urls.append((f'{SITE_URL}/blog/{slug}',         post.get('date', today), '0.7', 'monthly'))
     cats = list({slugify(t['category']) for t in TOOLS})
     for cat in cats:
-        urls.append((f'{SITE_URL}/category/{cat}', today, '0.6', 'monthly'))
+        urls.append((f'{SITE_URL}/category/{cat}',      today, '0.6', 'monthly'))
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     for url, lm, pri, cf in sorted(urls):
         xml += f'  <url><loc>{url}</loc><lastmod>{lm}</lastmod><changefreq>{cf}</changefreq><priority>{pri}</priority></url>\n'
