@@ -1,11 +1,8 @@
-# MOVING FORWARD WITH AI — app.py v3.2
-# Changes v3.2:
-#   1. Theme toggle works on BOTH mobile and desktop (single shared button logic)
-#   2. Mobile hamburger menu fixed — proper open/close, body scroll lock
-#   3. Desktop dropdowns (Compare + Who it's for) fixed
-#   4. Email section simplified to newsletter signup only
-#   5. Search overlay fixed — fetches /api/tools and renders results
-#   6. Star ratings REMOVED — fabricated data replaced with MFWAI score only
+# MOVING FORWARD WITH AI — app.py v3.3
+# Changes v3.3:
+#   1. Fix 1 — Theme toggle: removed reflow hack (html.style.display none/block)
+#   2. Fix 2 — Mobile menu: changed from display:none/flex to opacity/visibility/pointer-events
+#   3. Fix 3 — Desktop dropdowns: replaced containment check with e.target.closest('.nav-drop')
 # ============================================================================
 
 import os, json, re, datetime
@@ -404,7 +401,7 @@ body::after {
 .nav-icon-btn:hover { background:var(--cyan-d); border-color:var(--bdr2) }
 .nav-icon-btn svg { width:15px; height:15px; stroke:var(--ink3); fill:none; stroke-width:1.8 }
 
-/* Mobile theme toggle — shown on mobile alongside hamburger */
+/* Mobile theme toggle */
 #mob-theme-btn {
   display:none;
   width:36px; height:36px; border-radius:var(--r2);
@@ -431,18 +428,20 @@ body::after {
 #hbg.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
 #hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg) }
 
-/* Mobile Menu */
+/* ── FIX 2: Mobile Menu — opacity/visibility instead of display:none/flex ── */
 #mob {
-  display:none; position:fixed; inset:0;
+  position:fixed; inset:0;
   background:var(--bg); z-index:190; overflow-y:auto;
   padding:72px 24px 48px;
-  flex-direction:column; gap:0;
+  display:flex; flex-direction:column; gap:0;
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .28s var(--ease), visibility .28s var(--ease);
 }
-#mob.open { display:flex; animation:mobIn .28s var(--ease); }
-@keyframes mobIn {
-  from { opacity:0; transform:translateY(-12px) }
-  to   { opacity:1; transform:translateY(0) }
+#mob.open {
+  opacity:1; visibility:visible; pointer-events:auto;
 }
+/* ── end Fix 2 ── */
+
 .mob-section { padding:24px 0; border-bottom:1px solid var(--div) }
 .mob-section:first-child { padding-top:0 }
 .mob-primary-links { display:flex; flex-direction:column; gap:4px }
@@ -703,7 +702,7 @@ body::after {
 .blog-link { font-family:var(--font-mono); font-size:.66rem; color:var(--amber); display:inline-flex; align-items:center; gap:5px; transition:gap .2s; letter-spacing:.04em; text-transform:uppercase; }
 .blog-card:hover .blog-link { gap:9px }
 
-/* ── Newsletter / Email Section (simplified) ─────── */
+/* Newsletter Section */
 .email-sec {
   position:relative; z-index:1;
   background:var(--surf);
@@ -1008,9 +1007,9 @@ BASE = """<!DOCTYPE html>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-TBH27VXH8M');
 </script>
+</head>
 <body>
 
 <!-- Ticker -->
@@ -1096,7 +1095,7 @@ BASE = """<!DOCTYPE html>
         </svg>
       </button>
 
-      <!-- Mobile theme toggle (shown only on mobile, next to hamburger) -->
+      <!-- Mobile theme toggle -->
       <button id="mob-theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="mob-ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
@@ -1219,8 +1218,9 @@ BASE = """<!DOCTYPE html>
 
 <script>
 /* ══════════════════════════════════════════════════════
-   SHARED THEME LOGIC
-   Works for BOTH desktop (#theme-btn) and mobile (#mob-theme-btn)
+   FIX 1 — THEME TOGGLE
+   Removed the reflow hack (html.style.display = 'none' etc.)
+   applyTheme now simply adds/removes .light and saves to localStorage.
 ══════════════════════════════════════════════════════ */
 (function () {
   var html = document.documentElement;
@@ -1251,16 +1251,14 @@ BASE = """<!DOCTYPE html>
     }
     try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
     syncAllIcons(isLight);
-    /* Force reflow for Safari */
-    html.style.display = 'none';
-    void html.offsetHeight;
-    html.style.display = '';
+    /* NOTE: The reflow hack (html.style.display = 'none' / void offsetHeight / display = '')
+       has been intentionally removed — it was causing the toggle to fight itself. */
   }
 
   /* Sync icons on load */
   syncAllIcons(html.classList.contains('light'));
 
-  /* Wire up both buttons */
+  /* Wire up both buttons — desktop and mobile */
   ['theme-btn', 'mob-theme-btn'].forEach(function(id) {
     var btn = document.getElementById(id);
     if (btn) {
@@ -1280,7 +1278,9 @@ window.addEventListener('scroll', function () {
 }, { passive: true });
 
 /* ══════════════════════════════════════════════════════
-   HAMBURGER MENU
+   FIX 2 — HAMBURGER MENU
+   JS only toggles .open class — never touches display style.
+   CSS handles visibility via opacity/visibility/pointer-events.
 ══════════════════════════════════════════════════════ */
 (function () {
   var btn  = document.getElementById('hbg');
@@ -1330,8 +1330,10 @@ window.addEventListener('scroll', function () {
 })();
 
 /* ══════════════════════════════════════════════════════
-   DESKTOP DROPDOWN MENUS
-   Uses explicit IDs — no fragile querySelectorAll
+   FIX 3 — DESKTOP DROPDOWN MENUS
+   Uses e.target.closest('.nav-drop') instead of the old
+   dropIds.some() loop — prevents the race condition where
+   the document click fired before stopPropagation took effect.
 ══════════════════════════════════════════════════════ */
 (function () {
   var dropIds = ['drop-compare', 'drop-roles'];
@@ -1363,12 +1365,9 @@ window.addEventListener('scroll', function () {
     });
   });
 
+  /* Only close if the click is entirely outside any .nav-drop element */
   document.addEventListener('click', function(e) {
-    /* Close if click is outside any dropdown */
-    var insideDrop = dropIds.some(function(id) {
-      var drop = document.getElementById(id);
-      return drop && drop.contains(e.target);
-    });
+    var insideDrop = e.target.closest('.nav-drop');
     if (!insideDrop) closeAll();
   });
 
@@ -1404,11 +1403,11 @@ window.addEventListener('scroll', function () {
    Fetches /api/tools on first keystroke (lazy load)
 ══════════════════════════════════════════════════════ */
 (function() {
-  var allTools   = null;   /* null = not yet loaded */
-  var loading    = false;
-  var sov        = document.getElementById('sov');
-  var sovCount   = document.getElementById('sov-count');
-  var sovRes     = document.getElementById('sov-results');
+  var allTools    = null;
+  var loading     = false;
+  var sov         = document.getElementById('sov');
+  var sovCount    = document.getElementById('sov-count');
+  var sovRes      = document.getElementById('sov-results');
   var searchInput = document.getElementById('search-input');
   var searchTimer;
 
@@ -1581,8 +1580,6 @@ def tool_card(t, delay=0):
     if not t.get('free_tier') and not t.get('free_trial'):
         badges.append('<span class="badge b-paid">Paid only</span>')
     if t.get('featured'): badges.append('<span class="badge b-top">Featured</span>')
-    # NOTE: Star ratings removed — data was not from a verified source.
-    # MFWAI score (/100) is the only rating shown.
     return f"""<article class="tool-card rv" aria-label="{t['name']} — {t['category']} tool">
   <div class="tc-accent-bar" aria-hidden="true"></div>
   <div class="tc-body">
@@ -1614,7 +1611,6 @@ def tool_card(t, delay=0):
 
 
 def email_capture():
-    """Simplified newsletter section — no guide promises, just a clean signup."""
     return """<section class="email-sec" aria-labelledby="newsletter-heading">
   <div class="email-inner">
     <div class="email-left">
