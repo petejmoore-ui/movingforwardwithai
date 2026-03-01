@@ -1689,7 +1689,7 @@ ROLES = [
             "Repetitive marketing tasks consume time that should go toward strategy and creative work",
         ],
         "how_ai_helps": "AI handles the repetitive heavy lifting — generating first drafts, maintaining brand voice consistency, tracking campaign performance, and monitoring where your brand appears in AI search engines. The right stack frees marketers to focus on strategy, positioning, and the creative work that actually moves metrics.",
-        "tool_slugs": ["jasper-ai", "writesonic", "copy-ai", "semrush", "claude-pro", "zapier"],
+        "tool_slugs": ["jasper-ai", "writesonic", "copy-ai", "semrush", "claude-pro", "zapier", "getresponse", "mailchimp", "adcreative-ai", "brand24", "gamma"],
         "top_pick": "jasper-ai",
     },
     {
@@ -1721,7 +1721,7 @@ ROLES = [
             "Can't afford expensive creative software on creator budgets",
         ],
         "how_ai_helps": "AI accelerates the entire creative workflow — from ideation to first draft to polished final product. Text-based video editing, voice synthesis, and AI writing assistants turn hours of work into minutes, letting creators focus on the parts that actually require human creativity and judgment.",
-        "tool_slugs": ["claude-pro", "descript", "koala-ai", "writesonic", "jasper-ai", "elevenlabs", "grammarly"],
+        "tool_slugs": ["claude-pro", "descript", "koala-ai", "writesonic", "jasper-ai", "elevenlabs", "grammarly", "quillbot", "otter-ai", "prezi", "gamma"],
         "top_pick": "claude-pro",
     },
     {
@@ -1737,7 +1737,7 @@ ROLES = [
             "Inconsistent quality when rushing to meet multiple overlapping deadlines",
         ],
         "how_ai_helps": "AI multiplies a solo freelancer's effective capacity — handle research, create first drafts, automate administrative tasks, and maintain quality even under pressure. The right stack lets one skilled freelancer deliver output that used to require a small team, while saving 10–20 hours per week on repetitive work.",
-        "tool_slugs": ["claude-pro", "perplexity-pro", "grammarly", "cursor", "notion-ai", "zapier"],
+        "tool_slugs": ["claude-pro", "perplexity-pro", "grammarly", "cursor", "notion-ai", "zapier", "meetgeek", "clickup", "gamma", "otter-ai"],
         "top_pick": "claude-pro",
     },
     {
@@ -1753,7 +1753,7 @@ ROLES = [
             "Limited budget for tools and subscriptions — every dollar needs to justify itself",
         ],
         "how_ai_helps": "AI gives small businesses enterprise-level capabilities at freelancer prices. Automate customer follow-up, create professional content, build internal tools without developers, and maintain marketing presence — all without hiring specialists or spending weeks learning complex platforms.",
-        "tool_slugs": ["zapier", "lovable", "copy-ai", "koala-ai", "notion-ai", "writesonic", "elevenlabs", "n8n"],
+        "tool_slugs": ["zapier", "lovable", "copy-ai", "koala-ai", "notion-ai", "writesonic", "elevenlabs", "n8n", "getresponse", "mailchimp", "tidio", "clickup", "gamma", "adcreative-ai"],
         "top_pick": "zapier",
     },
     {
@@ -1769,7 +1769,7 @@ ROLES = [
             "Competing with AI-generated content on commodity topics — needing to demonstrate unique value",
         ],
         "how_ai_helps": "AI handles research, outlining, and SEO optimization so writers focus on the nuanced, high-value work that justifies professional rates. The best writers in 2026 use AI to dramatically increase output while maintaining the quality, expertise, and original perspective that AI alone can't replicate.",
-        "tool_slugs": ["claude-pro", "perplexity-pro", "frase", "surfer-seo", "grammarly", "koala-ai"],
+        "tool_slugs": ["claude-pro", "perplexity-pro", "frase", "surfer-seo", "grammarly", "koala-ai", "quillbot"],
         "top_pick": "claude-pro",
     },
     "best-ai-meeting-tools-2026": {
