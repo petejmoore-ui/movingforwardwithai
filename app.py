@@ -56,6 +56,116 @@ def bc_schema(crumbs):
         "item":(SITE_URL+u if not u.startswith('http') else u)}
         for i,(n,u) in enumerate(crumbs)]})
 
+def generate_comparison_verdict(ta, tb):
+    """Generate a dynamic comparison verdict based on tool data."""
+    if not ta or not tb:
+        return ''
+
+    sa, sb = ta['score'], tb['score']
+    diff = abs(sa - sb)
+    na, nb = ta['name'], tb['name']
+    pa, pb = ta['starting_price'], tb['starting_price']
+    cat_a, cat_b = ta['category'], tb['category']
+    free_a = ta.get('free_tier', False)
+    free_b = tb.get('free_tier', False)
+
+    # Parse numeric price for comparison
+    def parse_price(p):
+        try:
+            return float(p.replace('$','').replace('/mo','').replace('/user','').split('/')[0])
+        except (ValueError, AttributeError):
+            return 0
+    price_a = parse_price(pa)
+    price_b = parse_price(pb)
+    price_ratio = max(price_a, price_b) / max(min(price_a, price_b), 0.01)
+
+    # Different categories
+    if cat_a != cat_b:
+        return (
+            f"{na} ({cat_a}) and {nb} ({cat_b}) serve different purposes — "
+            f"this is less about which is better and more about which job you need done. "
+            f"{na} scores {sa}/100 and starts at {pa}; {nb} scores {sb}/100 and starts at {pb}. "
+            f"If your primary need falls into {cat_a.lower()}, go with {na}. "
+            f"If you need {cat_b.lower()} capabilities, {nb} is your tool. "
+            f"Both are independently reviewed and scored on merit."
+        )
+
+    # Clear winner (8+ point gap)
+    if diff >= 8:
+        winner = na if sa > sb else nb
+        loser = nb if sa > sb else na
+        ws = max(sa, sb)
+        ls = min(sa, sb)
+        wp = pa if sa > sb else pb
+        lp = pb if sa > sb else pa
+        return (
+            f"{winner} is the stronger choice in this matchup, scoring {ws}/100 vs "
+            f"{loser}'s {ls}/100. The {diff}-point gap reflects meaningful differences "
+            f"in product quality, feature depth, and user satisfaction. "
+            f"{winner} starts at {wp}; {loser} starts at {lp}. "
+            f"For most users deciding between these two, {winner} delivers more value — "
+            f"though {loser} may suit users who prioritize "
+            f"{'a lower price point' if parse_price(lp) < parse_price(wp) else 'specific niche features'}."
+        )
+
+    # Close scores — free tier is the decider
+    if free_a and not free_b:
+        return (
+            f"With scores within {diff} points ({na}: {sa}/100, {nb}: {sb}/100), "
+            f"the deciding factor here is accessibility: {na} offers a free tier while "
+            f"{nb} does not (starting at {pb}). "
+            f"Start with {na}'s free plan to evaluate the core experience, "
+            f"then consider {nb} if you need features that {na} doesn't cover. "
+            f"Both are solid tools — the free tier makes {na} the lower-risk starting point."
+        )
+
+    if free_b and not free_a:
+        return (
+            f"With scores within {diff} points ({na}: {sa}/100, {nb}: {sb}/100), "
+            f"the deciding factor here is accessibility: {nb} offers a free tier while "
+            f"{na} does not (starting at {pa}). "
+            f"Start with {nb}'s free plan to evaluate the core experience, "
+            f"then consider {na} if you need features that {nb} doesn't cover. "
+            f"Both are solid tools — the free tier makes {nb} the lower-risk starting point."
+        )
+
+    # Both have free tiers
+    if free_a and free_b:
+        return (
+            f"This is a close matchup — {na} scores {sa}/100 and {nb} scores {sb}/100. "
+            f"Both offer free tiers, so the best approach is to test each with your actual workflow. "
+            f"{na} starts at {pa} on paid plans; {nb} starts at {pb}. "
+            f"The key differentiator is approach: {na} focuses on "
+            f"{ta['tags'][0] if ta.get('tags') else 'its core features'}, while {nb} emphasizes "
+            f"{tb['tags'][0] if tb.get('tags') else 'its core features'}. "
+            f"Try both free tiers — the one that feels natural within a week is your answer."
+        )
+
+    # Price difference > 50%
+    if price_ratio > 1.5 and price_a > 0 and price_b > 0:
+        cheaper = na if price_a < price_b else nb
+        pricier = nb if price_a < price_b else na
+        cp = pa if price_a < price_b else pb
+        pp = pb if price_a < price_b else pa
+        cs = sa if price_a < price_b else sb
+        ps = sb if price_a < price_b else sa
+        return (
+            f"Price is a significant factor here: {cheaper} starts at {cp} while "
+            f"{pricier} starts at {pp}. {cheaper} scores {cs}/100; {pricier} scores {ps}/100. "
+            f"If budget is a primary consideration, {cheaper} delivers strong value at a lower price point. "
+            f"If you need the additional capabilities that justify {pricier}'s premium, "
+            f"the higher investment may be worthwhile. Evaluate which features you'll actually use daily."
+        )
+
+    # Default close comparison
+    return (
+        f"{na} ({sa}/100) and {nb} ({sb}/100) are closely matched tools. "
+        f"{na} starts at {pa}; {nb} starts at {pb}. "
+        f"The right choice depends on your specific workflow — review the pros and cons for each above, "
+        f"and consider which tool's strengths align with your highest-priority use case. "
+        f"{'Both offer free trials, so test before committing.' if (ta.get('free_trial') or tb.get('free_trial')) else 'Check each tool for current trial availability.'}"
+    )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ELITE CSS — Premium 2026 Design System
@@ -2386,7 +2496,20 @@ BASE = """<!DOCTYPE html>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="/">Home</a>
       <a href="/tools">All Tools</a>
-      <a href="/compare">Compare</a>
+      <div class="nav-drop" role="navigation" aria-label="Compare navigation">
+        <button class="nav-drop-btn" type="button" aria-expanded="false" aria-haspopup="true">
+          Compare
+          <svg class="drop-chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>
+        </button>
+        <div class="drop-menu" role="menu">
+          <a href="/compare" role="menuitem">
+            <span class="dm-icon" aria-hidden="true">⚔️</span>All Comparisons
+          </a>
+          <a href="/compare/custom" role="menuitem">
+            <span class="dm-icon" aria-hidden="true">🔀</span>Custom Compare →
+          </a>
+        </div>
+      </div>
       <a href="/blog">Guides</a>
       <div class="nav-drop" role="navigation" aria-label="Role navigation">
         <button class="nav-drop-btn" type="button" aria-expanded="false" aria-haspopup="true">
@@ -2453,7 +2576,17 @@ BASE = """<!DOCTYPE html>
       {% endfor %}
     </div>
   </div>
-</div>
+  <div class="mob-section">
+    <div class="mob-sublabel">Compare tools</div>
+    <div class="mob-pills">
+      <a href="/compare" class="mob-pill">
+        <span aria-hidden="true">⚔️</span>All Comparisons
+      </a>
+      <a href="/compare/custom" class="mob-pill">
+        <span aria-hidden="true">🔀</span>Custom Compare
+      </a>
+    </div>
+  </div>
 
 <!-- Page Content -->
 <main id="main-content" tabindex="-1">
@@ -2902,33 +3035,246 @@ def tool_card(t, delay=0):
 
 def email_capture():
     lm = LEAD_MAGNET
-    benefits = '\n'.join(
+
+    benefits = "\n".join(
         f'<div class="email-benefit"><div class="benefit-tick" aria-hidden="true">✓</div>{item}</div>'
-        for item in lm.get('items', []))
-    ev_items = '\n'.join(
+        for item in lm.get("items", [])
+    )
+
+    ev_items = "\n".join(
         f'<div class="ev-item"><span class="ev-num" aria-hidden="true">{str(i+1).zfill(2)}</span>{item}</div>'
-        for i, item in enumerate(lm['items']))
+        for i, item in enumerate(lm["items"])
+    )
+
     return f"""<section class="email-sec" aria-labelledby="email-heading">
   <div class="email-inner">
     <div>
       <div class="email-eyebrow">Free guide — no spam</div>
-      <h2 class="email-h2" id="email-heading">{lm['title']}<br><em>{lm['subtitle']}</em></h2>
+      <h2 class="email-h2" id="email-heading">
+        {lm['title']}<br><em>{lm['subtitle']}</em>
+      </h2>
       <p class="email-sub">{lm['description']}</p>
+
       <form class="email-form" id="email-form" novalidate>
-        <input class="email-input" type="email" placeholder="your@email.com"
-          required aria-label="Your email address" autocomplete="email">
+        <input
+          class="email-input"
+          type="email"
+          placeholder="your@email.com"
+          required
+          aria-label="Your email address"
+          autocomplete="email"
+        >
         <button type="submit" class="btn-email">{lm['cta']}</button>
       </form>
-      <div class="email-benefits" aria-label="What you'll get">{benefits}</div>
-      <p class="email-notice">// No spam. Unsubscribe any time. Privacy compliant.</p>
+
+      <div class="email-benefits" aria-label="What you'll get">
+        {benefits}
+      </div>
+
+      <p class="email-notice">
+        // No spam. Unsubscribe any time. Privacy compliant.
+      </p>
     </div>
+
     <div class="email-visual" aria-hidden="true">
       <div class="ev-title">{lm['title']}</div>
       <div class="ev-subtitle">{lm['subtitle']}</div>
-      <div class="ev-items">{ev_items}</div>
+      <div class="ev-items">
+        {ev_items}
+      </div>
     </div>
   </div>
 </section>"""
+
+
+def build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b):
+    """Build the full HTML content for the custom compare page."""
+
+    # Build select options
+    opts_a = "\n".join(
+        f'<option value="{t["slug"]}" {"selected" if t["slug"] == slug_a else ""}>{t["name"]}</option>'
+        for t in sorted_tools
+    )
+
+    opts_b = "\n".join(
+        f'<option value="{t["slug"]}" {"selected" if t["slug"] == slug_b else ""}>{t["name"]}</option>'
+        for t in sorted_tools
+    )
+
+    selector_html = f"""
+<div class="page" style="padding-top:32px;padding-bottom:28px">
+  <div class="sec-eyebrow">Custom comparison · Any two tools</div>
+
+  <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;
+             letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
+    Compare any two <em style="color:var(--cyan);font-style:normal">AI tools</em>
+  </h1>
+
+  <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:520px;
+            line-height:1.75;margin-bottom:28px">
+    Select any two tools from our reviewed collection and get an instant side-by-side comparison
+    with scores, pricing, and a clear verdict.
+  </p>
+
+  <div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r3);
+              padding:24px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;box-shadow:var(--sh1)">
+
+    <div style="flex:1;min-width:180px">
+      <label for="sel-a"
+             style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;
+                    text-transform:uppercase;color:var(--ink4);display:block;margin-bottom:8px">
+        Tool A
+      </label>
+
+      <select id="sel-a" name="a"
+              style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);
+                     border-radius:var(--r2);padding:11px 14px;color:var(--ink);
+                     font-family:var(--font-body);font-size:.88rem;outline:none;
+                     appearance:none;cursor:pointer;transition:border-color .2s;
+                     -webkit-appearance:none"
+              onfocus="this.style.borderColor='var(--cyan)'"
+              onblur="this.style.borderColor='var(--bdr2)'">
+        <option value="">Select a tool…</option>
+        {opts_a}
+      </select>
+    </div>
+
+    <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--ink4);
+                padding:11px 0;letter-spacing:.08em;flex-shrink:0">
+      VS
+    </div>
+
+    <div style="flex:1;min-width:180px">
+      <label for="sel-b"
+             style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;
+                    text-transform:uppercase;color:var(--ink4);display:block;margin-bottom:8px">
+        Tool B
+      </label>
+
+      <select id="sel-b" name="b"
+              style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);
+                     border-radius:var(--r2);padding:11px 14px;color:var(--ink);
+                     font-family:var(--font-body);font-size:.88rem;outline:none;
+                     appearance:none;cursor:pointer;transition:border-color .2s;
+                     -webkit-appearance:none"
+              onfocus="this.style.borderColor='var(--cyan)'"
+              onblur="this.style.borderColor='var(--bdr2)'">
+        <option value="">Select a tool…</option>
+        {opts_b}
+      </select>
+    </div>
+
+    <button id="compare-btn"
+            type="button"
+            class="btn-primary"
+            style="flex-shrink:0"
+            onclick="var a=document.getElementById('sel-a').value,
+                     b=document.getElementById('sel-b').value;
+                     if(a&&b&&a!==b)
+                       window.location.href='/compare/custom?a='+a+'&b='+b;
+                     else if(a===b)
+                       alert('Please select two different tools.');">
+      Compare now →
+    </button>
+  </div>
+</div>"""
+
+    if not ta or not tb:
+        return f"""
+{breadcrumb_html([('Home','/'),('Compare','/compare'),('Custom Compare','/compare/custom')])}
+{selector_html}
+<div class="page" style="padding:64px 0;text-align:center">
+  <p style="font-family:var(--font-mono);font-size:.78rem;color:var(--ink4);letter-spacing:.04em">
+    // Select two tools above to see a side-by-side comparison
+  </p>
+</div>"""
+
+    def build_cd_card(t):
+        sc = t["score"]
+        sc_col = score_color(sc)
+
+        free_tier_cell = (
+            '<span class="tick">✓</span>'
+            if t.get("free_tier")
+            else '<span class="cross">✗</span>'
+        )
+
+        if t.get("free_trial"):
+            trial_cell = f'<span class="tick">✓ {t.get("trial_days", "")}d</span>'
+        else:
+            trial_cell = '<span class="cross">✗</span>'
+
+        st = stars(t["rating"])
+        pros_html = "".join(f"<li>{p}</li>" for p in t["pros"][:3])
+        cons_html = "".join(f"<li>{c}</li>" for c in t["cons"][:2])
+
+        return f"""<div class="cd-card">
+  <div class="cd-name">{t['name']}</div>
+  <div class="cd-score" style="color:{sc_col}">{sc}</div>
+
+  <div style="font-family:var(--font-mono);font-size:.64rem;color:{sc_col};
+              letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">
+    {score_label(sc)} · MFWAI Score
+  </div>
+
+  <div style="margin-bottom:12px">
+    <span style="color:var(--amber);font-size:.85rem;letter-spacing:-.04em">{st}</span>
+    <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--ink4);margin-left:8px">
+      {t['rating']}/5 · {t['review_count']} reviews
+    </span>
+  </div>
+
+  <table class="comp-table">
+    <tbody>
+      <tr><td>Starting price</td><td style="font-weight:600;color:var(--ink)">{t['starting_price']}</td></tr>
+      <tr><td>Pricing model</td><td>{t['pricing_model']}</td></tr>
+      <tr><td>Free tier</td><td>{free_tier_cell}</td></tr>
+      <tr><td>Free trial</td><td>{trial_cell}</td></tr>
+      <tr><td>Category</td><td>{t['category']}</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:16px">
+    <div class="panel-label">Top pros</div>
+    <ul class="plist pros">{pros_html}</ul>
+  </div>
+
+  <div style="margin-top:16px">
+    <div class="panel-label">Key cons</div>
+    <ul class="plist cons">{cons_html}</ul>
+  </div>
+
+  <a href="{t['affiliate_url']}"
+     target="_blank"
+     rel="nofollow sponsored noopener noreferrer"
+     class="btn-try"
+     style="margin-top:20px;width:100%;justify-content:center">
+    Try {t['name']} →
+  </a>
+</div>"""
+
+    verdict_html = ""
+    if verdict:
+        verdict_html = f"""<div class="winner-block rv"
+     style="background:var(--cyan-d);border-color:var(--cyan-g)">
+  <div class="winner-label" style="color:var(--cyan)">// Quick verdict</div>
+  <p class="winner-text">{verdict}</p>
+</div>"""
+
+    return f"""
+{breadcrumb_html([('Home','/'),('Compare','/compare'),
+                  (f'{ta["name"]} vs {tb["name"]}',
+                   f'/compare/custom?a={slug_a}&b={slug_b}')])}
+{selector_html}
+
+<div class="page" style="padding-top:28px">
+  <div class="comp-detail-grid">
+    {build_cd_card(ta)}
+    {build_cd_card(tb)}
+  </div>
+
+  {verdict_html}
+</div>"""
 
 
 def affil_strip():
@@ -2938,7 +3284,9 @@ def affil_strip():
       <circle cx="12" cy="12" r="10"/>
       <path d="M12 16v-4M12 8h.01"/>
     </svg>
-    <strong>Affiliate disclosure:</strong> Moving Forward With AI earns a commission when you sign up through links — at no extra cost to you.
+    <strong>Affiliate disclosure:</strong>
+    Moving Forward With AI earns a commission when you sign up through links —
+    at no extra cost to you.
     <a href="/affiliate-disclosure">Learn more →</a>
   </div>
 </div>"""
@@ -3366,7 +3714,19 @@ def compare_index():
         When you're deciding between two tools, our head-to-head comparisons give you the clearest verdict.
       </p>
     </div>
-    <div class="page"><div class="comp-grid">{cards}</div></div>"""
+    <div class="page">
+      <div style="background:var(--cyan-d);border:1px solid var(--cyan-g);border-radius:var(--r3);
+          padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;
+          gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--ink);
+              letter-spacing:-.02em">Can't find your matchup?</div>
+          <div style="font-size:.86rem;color:var(--ink3);margin-top:3px">Compare any two tools from our full collection — instant side-by-side results.</div>
+        </div>
+        <a href="/compare/custom" class="btn-primary" style="flex-shrink:0">Custom Compare →</a>
+      </div>
+      <div class="comp-grid">{cards}</div>
+    </div>"""
     return render(
         'Compare AI Tools Side by Side — Moving Forward With AI',
         'Head-to-head AI tool comparisons. Clear verdicts on which tool wins and why.',
@@ -3449,6 +3809,19 @@ def compare_detail(slug):
         desc=c.get('meta_description', c['description']),
         content=content,
         bcs=bc_schema([('Home', '/'), ('Compare', '/compare'), (c['headline'], f'/compare/{slug}')]))
+
+@app.route('/compare/custom')
+def compare_custom():
+    slug_a = request.args.get('a', '')
+    slug_b = request.args.get('b', '')
+    ta = get_tool(slug_a) if slug_a else None
+    tb = get_tool(slug_b) if slug_b else None
+    verdict = generate_comparison_verdict(ta, tb) if ta and tb else ''
+    sorted_tools = sorted(TOOLS, key=lambda t: t['name'])
+    content = build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b)
+    ttl = f'{ta["name"]} vs {tb["name"]} — Compare AI Tools | Moving Forward With AI' if ta and tb else 'Compare Any Two AI Tools — Moving Forward With AI'
+    dsc = f'Side-by-side comparison of {ta["name"]} and {tb["name"]}. Scores, pricing, pros, cons and a clear verdict.' if ta and tb else 'Instantly compare any two AI tools side by side. Scores, pricing, pros, cons and a clear verdict — no signup required.'
+    return render(title=ttl, desc=dsc, content=content)
 
 
 @app.route('/blog')
