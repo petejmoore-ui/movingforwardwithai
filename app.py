@@ -1483,40 +1483,54 @@ def tool_card(t, delay=0):
     sbdr = 'var(--green-g)' if sc>=88 else 'var(--cyan-g)'
     scol = 'var(--green)'   if sc>=88 else 'var(--cyan)'
     badges = []
-    if t.get('free_tier'):  badges.append('<span class="badge b-free">Free tier</span>')
-    if t.get('free_trial'): badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
+    if t.get('free_tier'):
+        badges.append('<span class="badge b-free">Free tier</span>')
+    if t.get('free_trial'):
+        badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
     if not t.get('free_tier') and not t.get('free_trial'):
         badges.append('<span class="badge b-paid">Paid only</span>')
-    if t.get('featured'): badges.append('<span class="badge b-top">Featured</span>')
-    return f"""<article class="tool-card rv" aria-label="{t['name']} — {t['category']} tool">
+    if t.get('featured'):
+        badges.append('<span class="badge b-top">Featured</span>')
+
+    # Assign strings to variables to avoid nested quotes issues
+    name     = t["name"]
+    category = t["category"]
+    slug     = t["slug"]
+    tagline  = t.get("tagline","")
+    price    = t.get("starting_price","")
+    model    = t.get("pricing_model","")
+    aff_url  = t.get("affiliate_url","#")
+
+    return f'''
+<article class="tool-card rv" aria-label="{name} — {category} tool">
   <div class="tc-accent-bar" aria-hidden="true"></div>
   <div class="tc-body">
     <div class="tc-meta">
-      <div class="tc-cat" aria-label="Category: {t['category']}">{t['category']}</div>
+      <div class="tc-cat" aria-label="Category: {category}">{category}</div>
       <div class="tc-score" style="background:{sbg};border:1px solid {sbdr};color:{scol}"
            aria-label="MFWAI score: {sc} out of 100">{sc}/100</div>
     </div>
-    <a href="/tool/{t['slug']}" class="tc-name">{t['name']}</a>
-    <p class="tc-tagline">{t['tagline']}</p>
+    <a href="/tool/{slug}" class="tc-name">{name}</a>
+    <p class="tc-tagline">{tagline}</p>
     <div class="tc-badges" aria-label="Pricing badges">{''.join(badges)}</div>
   </div>
   <div class="tc-divider" aria-hidden="true"></div>
   <div class="tc-footer">
     <div class="tc-pricing">
-      <span class="tc-price">{t['starting_price']}</span>
-      <span class="tc-model">{t['pricing_model']}</span>
+      <span class="tc-price">{price}</span>
+      <span class="tc-model">{model}</span>
     </div>
     <div class="tc-btn-group">
-      <a href="{t['affiliate_url']}" target="_blank" rel="nofollow sponsored noopener noreferrer"
-         class="btn-try" aria-label="Try {t['name']} — affiliate link, opens in new tab">
-        Try {t['name']}
+      <a href="{aff_url}" target="_blank" rel="nofollow sponsored noopener noreferrer"
+         class="btn-try" aria-label="Try {name} — affiliate link, opens in new tab">
+        Try {name}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
-      <a href="/tool/{t['slug']}" class="btn-outline">Full review →</a>
+      <a href="/tool/{slug}" class="btn-outline">Full review →</a>
     </div>
   </div>
-</article>"""
-
+</article>
+'''
 
 def email_capture():
     return """<section class="email-sec" aria-labelledby="newsletter-heading">
