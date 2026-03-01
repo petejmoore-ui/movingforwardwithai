@@ -11,11 +11,34 @@ from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
 from flask import Flask, render_template_string, request, abort, Response, jsonify
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 app        = Flask(__name__)
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
+
+def render(title, desc, content, schema=None, bcs=None):
+    """Central render function — wraps all pages in your base HTML template."""
+    full_html = f"""<!DOCTYPE html>
+<html lang="en" data-theme="light">  <!-- or use your theme toggle logic -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <meta name="description" content="{desc}">
+    <link rel="stylesheet" href="/static/css/style.css">  <!-- assuming you have CSS -->
+    <!-- Add your meta tags, favicon, etc. here -->
+    {f'<script type="application/ld+json">{schema}</script>' if schema else ''}
+    {f'<script type="application/ld+json">{bcs}</script>' if bcs else ''}
+</head>
+<body>
+    <!-- Your header / nav / hamburger menu HTML here -->
+    <main>{content}</main>
+    <!-- Footer, scripts, etc. -->
+</body>
+</html>"""
+    return render_template_string(full_html)
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
