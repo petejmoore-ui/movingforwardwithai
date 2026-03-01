@@ -1412,6 +1412,7 @@ if(hits.length){
 } else {
   sovRes.innerHTML='<div class="sov-empty">// No tools found for "'+q+'"</div>';
 }
+}
 
   inp.addEventListener('input',function(e){ clearTimeout(timer); var q=e.target.value.trim(); timer=setTimeout(function(){runSearch(q);},160); });
   inp.addEventListener('keydown',function(e){ if(e.key==='Escape'){closeSov();inp.value='';} });
