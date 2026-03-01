@@ -1379,12 +1379,23 @@ window.addEventListener('scroll', function(){
 
   function miniCard(t){
     var hi=t.score>=88;
-    var bg=hi?'var(--green-d)':'var(--cyan-d)'; var bdr=hi?'var(--green-g)':'var(--cyan-g)'; var col=hi?'var(--green)':'var(--cyan)';
-    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'\'">'
-      +'<div class="tc-accent-bar"></div><div class="tc-body"><div class="tc-meta"><div class="tc-cat">'+t.category+'</div>'
-      +'<div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+t.score+'</div></div>'
-      +'<a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a><p class="tc-tagline">'+(t.tagline||'')+'</p>'
-      +'</div><div class="tc-footer"><div class="tc-pricing"><span class="tc-price">'+(t.starting_price||'')+'</span></div></div></div>';
+    var bg=hi?'var(--green-d)':'var(--cyan-d)';
+    var bd=hi?'var(--green-g)':'var(--cyan-g)';
+    var co=hi?'var(--green)':'var(--cyan)';
+    var d=document.createElement('div');
+    d.className='tool-card';
+    d.style.cursor='pointer';
+    d.onclick=function(){location.href='/tool/'+t.slug;};
+    d.innerHTML='<div class="tc-accent-bar"></div>'
+      +'<div class="tc-body"><div class="tc-meta">'
+      +'<div class="tc-cat">'+t.category+'</div>'
+      +'<div class="tc-score" style="background:'+bg+';border:1px solid '+bd+';color:'+co+'">'+t.score+'</div>'
+      +'</div><a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a>'
+      +'<p class="tc-tagline">'+(t.tagline||'')+'</p>'
+      +'</div><div class="tc-footer"><div class="tc-pricing">'
+      +'<span class="tc-price">'+(t.starting_price||'')+'</span>'
+      +'</div></div>';
+    return d;
   }
 
   function runSearch(q){
@@ -1395,10 +1406,12 @@ window.addEventListener('scroll', function(){
         return (t.name||'').toLowerCase().includes(ql)||(t.category||'').toLowerCase().includes(ql)||(t.tagline||'').toLowerCase().includes(ql)||(t.tags||[]).join(' ').toLowerCase().includes(ql);
       });
       sovCount.textContent='// '+hits.length+' result'+(hits.length!==1?'s':'')+' for "'+q+'"';
-      sovRes.innerHTML=hits.length?hits.map(miniCard).join(''):'<div class="sov-empty">// No tools found for "'+q+'"</div>';
-      sov.classList.add('open'); document.body.style.overflow='hidden';
-    });
-  }
+      sovRes.innerHTML='';
+if(hits.length){
+  hits.forEach(function(t){ sovRes.appendChild(miniCard(t)); });
+} else {
+  sovRes.innerHTML='<div class="sov-empty">// No tools found for "'+q+'"</div>';
+}
 
   inp.addEventListener('input',function(e){ clearTimeout(timer); var q=e.target.value.trim(); timer=setTimeout(function(){runSearch(q);},160); });
   inp.addEventListener('keydown',function(e){ if(e.key==='Escape'){closeSov();inp.value='';} });
