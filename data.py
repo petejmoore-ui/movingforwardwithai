@@ -734,6 +734,425 @@ TOOLS = [
         "date_added": "2026-02-28",
         "roles": ["small-business", "freelancers", "marketers"],
     },
+    # ========== 11 NEW TOOLS — MARCH 2026 UPDATE ==========
+    {
+        "slug": "getresponse",
+        "name": "GetResponse",
+        "tagline": "All-in-one email marketing platform with AI-powered automation, built-in webinars, and conversion funnels — features that most competitors charge extra for",
+        "category": "Email Marketing",
+        "tags": ["email marketing", "automation", "webinars", "landing pages", "AI", "newsletters", "funnels"],
+        "pricing_model": "Subscription",
+        "starting_price": "$19/mo",
+        "free_tier": True,
+        "free_trial": True,
+        "trial_days": 30,
+        "affiliate_url": "https://getresponse.com",
+        "rating": 4.3,
+        "review_count": "820+",
+        "best_for": [
+            "Small businesses needing email, landing pages, webinars, and automation in one platform",
+            "Solopreneurs building their first email list who want room to grow without switching tools",
+            "Course creators and coaches who need built-in webinar hosting alongside email sequences",
+            "Marketing teams wanting deeper automation than Mailchimp offers at comparable pricing",
+        ],
+        "not_for": ["Enterprise teams needing advanced CRM — consider HubSpot or ActiveCampaign instead", "Users with very large lists (50K+) who may find per-contact pricing expensive at scale"],
+        "pros": [
+            "Built-in webinar hosting is a genuine differentiator — no competitor at this price includes it",
+            "AI-powered email generator and subject line optimizer speed up campaign creation significantly",
+            "Visual automation workflow builder rivals ActiveCampaign's at a lower price point ($59 vs $79/mo for comparable features)",
+            "Free plan includes 500 contacts with unlimited emails — generous enough for early-stage testing",
+        ],
+        "cons": [
+            "Pricing jumps steeply between tiers — Starter ($19) to Marketer ($59) is a significant leap",
+            "AI tools limited to 3 uses on the Starter plan — meaningful AI features require the Marketer tier",
+            "Advanced segmentation capped at 7 filters, which restricts complex targeting strategies",
+        ],
+        "verdict": "GetResponse delivers more features per dollar than Mailchimp at every price point — webinars, funnels, and advanced automation are all included rather than sold as add-ons. The AI email tools are useful but require the $59/mo Marketer plan for full access. For small businesses choosing their first email platform, the 30-day free trial with premium features is the best way to evaluate whether GetResponse's all-in-one approach fits your workflow.",
+        "score": 80,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["marketers", "small-business"],
+    },
+    {
+        "slug": "mailchimp",
+        "name": "Mailchimp",
+        "tagline": "The most recognized email marketing brand in the world — now an Intuit company with AI-powered tools, but rising costs and shrinking free tier test loyalty",
+        "category": "Email Marketing",
+        "tags": ["email marketing", "automation", "landing pages", "AI", "Intuit", "analytics", "ecommerce"],
+        "pricing_model": "Subscription",
+        "starting_price": "$13/mo",
+        "free_tier": True,
+        "free_trial": True,
+        "trial_days": 14,
+        "affiliate_url": "https://mailchimp.com",
+        "rating": 4.3,
+        "review_count": "12,000+",
+        "best_for": [
+            "Beginners who want the most intuitive email editor and drag-and-drop design experience",
+            "Small ecommerce stores already using Shopify, WooCommerce, or other Mailchimp-integrated platforms",
+            "Teams that value brand recognition and a massive library of templates and integrations",
+            "Users who need a pay-as-you-go option for seasonal or infrequent email campaigns",
+        ],
+        "not_for": ["Budget-conscious users with growing lists — costs escalate quickly past 2,500 contacts", "Marketers needing advanced automation — GetResponse or ActiveCampaign offer more depth per dollar"],
+        "pros": [
+            "Unmatched template library and drag-and-drop editor make email design fast and intuitive",
+            "Intuit Assist AI generates subject lines, content suggestions, and send-time optimization",
+            "Largest integration ecosystem in email marketing — connects with virtually every business tool",
+            "Predictive segmentation and multivariate testing available on Standard and Premium plans",
+        ],
+        "cons": [
+            "Free plan reduced to 250 contacts and 500 sends — barely functional for real marketing use",
+            "Costs escalate quickly: 2,500 contacts on Essentials costs $45/mo after promotional pricing ends",
+            "Counts unsubscribed contacts toward billing limits — a frustrating practice that inflates costs",
+        ],
+        "verdict": "Mailchimp remains the default choice for email marketing beginners thanks to its intuitive editor and massive integration ecosystem. The Intuit acquisition brought AI capabilities and financial tool integrations. However, the shrinking free tier and aggressive pricing at scale mean growing businesses should compare costs carefully against GetResponse or MailerLite. Start with the 14-day free trial of Standard to evaluate the AI features before committing.",
+        "score": 78,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["marketers", "small-business"],
+    },
+    {
+        "slug": "clickup",
+        "name": "ClickUp",
+        "tagline": "The converged AI workspace replacing Asana, Trello, and Notion for project-heavy teams — with AI Brain, Super Agents, and 1,000+ integrations from $7/user/mo",
+        "category": "Productivity & Workspace",
+        "tags": ["project management", "AI", "productivity", "tasks", "collaboration", "docs", "automation"],
+        "pricing_model": "Per seat",
+        "starting_price": "$7/user/mo",
+        "free_tier": True,
+        "free_trial": True,
+        "trial_days": 14,
+        "affiliate_url": "https://clickup.com",
+        "rating": 4.7,
+        "review_count": "11,100+",
+        "best_for": [
+            "Cross-functional teams managing complex projects with dependencies, sprints, and Gantt charts",
+            "Agencies juggling multiple client projects who need structured task hierarchies and time tracking",
+            "Teams wanting to consolidate project management, docs, and chat into one platform",
+            "Organizations that prioritize customization and detailed reporting dashboards",
+        ],
+        "not_for": ["Solo operators wanting a lightweight, minimal-setup tool — Notion is simpler", "Teams with low technical comfort — the learning curve is steep for advanced features"],
+        "pros": [
+            "Most feature-rich project management platform at its price tier — Gantt, Board, Calendar, Table views included from $7/user/mo",
+            "ClickUp Brain AI provides workspace-aware search, summaries, and task generation across all your data",
+            "Super Agents (launched 2025) automate multi-step workflows like status updates, notifications, and timeline adjustments",
+            "Featured in 1,539 G2 Winter 2026 reports — ranked Top 3 in 526 categories, more than any other product",
+        ],
+        "cons": [
+            "Steep learning curve — G2 reviewers consistently note that setup and customization take significant time",
+            "ClickUp Brain is a paid per-user add-on on top of plan pricing, increasing total cost meaningfully",
+            "Performance issues reported during high-load periods — being cloud-only means no offline access",
+        ],
+        "verdict": "ClickUp is the most powerful project management platform available for teams willing to invest in setup. The depth of features — tasks, docs, whiteboards, dashboards, AI, and 1,000+ integrations — is unmatched at this price point. However, the complexity can overwhelm smaller teams. If your team needs structured project management with detailed reporting, the free plan and 14-day paid trial let you evaluate before committing. For simpler knowledge management needs, Notion AI remains a better fit.",
+        "score": 84,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["freelancers", "small-business", "marketers"],
+    },
+    {
+        "slug": "quillbot",
+        "name": "QuillBot",
+        "tagline": "AI paraphrasing and writing assistant used by over 35 million writers — grammar checking, plagiarism detection, and tone adjustment from $8.33/mo",
+        "category": "Writing & Content",
+        "tags": ["writing", "paraphrasing", "grammar", "plagiarism", "AI", "students", "editing"],
+        "pricing_model": "Subscription",
+        "starting_price": "$9.95/mo",
+        "free_tier": True,
+        "free_trial": False,
+        "trial_days": 0,
+        "affiliate_url": "https://quillbot.com",
+        "rating": 4.3,
+        "review_count": "300+",
+        "best_for": [
+            "Students and academics who need reliable paraphrasing with plagiarism checking and citation generation",
+            "Non-native English writers who want sentence-level clarity and grammar improvement",
+            "Freelance writers who need to rephrase and polish existing content quickly",
+            "Budget-conscious professionals who want Grammarly-like features at a lower price point",
+        ],
+        "not_for": ["Users needing AI content generation from scratch — Jasper or Claude are better choices", "Teams needing collaboration features — QuillBot is designed for individual writers"],
+        "pros": [
+            "Paraphrasing engine with 9 modes (Standard, Fluency, Formal, Academic, Creative, and more) is genuinely versatile",
+            "Free tier includes basic paraphrasing and grammar checking with no account required — immediate value",
+            "Chrome extension, Google Docs, and Microsoft Word integrations keep the tool accessible across platforms",
+            "Annual pricing ($99.95/year) works out to $8.33/mo — significantly cheaper than Grammarly Premium",
+        ],
+        "cons": [
+            "Free version limits paraphrasing to 125 words at a time — frustrating for longer documents",
+            "AI sometimes produces awkward or overly formal rephrasing that requires manual review",
+            "Plagiarism checker limited to 25,000 words/month on Premium — power users may hit this cap",
+        ],
+        "verdict": "QuillBot excels at its core job: improving existing text through paraphrasing, grammar correction, and tone adjustment. With over 35 million users, it's one of the most widely adopted writing tools available. The free tier is generous enough for casual use, and the Premium annual plan ($8.33/mo) undercuts Grammarly significantly. For students and non-native English writers, QuillBot delivers strong value. For content creation from scratch, look elsewhere.",
+        "score": 74,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["freelance-writers", "content-creators"],
+    },
+    {
+        "slug": "tidio",
+        "name": "Tidio",
+        "tagline": "AI customer service platform with Lyro — an autonomous AI agent that resolves up to 67% of support queries without human intervention, starting free",
+        "category": "AI Customer Service",
+        "tags": ["live chat", "AI agent", "customer service", "chatbot", "ecommerce", "Shopify", "support"],
+        "pricing_model": "Conversation-based",
+        "starting_price": "$29/mo",
+        "free_tier": True,
+        "free_trial": True,
+        "trial_days": 7,
+        "affiliate_url": "https://tidio.com",
+        "rating": 4.7,
+        "review_count": "1,500+",
+        "best_for": [
+            "Small ecommerce stores needing live chat and AI-powered customer support on Shopify or WordPress",
+            "Businesses wanting to automate FAQ responses without building complex chatbot flows from scratch",
+            "Support teams that need 24/7 coverage without hiring overnight staff",
+            "Solopreneurs who handle customer queries themselves and need AI to reduce the workload",
+        ],
+        "not_for": ["High-traffic sites (1,000+ monthly conversations) — costs scale quickly with conversation-based billing", "Enterprise teams needing omnichannel support with voice, advanced routing, and deep analytics"],
+        "pros": [
+            "Lyro AI agent learns from your help content and responds in natural language — setup takes under 30 minutes",
+            "67% average AI resolution rate is the highest published figure in the chatbot industry",
+            "Seamless Shopify integration lets AI answer product questions, check orders, and recommend items",
+            "Free plan includes 50 Lyro conversations and 10 operator seats — enough to evaluate thoroughly",
+        ],
+        "cons": [
+            "Pricing is conversation-based, not seat-based — total costs become unpredictable as chat volume grows",
+            "Lyro AI and Flows automation are billed as separate add-ons, often doubling the effective monthly cost",
+            "AI stops responding when conversation quota is exhausted, creating inconsistent customer experience",
+        ],
+        "verdict": "Tidio's Lyro AI agent is the standout feature — it transforms a basic live chat tool into an autonomous support system that handles the majority of routine customer queries. For small ecommerce businesses, the Shopify integration and quick setup deliver immediate value. Be aware that the conversation-based pricing means costs can exceed expectations as traffic grows. Start with the free plan's 50 Lyro conversations to measure resolution rates before upgrading.",
+        "score": 79,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["small-business"],
+    },
+    {
+        "slug": "meetgeek",
+        "name": "MeetGeek",
+        "tagline": "AI meeting assistant with transcription, summaries, action items, and conversation analytics — built for teams that run on meetings",
+        "category": "AI Meeting Tools",
+        "tags": ["meetings", "transcription", "AI", "notes", "action items", "analytics", "Zoom"],
+        "pricing_model": "Subscription",
+        "starting_price": "$15.99/mo",
+        "free_tier": True,
+        "free_trial": False,
+        "trial_days": 0,
+        "affiliate_url": "https://meetgeek.ai",
+        "rating": 4.6,
+        "review_count": "470+",
+        "best_for": [
+            "Sales teams that need meeting recordings synced to HubSpot, Salesforce, or other CRMs automatically",
+            "Consultants and agencies who record client sessions and need professional summaries and action items",
+            "Managers who want conversation analytics — talk time, engagement, and meeting effectiveness metrics",
+            "Remote teams across time zones who rely on async meeting catch-up through summaries and highlights",
+        ],
+        "not_for": ["Individuals who attend fewer than 5 meetings per month — free alternatives like Fathom may suffice", "Teams that prioritize live transcription display during meetings — Otter.ai excels there"],
+        "pros": [
+            "Post-meeting summaries with action items and key decisions are the strongest in the category",
+            "Conversation analytics provide talk-time distribution, engagement metrics, and meeting effectiveness insights",
+            "CRM integrations (HubSpot, Salesforce) automatically log meeting notes — saving hours of admin for sales teams",
+            "Supports 100+ languages with accurate transcription across Zoom, Google Meet, and Microsoft Teams",
+        ],
+        "cons": [
+            "Bot-based recording means a visible participant joins your meeting — can feel intrusive for external calls",
+            "Free plan limited to 5 hours of recordings per month — most active users need Pro ($15.99/mo) quickly",
+            "Some users report slow customer support response times when recordings fail to process",
+        ],
+        "verdict": "MeetGeek is the strongest choice for teams that need more than just transcription — the conversation analytics, CRM integrations, and structured action items set it apart from simpler alternatives like Otter.ai. Sales teams and consultants get the most value from automatic CRM syncing and meeting effectiveness insights. The free plan's 5-hour limit is enough to evaluate whether the workflow improvements justify the $15.99/mo Pro upgrade.",
+        "score": 80,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["freelancers", "marketers", "small-business"],
+    },
+    {
+        "slug": "otter-ai",
+        "name": "Otter.ai",
+        "tagline": "AI meeting transcription with real-time captions, collaborative notes, and OtterPilot — the most accessible AI note-taker for individuals and small teams",
+        "category": "AI Meeting Tools",
+        "tags": ["transcription", "meetings", "AI", "notes", "captions", "collaboration", "OtterPilot"],
+        "pricing_model": "Subscription",
+        "starting_price": "$16.99/mo",
+        "free_tier": True,
+        "free_trial": False,
+        "trial_days": 0,
+        "affiliate_url": "https://otter.ai",
+        "rating": 4.3,
+        "review_count": "450+",
+        "best_for": [
+            "Individual professionals who need reliable meeting transcription without complex setup",
+            "Students and researchers transcribing lectures, interviews, and focus groups",
+            "Small teams wanting collaborative real-time notes during meetings with live captioning",
+            "Users who prioritize live transcription display during meetings over post-meeting analytics",
+        ],
+        "not_for": ["Teams needing advanced CRM integrations and conversation analytics — MeetGeek offers more depth", "Users requiring accuracy with heavy accents or noisy environments — transcription quality drops noticeably"],
+        "pros": [
+            "OtterPilot auto-joins Zoom, Google Meet, and Teams meetings — generates notes, summaries, and action items",
+            "Live transcription with real-time captions displayed during meetings is best-in-class for accessibility",
+            "Free plan includes 300 monthly transcription minutes — the most generous free tier among meeting tools",
+            "Simple, intuitive interface makes it the easiest AI meeting tool to start using immediately",
+        ],
+        "cons": [
+            "Transcription accuracy drops significantly with accented speech, overlapping voices, or background noise",
+            "Customer support is widely criticized — Trustpilot reviews cite slow responses and billing issues",
+            "Free plan caps individual meetings at 30 minutes — most business meetings exceed this limit",
+        ],
+        "verdict": "Otter.ai is the most accessible AI meeting transcription tool available — the generous free tier and intuitive design make it the natural starting point for anyone exploring AI note-taking. The live captioning feature is particularly valuable for accessibility. However, teams needing CRM integration, conversation analytics, or higher transcription accuracy should compare against MeetGeek. Test the free tier's 300 monthly minutes to evaluate transcription quality with your typical meeting conditions.",
+        "score": 76,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["freelancers", "content-creators"],
+    },
+    {
+        "slug": "gamma",
+        "name": "Gamma",
+        "tagline": "AI-native presentation builder with 70 million users — generates polished slide decks, documents, and webpages from a text prompt in under 60 seconds",
+        "category": "AI Presentations",
+        "tags": ["presentations", "AI", "slides", "documents", "design", "decks", "webpages"],
+        "pricing_model": "Credit-based",
+        "starting_price": "$8/mo",
+        "free_tier": True,
+        "free_trial": False,
+        "trial_days": 0,
+        "affiliate_url": "https://gamma.app",
+        "rating": 4.7,
+        "review_count": "600+",
+        "best_for": [
+            "Founders and marketers who create pitch decks and proposals regularly but lack design skills",
+            "Teams that need to turn meeting notes, outlines, or documents into visual presentations fast",
+            "Educators and trainers creating course content and lecture slides from existing materials",
+            "Anyone who spends hours in PowerPoint and wants to reduce deck creation to minutes",
+        ],
+        "not_for": ["Designers who need pixel-perfect control over every element — PowerPoint or Canva offer more precision", "Users needing offline editing — Gamma is cloud-only with no desktop app"],
+        "pros": [
+            "Generates complete, visually polished presentations from a text prompt in under 60 seconds — speed is transformative",
+            "70 million users and $100M ARR validate the product-market fit — this is not a niche experiment",
+            "Creates presentations, documents, and webpages from the same interface — versatile beyond just slides",
+            "Built-in AI image generation and smart layout engine produce professional results without design expertise",
+        ],
+        "cons": [
+            "Export to PowerPoint can introduce formatting issues — not ideal for strict corporate template requirements",
+            "Credit-based system means heavy users on the Plus plan ($8/mo) may exhaust their allocation",
+            "Limited control over individual design elements compared to traditional presentation tools",
+        ],
+        "verdict": "Gamma has redefined what's possible with AI-powered presentations — generating a polished deck from a text prompt in under a minute is a genuine workflow transformation. With 70 million users, it has proven that AI-native beats traditional for most presentation needs. The free tier includes enough credits to create several presentations and evaluate whether the speed advantage justifies the approach. For corporate environments requiring strict template adherence, traditional tools remain necessary.",
+        "score": 83,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["marketers", "freelancers", "small-business"],
+    },
+    {
+        "slug": "prezi",
+        "name": "Prezi",
+        "tagline": "The original non-linear presentation platform with zoomable canvas and AI-assisted creation — still the most memorable way to present ideas visually",
+        "category": "AI Presentations",
+        "tags": ["presentations", "design", "visual", "zoomable", "video", "AI", "storytelling"],
+        "pricing_model": "Subscription",
+        "starting_price": "$7/mo",
+        "free_tier": True,
+        "free_trial": True,
+        "trial_days": 14,
+        "affiliate_url": "https://prezi.com",
+        "rating": 4.2,
+        "review_count": "2,400+",
+        "best_for": [
+            "Speakers and educators who want a memorable, non-linear presentation style that stands out from slides",
+            "Sales professionals delivering product demos where zooming into detail creates impact",
+            "Creative professionals who prioritize storytelling and visual flow over traditional slide formats",
+            "Video presenters using Prezi Video to overlay visuals alongside their webcam feed",
+        ],
+        "not_for": ["Users who need fast AI generation from text prompts — Gamma is significantly faster", "Teams requiring standard PowerPoint output for corporate environments"],
+        "pros": [
+            "Zoomable canvas creates a unique, memorable presentation format that audiences recall better than standard slides",
+            "Prezi Video overlays presentation visuals alongside your webcam — excellent for virtual presentations and sales demos",
+            "AI-assisted creation helps generate presentation structure and content suggestions from topics",
+            "Strong template library with professionally designed visual storytelling frameworks",
+        ],
+        "cons": [
+            "AI capabilities are less advanced than Gamma — content generation is assistive rather than fully autonomous",
+            "The zoomable format has a learning curve and isn't always appropriate for data-heavy or corporate presentations",
+            "Free plan limits presentations to public visibility — private presentations require a paid plan",
+        ],
+        "verdict": "Prezi occupies a unique niche: when you want your presentation to be remembered, the zoomable canvas format creates an impact that linear slides cannot match. Prezi Video adds genuine value for virtual presentations and sales calls. However, for speed and AI-powered generation, Gamma now leads the category. Choose Prezi when the presentation format itself needs to make an impression; choose Gamma when you need a polished deck fast.",
+        "score": 73,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["marketers", "content-creators"],
+    },
+    {
+        "slug": "adcreative-ai",
+        "name": "AdCreative.ai",
+        "tagline": "AI-powered ad creative generation trained on high-performing ads — produces display, social, and video ad variations with conversion-score predictions",
+        "category": "AI Advertising",
+        "tags": ["advertising", "creative", "AI", "ads", "social media", "display", "conversion"],
+        "pricing_model": "Credit-based",
+        "starting_price": "$21/mo",
+        "free_tier": False,
+        "free_trial": True,
+        "trial_days": 7,
+        "affiliate_url": "https://adcreative.ai",
+        "rating": 4.3,
+        "review_count": "700+",
+        "best_for": [
+            "Performance marketers running Facebook, Instagram, and Google Display campaigns who need creative variations at scale",
+            "Small businesses without a designer who need professional-looking ad creatives quickly",
+            "Agencies managing multiple client ad accounts who need rapid creative iteration and testing",
+            "Ecommerce brands running product-focused ad campaigns across multiple platforms simultaneously",
+        ],
+        "not_for": ["Brands requiring highly custom, on-brand creative — AI output needs significant manual refinement", "Users comfortable with Canva who can create similar results without the subscription cost"],
+        "pros": [
+            "Generates multiple ad creative variations in seconds — dramatically speeds up the A/B testing workflow",
+            "Conversion score prediction helps prioritize which creatives to test first, reducing wasted ad spend",
+            "Supports display ads, social media creatives, and video ad formats from one platform",
+            "Connects directly to Google and Meta ad accounts for seamless creative deployment",
+        ],
+        "cons": [
+            "Quality is inconsistent — G2 reviewers report only about 30% of generated creatives are immediately usable",
+            "Billing complaints on G2 and Trustpilot — auto-renewal after trial catches users who forget to cancel",
+            "Credit system (10 credits on Starter) is restrictive — most campaigns need significantly more iterations",
+        ],
+        "verdict": "AdCreative.ai accelerates the ad creative workflow for performance marketers who need volume and variation. The conversion score predictions add genuine value for prioritizing A/B tests. However, the output quality is inconsistent — expect to use roughly a third of generated creatives without heavy editing. The 7-day free trial lets you evaluate creative quality against your brand standards before committing. Check billing terms carefully given the auto-renewal complaints.",
+        "score": 72,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["marketers", "small-business"],
+    },
+    {
+        "slug": "brand24",
+        "name": "Brand24",
+        "tagline": "AI-powered media monitoring that tracks brand mentions across social media, news, blogs, forums, and podcasts — with sentiment analysis and competitive benchmarking",
+        "category": "Social Media",
+        "tags": ["media monitoring", "brand mentions", "sentiment", "social media", "AI", "analytics", "PR"],
+        "pricing_model": "Subscription",
+        "starting_price": "$199/mo",
+        "free_tier": False,
+        "free_trial": True,
+        "trial_days": 14,
+        "affiliate_url": "https://brand24.com",
+        "rating": 4.6,
+        "review_count": "280+",
+        "best_for": [
+            "PR teams monitoring media coverage and managing brand reputation across channels in real time",
+            "Marketing managers tracking campaign mentions, competitor activity, and industry sentiment",
+            "Agencies providing social listening and reputation management services to multiple clients",
+            "Brands that need automated alerts when mentions spike — for crisis detection or viral content monitoring",
+        ],
+        "not_for": ["Small businesses with limited budgets — $199/mo minimum is significant for basic monitoring needs", "Teams needing deep social media management features — Brand24 monitors but doesn't schedule or publish"],
+        "pros": [
+            "Monitors mentions across social media, news sites, blogs, forums, podcasts, and video platforms in real time",
+            "AI-powered sentiment analysis automatically categorizes mentions as positive, negative, or neutral",
+            "Automated reporting with white-label options makes client reporting efficient for agencies",
+            "Slack integration delivers instant notifications when brand mentions spike or sentiment shifts",
+        ],
+        "cons": [
+            "Entry pricing at $199/mo is steep — puts it out of reach for most small businesses and solo operators",
+            "Historical data access is limited on lower plans, restricting long-term trend analysis",
+            "Sentiment analysis occasionally misclassifies neutral or sarcastic mentions — requires human review for accuracy",
+        ],
+        "verdict": "Brand24 is the go-to media monitoring platform for teams that take brand reputation seriously. The real-time tracking across social, news, blogs, and podcasts provides comprehensive coverage, and the AI sentiment analysis saves hours of manual review. The $199/mo entry price limits the audience to businesses and agencies where brand monitoring is a core operational need. The 14-day free trial is essential for evaluating coverage quality for your specific brand and industry.",
+        "score": 78,
+        "featured": False,
+        "date_added": "2026-03-01",
+        "roles": ["marketers"],
+    },
 ]
 
 COMPARISONS = [
@@ -801,6 +1220,58 @@ COMPARISONS = [
         "winner_slug": None,
         "winner_reason": "Choose n8n if you have technical resources and want maximum control, self-hosting, and cost predictability at scale. Choose Zapier if you prioritize ease of use, the broadest possible app ecosystem, and getting automations running in minutes rather than hours. Both now support AI-powered workflows — n8n goes deeper, Zapier goes wider.",
         "date": "2026-02-28",
+    },
+    {
+        "slug": "meetgeek-vs-otter-ai",
+        "tool_a": "meetgeek",
+        "tool_b": "otter-ai",
+        "headline": "MeetGeek vs Otter.ai",
+        "description": "The two most popular AI meeting transcription tools take different approaches: MeetGeek focuses on post-meeting insights and CRM integration, while Otter.ai prioritizes live transcription and accessibility. If you record 5–20 meetings a month, this comparison helps you pick the right one.",
+        "meta_description": "MeetGeek vs Otter.ai 2026: transcription accuracy, pricing, and which AI meeting tool wins for freelancers and small teams.",
+        "verdict_a": "MeetGeek delivers stronger post-meeting value — structured summaries, action item extraction, conversation analytics, and automatic CRM syncing to HubSpot and Salesforce. For sales teams and consultants, these features save hours of admin work every week.",
+        "verdict_b": "Otter.ai wins on accessibility and free tier generosity — 300 free monthly minutes vs MeetGeek's 5 hours, plus best-in-class live captioning during meetings. The simpler interface means zero learning curve for individuals and students.",
+        "winner_slug": "meetgeek",
+        "winner_reason": "MeetGeek wins for professionals and teams who need meetings to drive action — the conversation analytics, CRM integrations, and structured action items deliver measurably more value from each recorded meeting. Otter.ai is the better starting point for individuals on a budget or anyone who values live captioning, but most users upgrading from free outgrow it. Start with Otter.ai's free tier to test AI transcription, then evaluate MeetGeek when you need team features.",
+        "date": "2026-03-01",
+    },
+    {
+        "slug": "getresponse-vs-mailchimp",
+        "tool_a": "getresponse",
+        "tool_b": "mailchimp",
+        "headline": "GetResponse vs Mailchimp",
+        "description": "The most searched email marketing comparison of 2026. Mailchimp has the brand recognition, but GetResponse consistently delivers more features per dollar — including built-in webinars and deeper automation. This guide helps first-time email marketers and switchers make the right call.",
+        "meta_description": "GetResponse vs Mailchimp 2026: pricing, AI features, automation depth, and which email platform wins for small businesses.",
+        "verdict_a": "GetResponse includes webinars, conversion funnels, and advanced automation at every tier — features Mailchimp either lacks or charges extra for. The 30-day free trial with premium features is the most generous evaluation period in email marketing.",
+        "verdict_b": "Mailchimp offers the most intuitive email editor, the largest integration ecosystem, and the strongest brand recognition. For absolute beginners who value simplicity and template variety, the onboarding experience is unmatched.",
+        "winner_slug": "getresponse",
+        "winner_reason": "GetResponse wins on features-per-dollar at every price tier. Built-in webinars, deeper automation workflows, and a more generous free plan (500 contacts vs Mailchimp's 250) make it the better investment for growing businesses. Mailchimp remains the safer choice for complete beginners who prioritize the simplest possible editor and don't need automation depth. For anyone comparing costs carefully, GetResponse delivers more for less.",
+        "date": "2026-03-01",
+    },
+    {
+        "slug": "gamma-vs-prezi",
+        "tool_a": "gamma",
+        "tool_b": "prezi",
+        "headline": "Gamma vs Prezi",
+        "description": "AI-native presentation builder vs the original visual storytelling platform. Gamma generates polished decks from text prompts in seconds; Prezi creates memorable non-linear experiences with its zoomable canvas. The right choice depends on whether you need speed or impact.",
+        "meta_description": "Gamma vs Prezi 2026: AI presentation generation vs zoomable canvas. Which tool wins for marketers and freelancers?",
+        "verdict_a": "Gamma transforms how presentations are created — describe what you want, get a polished deck in under 60 seconds. With 70 million users and AI-native design, it's the clear choice for speed, volume, and modern presentation workflows.",
+        "verdict_b": "Prezi's zoomable canvas creates a fundamentally different presentation experience that audiences remember. Prezi Video adds genuine value for virtual meetings and sales demos. When the format needs to make an impression, Prezi delivers what slides cannot.",
+        "winner_slug": "gamma",
+        "winner_reason": "Gamma wins for the majority of users because the speed advantage is transformative — creating a professional deck in under a minute vs hours in traditional tools. The AI-native approach and growing user base (70M) signal where the category is heading. Prezi remains the better choice specifically when the presentation format itself needs to differentiate you — conference talks, creative pitches, and live demos where the zoomable canvas creates genuine impact. For everyday business presentations, Gamma is the clear winner.",
+        "date": "2026-03-01",
+    },
+    {
+        "slug": "clickup-vs-notion-ai",
+        "tool_a": "clickup",
+        "tool_b": "notion-ai",
+        "headline": "ClickUp vs Notion AI",
+        "description": "Structured project management vs flexible knowledge workspace — the two platforms that most freelancers and small teams consider when consolidating their productivity stack. This comparison cuts through the feature lists to help you pick the one that matches how you actually work.",
+        "meta_description": "ClickUp vs Notion AI 2026: project management vs knowledge workspace. Which productivity platform wins for your team?",
+        "verdict_a": "ClickUp is the most feature-rich project management platform available — Gantt charts, sprints, time tracking, dashboards, and 1,000+ integrations from $7/user/mo. ClickUp Brain and Super Agents add AI-powered automation to structured workflows. Best for teams managing complex, multi-phase projects.",
+        "verdict_b": "Notion AI excels as a flexible knowledge workspace where docs, databases, and projects coexist in a single, elegant interface. The AI Agents (20-minute autonomous tasks) and multi-model access make it the more capable AI assistant. Best for teams that value flexibility and knowledge management over rigid project structures.",
+        "winner_slug": None,
+        "winner_reason": "This is a genuine 'different tools for different teams' comparison. Choose ClickUp if your work revolves around structured project execution — task dependencies, timelines, sprints, and detailed reporting. Choose Notion AI if your work revolves around knowledge, documentation, and flexible workflows where the structure needs to adapt weekly. For project-heavy agencies and development teams, ClickUp wins. For knowledge workers, writers, and teams that need adaptive workspaces, Notion AI wins. Test both free tiers — the one that feels natural within a week is your answer.",
+        "date": "2026-03-01",
     },
 ]
 
@@ -1300,5 +1771,158 @@ ROLES = [
         "how_ai_helps": "AI handles research, outlining, and SEO optimization so writers focus on the nuanced, high-value work that justifies professional rates. The best writers in 2026 use AI to dramatically increase output while maintaining the quality, expertise, and original perspective that AI alone can't replicate.",
         "tool_slugs": ["claude-pro", "perplexity-pro", "frase", "surfer-seo", "grammarly", "koala-ai"],
         "top_pick": "claude-pro",
+    },
+    "best-ai-meeting-tools-2026": {
+        "title": "Best AI Meeting Tools in 2026 — Transcription, Notes & Insights Compared",
+        "heading": "The Best AI Meeting Tools in 2026 — Which One Is Actually Worth It?",
+        "description": "AI meeting tools have moved well beyond basic transcription. This guide covers what separates the good from the mediocre, and exactly which tool suits your situation.",
+        "meta_description": "Best AI meeting tools 2026: MeetGeek vs Otter.ai and more. Verified pricing, honest verdicts, and clear recommendations by use case.",
+        "category": "Tool Comparisons",
+        "date": "2026-03-01",
+        "content": """
+<p>The average knowledge worker spends over 15 hours per week in meetings — and most of that time produces nothing actionable unless someone takes good notes. AI meeting tools in 2026 solve this problem by recording, transcribing, summarizing, and extracting action items automatically. The best ones go further, providing conversation analytics and CRM integrations that turn every meeting into a documented workflow.</p>
+
+<p>This guide compares the two leading options — MeetGeek and Otter.ai — along with the key criteria you should evaluate before subscribing to either.</p>
+
+<h2>Why AI Meeting Tools Matter More Than Ever</h2>
+
+<p>The shift to hybrid and remote work made meeting recordings standard practice. But recording without transcription is just creating unwatchable archives. AI meeting tools transform recordings into searchable, structured knowledge — summaries you can scan in 30 seconds, action items assigned to specific people, and keyword-searchable transcripts you can reference months later.</p>
+
+<p>The practical time saving is significant. Teams using AI meeting assistants report saving 4–6 hours per week on note-taking and follow-up tasks. For consultants billing by the hour, that translates directly into recovered revenue. For managers, it means meetings actually produce documented outcomes instead of forgotten conversations.</p>
+
+<h2>What to Look for When Choosing an AI Meeting Tool</h2>
+
+<p><strong>Transcription accuracy</strong> is the foundation — if the transcript is unreliable, everything built on it (summaries, action items, search) breaks down. Test accuracy with your actual meeting conditions: accents, multiple speakers, background noise, and technical terminology all affect quality.</p>
+
+<p><strong>Platform integrations</strong> determine whether the tool fits your workflow or disrupts it. Both MeetGeek and Otter.ai support Zoom, Google Meet, and Microsoft Teams. The difference lies in what happens after the meeting — CRM syncing, project management integration, and Slack notifications vary significantly between tools.</p>
+
+<p><strong>Post-meeting intelligence</strong> separates basic transcription tools from genuine meeting assistants. Features like conversation analytics (talk-time distribution, engagement metrics), structured action items, and key decision extraction deliver value that raw transcripts cannot.</p>
+
+<p><strong>Pricing structure</strong> determines whether the tool scales with your usage or punishes it. Pay attention to whether limits apply to total minutes, number of meetings, or recording hours — and whether those limits fit your typical monthly meeting volume.</p>
+
+<h2>MeetGeek — Best for Teams and Sales Professionals</h2>
+
+<p>MeetGeek ($15.99/mo Pro) positions itself as the meeting tool for teams that need meetings to drive action. The standout features are conversation analytics — showing who talked most, engagement levels, and meeting effectiveness scores — and automatic CRM integration that logs meeting notes directly into HubSpot, Salesforce, and Pipedrive records.</p>
+
+<p><strong>Strengths:</strong> Post-meeting summaries are the most structured in the category, with clearly separated sections for key decisions, action items, and discussion points. The conversation analytics provide data that helps managers improve meeting efficiency over time. CRM syncing eliminates the most tedious part of sales meeting follow-up — manually logging what was discussed.</p>
+
+<p><strong>Weaknesses:</strong> The recording bot joins meetings as a visible participant, which can feel intrusive for external calls with clients who haven't encountered AI meeting tools before. The free plan's 5-hour monthly limit is sufficient for evaluation but most users need to upgrade within the first week. Customer support response times have been criticized in recent reviews.</p>
+
+<p><strong>Pricing:</strong> Free tier with 5 hours/month, Pro at $15.99/mo per user (unlimited transcription), and Business at $29.99/mo with advanced analytics and custom integrations.</p>
+
+<h2>Otter.ai — Best for Individuals and Accessibility</h2>
+
+<p>Otter.ai ($16.99/mo Pro) takes a different approach — prioritizing live transcription during meetings and making the technology as accessible as possible. The OtterPilot feature auto-joins meetings and generates notes, but the real differentiator is real-time captioning displayed during meetings, which serves both as a note-taking aid and an accessibility feature.</p>
+
+<p><strong>Strengths:</strong> The most generous free tier in the category — 300 monthly transcription minutes at no cost. Live captioning during meetings is best-in-class and genuinely useful for participants with hearing difficulties or non-native speakers following along in English. The interface is the simplest and most intuitive of any AI meeting tool, with virtually zero setup required.</p>
+
+<p><strong>Weaknesses:</strong> Transcription accuracy drops noticeably with accented speech, overlapping voices, and noisy environments — a limitation that multiple review platforms highlight consistently. Customer support has drawn significant criticism on Trustpilot, with billing issues and slow response times being common complaints. The free plan caps individual meetings at 30 minutes, which limits usefulness for most business contexts.</p>
+
+<p><strong>Pricing:</strong> Free tier with 300 minutes/month (30-minute meeting cap), Pro at $16.99/mo (90-minute meetings, 1,200 minutes), and Business at $30/mo with advanced admin and analytics features.</p>
+
+<h2>Direct Comparison: MeetGeek vs Otter.ai</h2>
+
+<p><strong>Transcription accuracy:</strong> Both perform well in clear audio conditions. MeetGeek supports 100+ languages and holds up slightly better with mixed-accent meetings. Otter.ai's accuracy degrades more noticeably with background noise and overlapping speakers.</p>
+
+<p><strong>Post-meeting intelligence:</strong> MeetGeek leads significantly. Structured summaries with separated decisions, action items, and discussion points are more useful than Otter.ai's more general meeting notes. Conversation analytics are exclusive to MeetGeek.</p>
+
+<p><strong>CRM integration:</strong> MeetGeek offers native integrations with HubSpot, Salesforce, and Pipedrive. Otter.ai connects to Salesforce and HubSpot but with less granular data syncing.</p>
+
+<p><strong>Free tier:</strong> Otter.ai wins with 300 minutes/month vs MeetGeek's 5 hours. For pure evaluation, Otter.ai gives you more room to test before paying.</p>
+
+<p><strong>Live experience:</strong> Otter.ai wins with real-time captioning displayed during the meeting. MeetGeek's value is primarily delivered after the meeting ends.</p>
+
+<h2>Who Should Choose Which</h2>
+
+<p><strong>Choose MeetGeek if</strong> you're on a sales team that needs CRM integration, you manage a team and want conversation analytics to improve meeting efficiency, or you're a consultant who needs professional post-meeting deliverables for clients. The team features and structured outputs justify the Pro pricing for anyone who relies on meetings for their work.</p>
+
+<p><strong>Choose Otter.ai if</strong> you're an individual professional who needs simple, reliable transcription without complex setup, a student or researcher transcribing lectures and interviews, or anyone who values live captioning during meetings for accessibility. The generous free tier makes it the natural starting point for exploring AI meeting tools.</p>
+
+<h2>Bottom Line</h2>
+
+<p>For teams and sales professionals, MeetGeek delivers more actionable value from every meeting — the conversation analytics and CRM integrations transform meetings from time costs into documented workflows. For individuals who need straightforward transcription with the lowest barrier to entry, Otter.ai's free tier and intuitive interface are hard to beat. Start with Otter.ai's free plan to experience AI transcription, then evaluate MeetGeek's Pro tier when you need team features and deeper post-meeting intelligence.</p>
+""",
+        "related_tools": ["meetgeek", "otter-ai"],
+        "related_role": "freelancers",
+    },
+    "email-marketing-ai-tools-2026": {
+        "title": "Best AI Email Marketing Tools in 2026 — GetResponse vs Mailchimp & Beyond",
+        "heading": "AI Email Marketing in 2026 — GetResponse, Mailchimp, and Which One to Choose",
+        "description": "Email marketing hasn't gone away — AI has made it significantly more powerful. This guide covers the two leading platforms for small businesses and which one delivers more for your money.",
+        "meta_description": "GetResponse vs Mailchimp 2026: AI features, pricing, and which email platform wins for small businesses and freelancers. Verified and updated.",
+        "category": "Buyer's Guides",
+        "date": "2026-03-01",
+        "content": """
+<p>Email marketing in 2026 generates an average return of $36–42 for every $1 spent — a figure that's held steady even as social media algorithms, AI search, and ad costs have shifted dramatically. The difference now is that AI has transformed email from a manual, campaign-by-campaign process into something far more automated and personalized.</p>
+
+<p>This guide compares the two platforms that small businesses and freelancers search most: GetResponse and Mailchimp. Both have added AI capabilities, but they serve different users at different price points — and the right choice depends on what you actually need.</p>
+
+<h2>What AI Actually Adds to Email Marketing</h2>
+
+<p>AI in email marketing isn't just a buzzword — it addresses specific pain points that marketers face daily. Subject line optimization uses historical open rate data to predict which phrasings will perform best. Send-time optimization analyzes subscriber behavior to deliver emails when each individual is most likely to engage. Content generation helps create email copy, product descriptions, and call-to-action variations without starting from scratch every time.</p>
+
+<p>The more advanced AI features — predictive segmentation, customer lifetime value scoring, and automated campaign flows — require enough subscriber data to be meaningful. For lists under 1,000 contacts, basic automation handles most needs. For lists above 2,500, AI-driven features start delivering measurable improvements in open rates and conversions.</p>
+
+<h2>What to Evaluate Before Choosing a Platform</h2>
+
+<p><strong>Deliverability</strong> matters more than any feature. An email that lands in spam is worthless regardless of how well it was written. Both GetResponse and Mailchimp maintain strong deliverability reputations, but third-party tests show slight variations by industry and sending volume. Request a deliverability report during your trial period.</p>
+
+<p><strong>Automation depth</strong> determines how much of your email workflow runs without manual intervention. Basic automation (welcome sequences, abandoned cart emails) is standard on both platforms. Advanced automation (behavioral triggers, conditional branching, lead scoring) varies significantly by plan tier.</p>
+
+<p><strong>Total cost at your list size</strong> is where the real comparison happens. Starting prices are marketing — what matters is the price at 1,000, 5,000, and 25,000 contacts, because that's where most businesses actually operate.</p>
+
+<h2>GetResponse — The Value-Packed Challenger</h2>
+
+<p>GetResponse ($19/mo starting) has built its 2026 positioning around being the all-in-one alternative that includes features competitors charge extra for. The standout differentiators are built-in webinar hosting (no competitor at this price includes it), conversion funnels, and a visual automation builder that rivals platforms costing twice as much.</p>
+
+<p><strong>AI capabilities:</strong> The AI email generator creates complete email drafts from brief descriptions, and the subject line optimizer predicts open rates before you send. These features require the Marketer plan ($59/mo) for full access — the Starter plan limits AI to 3 uses, which is more of a demo than a feature.</p>
+
+<p><strong>Where it excels:</strong> The visual automation workflow builder is where GetResponse punches above its weight. Creating complex multi-step sequences with conditional logic, timing delays, and behavioral triggers is intuitive and powerful. For businesses running automated nurture sequences, abandoned cart flows, and re-engagement campaigns, the automation depth matches ActiveCampaign at a lower price point.</p>
+
+<p><strong>Where it falls short:</strong> The template library, while adequate, doesn't match Mailchimp's variety or design quality. The jump from Starter ($19/mo) to Marketer ($59/mo) is steep — and most meaningful AI features live behind that paywall.</p>
+
+<p><strong>Pricing at scale:</strong> 1,000 contacts: $19/mo (Starter). 5,000 contacts: $54/mo (Starter). 25,000 contacts: $174/mo (Starter). Free plan: 500 contacts, unlimited emails.</p>
+
+<h2>Mailchimp — The Trusted Default</h2>
+
+<p>Mailchimp ($13/mo starting) remains the most recognized email marketing brand in the world. The Intuit acquisition brought financial tool integrations and Intuit Assist AI, while the core strengths — an intuitive drag-and-drop editor, massive template library, and the largest integration ecosystem in email marketing — remain intact.</p>
+
+<p><strong>AI capabilities:</strong> Intuit Assist generates subject lines, content suggestions, and send-time optimization. Predictive segmentation (Standard plan and above) uses subscriber behavior data to create smart audience segments automatically. The AI features are well-integrated into the existing workflow rather than bolted on.</p>
+
+<p><strong>Where it excels:</strong> The email editor and template library are the best in the category for beginners. Creating professional-looking emails requires zero design experience. The integration ecosystem connects to virtually every business tool — CRMs, ecommerce platforms, accounting software, and more. For businesses already using multiple SaaS tools, Mailchimp likely has native integrations with all of them.</p>
+
+<p><strong>Where it falls short:</strong> The free plan has been reduced to 250 contacts and 500 sends — barely functional for any real marketing use. Costs escalate aggressively as contact lists grow, and Mailchimp counts unsubscribed contacts toward billing limits. Advanced automation requires the Standard plan ($20/mo starting), and even then the automation depth doesn't match GetResponse's Marketer tier.</p>
+
+<p><strong>Pricing at scale:</strong> 1,000 contacts: $26.50/mo (Essentials). 5,000 contacts: $75/mo (Essentials). 25,000 contacts: $270/mo (Essentials). Free plan: 250 contacts, 500 sends.</p>
+
+<h2>Pricing Comparison</h2>
+
+<table class="comp-table">
+<tbody>
+<tr><td>Contacts</td><td><strong>GetResponse</strong></td><td><strong>Mailchimp</strong></td></tr>
+<tr><td>Free tier</td><td>500 contacts, unlimited emails</td><td>250 contacts, 500 sends</td></tr>
+<tr><td>1,000 contacts</td><td>$19/mo (Starter)</td><td>$26.50/mo (Essentials)</td></tr>
+<tr><td>5,000 contacts</td><td>$54/mo (Starter)</td><td>$75/mo (Essentials)</td></tr>
+<tr><td>25,000 contacts</td><td>$174/mo (Starter)</td><td>$270/mo (Essentials)</td></tr>
+<tr><td>Webinars</td><td><span class="tick">✓</span> Included</td><td><span class="cross">✗</span> Not available</td></tr>
+<tr><td>Advanced automation</td><td>$59/mo (Marketer)</td><td>$20/mo (Standard)</td></tr>
+<tr><td>AI features (full)</td><td>$59/mo (Marketer)</td><td>$20/mo (Standard)</td></tr>
+</tbody>
+</table>
+
+<h2>Who Should Choose GetResponse</h2>
+
+<p>GetResponse is the better choice for small businesses that need more than basic email sends — webinars, landing pages, conversion funnels, and advanced automation in one platform. If you're comparing costs carefully, GetResponse delivers more features at every price point. The 30-day free trial with premium features is the most generous evaluation period available, giving you real time to test automation workflows with your actual subscriber data.</p>
+
+<h2>Who Should Choose Mailchimp</h2>
+
+<p>Mailchimp is the better choice for absolute beginners who value the simplest possible onboarding, businesses already deeply integrated with other tools in the Mailchimp ecosystem, and ecommerce stores where Mailchimp's native Shopify and WooCommerce integrations streamline product-based email campaigns. The template library and editor experience remain the best in the category for non-designers.</p>
+
+<h2>Bottom Line</h2>
+
+<p>GetResponse delivers more value for growing businesses at every price tier — the built-in webinars, stronger automation, and more generous free plan make it the better investment for most small businesses choosing an email platform in 2026. Mailchimp remains the easier starting point for beginners and the safer choice for businesses already embedded in its ecosystem. Test both: use GetResponse's 30-day trial for the full feature set, and Mailchimp's 14-day Standard trial for the AI and automation features. Let your actual workflow — not brand recognition — drive the decision.</p>
+""",
+        "related_tools": ["getresponse", "mailchimp"],
+        "related_role": "marketers",
     },
 ]
