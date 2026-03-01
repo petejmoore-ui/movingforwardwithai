@@ -1,8 +1,12 @@
-# MOVING FORWARD WITH AI — app.py v3.3
-# Changes v3.3:
-#   1. Fix 1 — Theme toggle: removed reflow hack (html.style.display none/block)
-#   2. Fix 2 — Mobile menu: changed from display:none/flex to opacity/visibility/pointer-events
-#   3. Fix 3 — Desktop dropdowns: replaced containment check with e.target.closest('.nav-drop')
+
+# MOVING FORWARD WITH AI — app.py v3.2
+# Changes v3.2:
+#   1. Theme toggle works on BOTH mobile and desktop (single shared button logic)
+#   2. Mobile hamburger menu fixed — proper open/close, body scroll lock
+#   3. Desktop dropdowns (Compare + Who it's for) fixed
+#   4. Email section simplified to newsletter signup only
+#   5. Search overlay fixed — fetches /api/tools and renders results
+#   6. Star ratings REMOVED — fabricated data replaced with MFWAI score only
 # ============================================================================
 
 import os, json, re, datetime
@@ -401,7 +405,7 @@ body::after {
 .nav-icon-btn:hover { background:var(--cyan-d); border-color:var(--bdr2) }
 .nav-icon-btn svg { width:15px; height:15px; stroke:var(--ink3); fill:none; stroke-width:1.8 }
 
-/* Mobile theme toggle */
+/* Mobile theme toggle — shown on mobile alongside hamburger */
 #mob-theme-btn {
   display:none;
   width:36px; height:36px; border-radius:var(--r2);
@@ -428,20 +432,18 @@ body::after {
 #hbg.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
 #hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg) }
 
-/* ── FIX 2: Mobile Menu — opacity/visibility instead of display:none/flex ── */
+/* Mobile Menu */
 #mob {
-  position:fixed; inset:0;
+  display:none; position:fixed; inset:0;
   background:var(--bg); z-index:190; overflow-y:auto;
   padding:72px 24px 48px;
-  display:flex; flex-direction:column; gap:0;
-  opacity:0; visibility:hidden; pointer-events:none;
-  transition:opacity .28s var(--ease), visibility .28s var(--ease);
+  flex-direction:column; gap:0;
 }
-#mob.open {
-  opacity:1; visibility:visible; pointer-events:auto;
+#mob.open { display:flex; animation:mobIn .28s var(--ease); }
+@keyframes mobIn {
+  from { opacity:0; transform:translateY(-12px) }
+  to   { opacity:1; transform:translateY(0) }
 }
-/* ── end Fix 2 ── */
-
 .mob-section { padding:24px 0; border-bottom:1px solid var(--div) }
 .mob-section:first-child { padding-top:0 }
 .mob-primary-links { display:flex; flex-direction:column; gap:4px }
@@ -702,7 +704,7 @@ body::after {
 .blog-link { font-family:var(--font-mono); font-size:.66rem; color:var(--amber); display:inline-flex; align-items:center; gap:5px; transition:gap .2s; letter-spacing:.04em; text-transform:uppercase; }
 .blog-card:hover .blog-link { gap:9px }
 
-/* Newsletter Section */
+/* ── Newsletter / Email Section (simplified) ─────── */
 .email-sec {
   position:relative; z-index:1;
   background:var(--surf);
@@ -1007,9 +1009,9 @@ BASE = """<!DOCTYPE html>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
+
   gtag('config', 'G-TBH27VXH8M');
 </script>
-</head>
 <body>
 
 <!-- Ticker -->
@@ -1095,7 +1097,7 @@ BASE = """<!DOCTYPE html>
         </svg>
       </button>
 
-      <!-- Mobile theme toggle -->
+      <!-- Mobile theme toggle (shown only on mobile, next to hamburger) -->
       <button id="mob-theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="mob-ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
@@ -1218,235 +1220,321 @@ BASE = """<!DOCTYPE html>
 
 <script>
 /* ══════════════════════════════════════════════════════
-   COMPLETE SCRIPT REPLACEMENT — v3.5
-   Replace the entire <script>...</script> block at the
-   bottom of your page with this content.
+   SHARED THEME LOGIC
+   Works for BOTH desktop (#theme-btn) and mobile (#mob-theme-btn)
 ══════════════════════════════════════════════════════ */
-
-/* ── THEME TOGGLE ─────────────────────────────────── */
 (function () {
   var html = document.documentElement;
 
-  function syncIcons(light) {
-    [['ico-sun','ico-moon'],['mob-ico-sun','mob-ico-moon']].forEach(function(p){
-      var s = document.getElementById(p[0]);
-      var m = document.getElementById(p[1]);
-      if (s) s.style.display = light ? 'none'  : 'block';
-      if (m) m.style.display = light ? 'block' : 'none';
+  function syncAllIcons(isLight) {
+    var pairs = [
+      ['ico-sun',     'ico-moon'],
+      ['mob-ico-sun', 'mob-ico-moon']
+    ];
+    pairs.forEach(function(p) {
+      var sun  = document.getElementById(p[0]);
+      var moon = document.getElementById(p[1]);
+      if (sun)  sun.style.display  = isLight ? 'none'  : 'block';
+      if (moon) moon.style.display = isLight ? 'block' : 'none';
+    });
+    var label = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+    ['theme-btn','mob-theme-btn'].forEach(function(id){
+      var b = document.getElementById(id);
+      if (b) b.setAttribute('aria-label', label);
     });
   }
 
-  function applyTheme(light) {
-    html.classList.toggle('light', light);
-    try { localStorage.setItem('mfwai-theme', light ? 'light' : 'dark'); } catch(e){}
-    syncIcons(light);
+  function applyTheme(isLight) {
+    if (isLight) {
+      html.classList.add('light');
+    } else {
+      html.classList.remove('light');
+    }
+    try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
+    syncAllIcons(isLight);
+    /* Force reflow for Safari */
+    html.style.display = 'none';
+    void html.offsetHeight;
+    html.style.display = '';
   }
 
-  syncIcons(html.classList.contains('light'));
+  /* Sync icons on load */
+  syncAllIcons(html.classList.contains('light'));
 
-  ['theme-btn','mob-theme-btn'].forEach(function(id){
-    var b = document.getElementById(id);
-    if (b) b.addEventListener('click', function(){ applyTheme(!html.classList.contains('light')); });
+  /* Wire up both buttons */
+  ['theme-btn', 'mob-theme-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', function() {
+        applyTheme(!html.classList.contains('light'));
+      });
+    }
   });
 })();
 
-/* ── STICKY NAV ───────────────────────────────────── */
-window.addEventListener('scroll', function(){
-  var n = document.getElementById('sitenav');
-  if (n) n.classList.toggle('scrolled', window.scrollY > 24);
+/* ══════════════════════════════════════════════════════
+   STICKY NAV SHADOW
+══════════════════════════════════════════════════════ */
+window.addEventListener('scroll', function () {
+  var nav = document.getElementById('sitenav');
+  if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
 }, { passive: true });
 
-/* ── MOBILE MENU ──────────────────────────────────── */
-(function(){
+/* ══════════════════════════════════════════════════════
+   HAMBURGER MENU
+══════════════════════════════════════════════════════ */
+(function () {
   var btn  = document.getElementById('hbg');
   var menu = document.getElementById('mob');
   if (!btn || !menu) return;
 
-  /* Hide menu properly at all sizes until opened */
-  /* The CSS already does opacity:0/visibility:hidden.
-     We also force display:none via JS until opened so it
-     cannot intercept any clicks at desktop size. */
-  menu.style.display = 'none';
-
-  function open() {
-    menu.style.display = 'flex';
-    /* Force reflow so the transition fires */
-    void menu.offsetHeight;
+  function openMenu() {
     menu.classList.add('open');
     btn.classList.add('open');
-    btn.setAttribute('aria-expanded','true');
+    btn.setAttribute('aria-expanded', 'true');
+    btn.setAttribute('aria-label', 'Close navigation menu');
     document.body.style.overflow = 'hidden';
   }
 
-  function close() {
+  function closeMenu() {
     menu.classList.remove('open');
     btn.classList.remove('open');
-    btn.setAttribute('aria-expanded','false');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', 'Open navigation menu');
     document.body.style.overflow = '';
-    /* Wait for transition then hide */
-    setTimeout(function(){ if (!menu.classList.contains('open')) menu.style.display = 'none'; }, 300);
   }
 
-  btn.addEventListener('click', function(e){
+  btn.addEventListener('click', function (e) {
     e.stopPropagation();
-    menu.classList.contains('open') ? close() : open();
+    if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); }
   });
 
-  menu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', close); });
+  /* Close when any link inside the mobile menu is tapped */
+  menu.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () { closeMenu(); });
+  });
 
-  document.addEventListener('keydown', function(e){ if (e.key==='Escape') close(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && menu.classList.contains('open')) {
+      closeMenu(); btn.focus();
+    }
+  });
 
-  document.addEventListener('click', function(e){
-    if (menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) close();
+  document.addEventListener('click', function (e) {
+    if (menu.classList.contains('open') &&
+        !menu.contains(e.target) &&
+        e.target !== btn &&
+        !btn.contains(e.target)) {
+      closeMenu();
+    }
   });
 })();
 
-/* ── DESKTOP DROPDOWNS ────────────────────────────── */
-(function(){
-  var drops = ['drop-compare','drop-roles'].map(function(id){ return document.getElementById(id); }).filter(Boolean);
+/* ══════════════════════════════════════════════════════
+   DESKTOP DROPDOWN MENUS
+   Uses explicit IDs — no fragile querySelectorAll
+══════════════════════════════════════════════════════ */
+(function () {
+  var dropIds = ['drop-compare', 'drop-roles'];
 
-  function closeAll(){
-    drops.forEach(function(d){
-      d.classList.remove('open');
-      var b = d.querySelector('.nav-drop-btn');
-      if (b) b.setAttribute('aria-expanded','false');
+  function closeAll() {
+    dropIds.forEach(function(id) {
+      var drop = document.getElementById(id);
+      if (!drop) return;
+      drop.classList.remove('open');
+      var btn = drop.querySelector('.nav-drop-btn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
     });
   }
 
-  var skipNext = false;
-
-  drops.forEach(function(drop){
+  dropIds.forEach(function(id) {
+    var drop = document.getElementById(id);
+    if (!drop) return;
     var btn = drop.querySelector('.nav-drop-btn');
     if (!btn) return;
-    btn.addEventListener('click', function(){
-      var wasOpen = drop.classList.contains('open');
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = drop.classList.contains('open');
       closeAll();
-      if (!wasOpen) {
+      if (!isOpen) {
         drop.classList.add('open');
-        btn.setAttribute('aria-expanded','true');
-        skipNext = true;          /* tell document listener to ignore this event's bubble */
-        setTimeout(function(){ skipNext = false; }, 0);
+        btn.setAttribute('aria-expanded', 'true');
       }
     });
   });
 
-  document.addEventListener('click', function(e){
-    if (skipNext) return;
-    /* Walk up from target — safe for SVG children */
-    var el = e.target;
-    while (el && el !== document.body) {
-      if (el.classList && el.classList.contains('nav-drop')) return;
-      el = el.parentElement;
-    }
-    closeAll();
+  document.addEventListener('click', function(e) {
+    /* Close if click is outside any dropdown */
+    var insideDrop = dropIds.some(function(id) {
+      var drop = document.getElementById(id);
+      return drop && drop.contains(e.target);
+    });
+    if (!insideDrop) closeAll();
   });
 
-  document.addEventListener('keydown', function(e){ if (e.key==='Escape') closeAll(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAll();
+  });
 })();
 
-/* ── SCROLL REVEAL ────────────────────────────────── */
-(function(){
+/* ══════════════════════════════════════════════════════
+   SCROLL REVEAL
+══════════════════════════════════════════════════════ */
+(function () {
   if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
   var els = document.querySelectorAll('.rv');
   if (!els.length) return;
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if (entry.isIntersecting){ entry.target.classList.add('visible'); io.unobserve(entry.target); }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        io.unobserve(entry.target);
+      }
     });
-  }, { threshold:0.08, rootMargin:'0px 0px -30px 0px' });
-  els.forEach(function(el, i){ el.style.transitionDelay = (i%4*0.07)+'s'; io.observe(el); });
-})();
-
-/* ── SEARCH OVERLAY ───────────────────────────────── */
-(function(){
-  var allTools=null, loading=false;
-  var sov=document.getElementById('sov');
-  var sovCount=document.getElementById('sov-count');
-  var sovRes=document.getElementById('sov-results');
-  var inp=document.getElementById('search-input');
-  var timer;
-  if (!sov||!inp) return;
-
-  function loadTools(cb){
-    if (allTools!==null){cb();return;}
-    if (loading) return;
-    loading=true;
-    fetch('/api/tools').then(function(r){return r.json();}).then(function(d){allTools=d.tools||[];loading=false;cb();}).catch(function(){allTools=[];loading=false;cb();});
-  }
-
-  function closeSov(){ sov.classList.remove('open'); document.body.style.overflow=''; }
-
-  function miniCard(t){
-    var hi=t.score>=88;
-    var bg=hi?'var(--green-d)':'var(--cyan-d)';
-    var bd=hi?'var(--green-g)':'var(--cyan-g)';
-    var co=hi?'var(--green)':'var(--cyan)';
-    var d=document.createElement('div');
-    d.className='tool-card';
-    d.style.cursor='pointer';
-    d.onclick=function(){location.href='/tool/'+t.slug;};
-    d.innerHTML='<div class="tc-accent-bar"></div>'
-      +'<div class="tc-body"><div class="tc-meta">'
-      +'<div class="tc-cat">'+t.category+'</div>'
-      +'<div class="tc-score" style="background:'+bg+';border:1px solid '+bd+';color:'+co+'">'+t.score+'</div>'
-      +'</div><a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a>'
-      +'<p class="tc-tagline">'+(t.tagline||'')+'</p>'
-      +'</div><div class="tc-footer"><div class="tc-pricing">'
-      +'<span class="tc-price">'+(t.starting_price||'')+'</span>'
-      +'</div></div>';
-    return d;
-  }
-
-  function runSearch(q){
-  if (!q||q.length<2){closeSov();return;}
-  loadTools(function(){
-    var ql=q.toLowerCase();
-    var hits=allTools.filter(function(t){
-      return (t.name||'').toLowerCase().includes(ql)||
-             (t.category||'').toLowerCase().includes(ql)||
-             (t.tagline||'').toLowerCase().includes(ql)||
-             (t.tags||[]).join(' ').toLowerCase().includes(ql);
-    });
-
-    sovCount.textContent='// '+hits.length+' result'+(hits.length!==1?'s':'')+' for "'+q+'"';
-    sovRes.innerHTML='';
-
-    if(hits.length){
-      hits.forEach(function(t){ sovRes.appendChild(miniCard(t)); });
-    } else {
-      sovRes.innerHTML='<div class="sov-empty">// No tools found for "'+q+'"</div>';
-    }
-  }); 
-}
-
-  inp.addEventListener('input',function(e){ clearTimeout(timer); var q=e.target.value.trim(); timer=setTimeout(function(){runSearch(q);},160); });
-  inp.addEventListener('keydown',function(e){ if(e.key==='Escape'){closeSov();inp.value='';} });
-  document.getElementById('sov-close').addEventListener('click',closeSov);
-  sov.addEventListener('click',function(e){if(e.target===sov)closeSov();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSov();});
-})();
-
-/* ── COOKIE BANNER ────────────────────────────────── */
-(function(){
-  var KEY='mfwai_consent_v2', bar=document.getElementById('ckbar');
-  try{ if(!localStorage.getItem(KEY)) setTimeout(function(){bar.classList.add('show');},1800); }catch(e){bar.classList.add('show');}
-  function dismiss(v){ try{localStorage.setItem(KEY,v);}catch(e){} bar.classList.remove('show'); }
-  document.getElementById('ck-ok').addEventListener('click',function(){dismiss('all');});
-  document.getElementById('ck-ess').addEventListener('click',function(){dismiss('ess');});
-})();
-
-/* ── EMAIL FORM ───────────────────────────────────── */
-(function(){
-  var ef=document.getElementById('email-form');
-  if (!ef) return;
-  ef.addEventListener('submit',function(e){
-    e.preventDefault();
-    var btn=ef.querySelector('button[type="submit"]'), em=ef.querySelector('input[type="email"]');
-    if (!em||!em.value) return;
-    btn.textContent='Subscribed ✓'; btn.style.background='var(--green)'; btn.disabled=true; em.disabled=true;
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+  els.forEach(function (el, i) {
+    el.style.transitionDelay = (i % 4 * 0.07) + 's';
+    io.observe(el);
   });
 })();
+
+/* ══════════════════════════════════════════════════════
+   SEARCH OVERLAY
+   Fetches /api/tools on first keystroke (lazy load)
+══════════════════════════════════════════════════════ */
+(function() {
+  var allTools   = null;   /* null = not yet loaded */
+  var loading    = false;
+  var sov        = document.getElementById('sov');
+  var sovCount   = document.getElementById('sov-count');
+  var sovRes     = document.getElementById('sov-results');
+  var searchInput = document.getElementById('search-input');
+  var searchTimer;
+
+  if (!sov || !searchInput) return;
+
+  function loadTools(cb) {
+    if (allTools !== null) { cb(); return; }
+    if (loading) return;
+    loading = true;
+    fetch('/api/tools')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        allTools = d.tools || [];
+        loading = false;
+        cb();
+      })
+      .catch(function(){
+        allTools = [];
+        loading = false;
+        cb();
+      });
+  }
+
+  function closeSov() {
+    sov.classList.remove('open');
+    document.body.style.overflow = '';
+    if (searchInput) searchInput.setAttribute('aria-expanded', 'false');
+  }
+
+  function miniCard(t) {
+    var sc   = t.score;
+    var isHi = sc >= 88;
+    var bg   = isHi ? 'var(--green-d)' : 'var(--cyan-d)';
+    var bdr  = isHi ? 'var(--green-g)' : 'var(--cyan-g)';
+    var col  = isHi ? 'var(--green)'   : 'var(--cyan)';
+    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/' + t.slug + '\'">'
+      + '<div class="tc-accent-bar"></div>'
+      + '<div class="tc-body">'
+      + '<div class="tc-meta">'
+      + '<div class="tc-cat">' + (t.category||'') + '</div>'
+      + '<div class="tc-score" style="background:' + bg + ';border:1px solid ' + bdr + ';color:' + col + '">' + sc + '</div>'
+      + '</div>'
+      + '<a href="/tool/' + t.slug + '" class="tc-name">' + t.name + '</a>'
+      + '<p class="tc-tagline">' + (t.tagline||'') + '</p>'
+      + '</div>'
+      + '<div class="tc-footer">'
+      + '<div class="tc-pricing"><span class="tc-price">' + (t.starting_price||'') + '</span></div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function runSearch(q) {
+    if (!q || q.length < 2) { closeSov(); return; }
+    loadTools(function() {
+      var ql   = q.toLowerCase();
+      var hits = allTools.filter(function(t) {
+        return (t.name     || '').toLowerCase().includes(ql)
+            || (t.category || '').toLowerCase().includes(ql)
+            || (t.tagline  || '').toLowerCase().includes(ql)
+            || (t.tags     || []).join(' ').toLowerCase().includes(ql);
+      });
+      sovCount.textContent = '// ' + hits.length + ' result' + (hits.length !== 1 ? 's' : '') + ' for "' + q + '"';
+      sovRes.innerHTML = hits.length
+        ? hits.map(miniCard).join('')
+        : '<div class="sov-empty">// No tools found for "' + q + '"</div>';
+      sov.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      searchInput.setAttribute('aria-expanded', 'true');
+    });
+  }
+
+  searchInput.addEventListener('input', function(e) {
+    clearTimeout(searchTimer);
+    var q = e.target.value.trim();
+    searchTimer = setTimeout(function() { runSearch(q); }, 160);
+  });
+
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeSov(); searchInput.value = ''; }
+  });
+
+  document.getElementById('sov-close').addEventListener('click', closeSov);
+
+  sov.addEventListener('click', function(e) { if (e.target === sov) closeSov(); });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSov();
+  });
+})();
+
+/* ══════════════════════════════════════════════════════
+   COOKIE BANNER
+══════════════════════════════════════════════════════ */
+(function () {
+  var KEY = 'mfwai_consent_v2';
+  var bar = document.getElementById('ckbar');
+  try {
+    if (!localStorage.getItem(KEY)) {
+      setTimeout(function () { bar.classList.add('show'); }, 1800);
+    }
+  } catch (e) { bar.classList.add('show'); }
+  function dismiss(v) {
+    try { localStorage.setItem(KEY, v); } catch (e) {}
+    bar.classList.remove('show');
+  }
+  document.getElementById('ck-ok').addEventListener('click',  function () { dismiss('all'); });
+  document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
+})();
+
+/* ══════════════════════════════════════════════════════
+   EMAIL FORM
+══════════════════════════════════════════════════════ */
+var ef = document.getElementById('email-form');
+if (ef) {
+  ef.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = ef.querySelector('button[type="submit"]');
+    var em  = ef.querySelector('input[type="email"]');
+    if (!em || !em.value) return;
+    btn.textContent = 'Subscribed ✓';
+    btn.style.background = 'var(--green)';
+    btn.disabled = true;
+    em.disabled  = true;
+  });
+}
 </script>
 
 </body>
@@ -1489,56 +1577,45 @@ def tool_card(t, delay=0):
     sbdr = 'var(--green-g)' if sc>=88 else 'var(--cyan-g)'
     scol = 'var(--green)'   if sc>=88 else 'var(--cyan)'
     badges = []
-    if t.get('free_tier'):
-        badges.append('<span class="badge b-free">Free tier</span>')
-    if t.get('free_trial'):
-        badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
+    if t.get('free_tier'):  badges.append('<span class="badge b-free">Free tier</span>')
+    if t.get('free_trial'): badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
     if not t.get('free_tier') and not t.get('free_trial'):
         badges.append('<span class="badge b-paid">Paid only</span>')
-    if t.get('featured'):
-        badges.append('<span class="badge b-top">Featured</span>')
-
-    # Assign strings to variables to avoid nested quotes issues
-    name     = t["name"]
-    category = t["category"]
-    slug     = t["slug"]
-    tagline  = t.get("tagline","")
-    price    = t.get("starting_price","")
-    model    = t.get("pricing_model","")
-    aff_url  = t.get("affiliate_url","#")
-
-    return f'''
-<article class="tool-card rv" aria-label="{name} — {category} tool">
+    if t.get('featured'): badges.append('<span class="badge b-top">Featured</span>')
+    # NOTE: Star ratings removed — data was not from a verified source.
+    # MFWAI score (/100) is the only rating shown.
+    return f"""<article class="tool-card rv" aria-label="{t['name']} — {t['category']} tool">
   <div class="tc-accent-bar" aria-hidden="true"></div>
   <div class="tc-body">
     <div class="tc-meta">
-      <div class="tc-cat" aria-label="Category: {category}">{category}</div>
+      <div class="tc-cat" aria-label="Category: {t['category']}">{t['category']}</div>
       <div class="tc-score" style="background:{sbg};border:1px solid {sbdr};color:{scol}"
            aria-label="MFWAI score: {sc} out of 100">{sc}/100</div>
     </div>
-    <a href="/tool/{slug}" class="tc-name">{name}</a>
-    <p class="tc-tagline">{tagline}</p>
+    <a href="/tool/{t['slug']}" class="tc-name">{t['name']}</a>
+    <p class="tc-tagline">{t['tagline']}</p>
     <div class="tc-badges" aria-label="Pricing badges">{''.join(badges)}</div>
   </div>
   <div class="tc-divider" aria-hidden="true"></div>
   <div class="tc-footer">
     <div class="tc-pricing">
-      <span class="tc-price">{price}</span>
-      <span class="tc-model">{model}</span>
+      <span class="tc-price">{t['starting_price']}</span>
+      <span class="tc-model">{t['pricing_model']}</span>
     </div>
     <div class="tc-btn-group">
-      <a href="{aff_url}" target="_blank" rel="nofollow sponsored noopener noreferrer"
-         class="btn-try" aria-label="Try {name} — affiliate link, opens in new tab">
-        Try {name}
+      <a href="{t['affiliate_url']}" target="_blank" rel="nofollow sponsored noopener noreferrer"
+         class="btn-try" aria-label="Try {t['name']} — affiliate link, opens in new tab">
+        Try {t['name']}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
-      <a href="/tool/{slug}" class="btn-outline">Full review →</a>
+      <a href="/tool/{t['slug']}" class="btn-outline">Full review →</a>
     </div>
   </div>
-</article>
-'''
+</article>"""
+
 
 def email_capture():
+    """Simplified newsletter section — no guide promises, just a clean signup."""
     return """<section class="email-sec" aria-labelledby="newsletter-heading">
   <div class="email-inner">
     <div class="email-left">
