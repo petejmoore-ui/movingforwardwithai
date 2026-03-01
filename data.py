@@ -401,7 +401,7 @@ TOOLS = [
         "free_tier": False,
         "free_trial": True,
         "trial_days": 7,
-        "affiliate_url": "https://searchatlas.com",
+        "affiliate_url": "https://dashboard.searchatlas.com/register",
         "rating": 4.8,
         "review_count": "105",
         "best_for": [
