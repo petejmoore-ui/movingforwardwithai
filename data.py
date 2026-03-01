@@ -517,7 +517,7 @@ TOOLS = [
         "free_tier": True,
         "free_trial": False,
         "trial_days": 0,
-        "affiliate_url": "https://elevenlabs.io",
+        "affiliate_url": "https://try.elevenlabs.io/14w0n6xmpdoz",
         "rating": 4.7,
         "review_count": "1,200+",
         "best_for": [
