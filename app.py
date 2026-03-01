@@ -1218,321 +1218,215 @@ BASE = """<!DOCTYPE html>
 
 <script>
 /* ══════════════════════════════════════════════════════
-   FIX 1 — THEME TOGGLE
-   Removed the reflow hack (html.style.display = 'none' etc.)
-   applyTheme now simply adds/removes .light and saves to localStorage.
+   COMPLETE SCRIPT REPLACEMENT — v3.5
+   Replace the entire <script>...</script> block at the
+   bottom of your page with this content.
 ══════════════════════════════════════════════════════ */
+
+/* ── THEME TOGGLE ─────────────────────────────────── */
 (function () {
   var html = document.documentElement;
 
-  function syncAllIcons(isLight) {
-    var pairs = [
-      ['ico-sun',     'ico-moon'],
-      ['mob-ico-sun', 'mob-ico-moon']
-    ];
-    pairs.forEach(function(p) {
-      var sun  = document.getElementById(p[0]);
-      var moon = document.getElementById(p[1]);
-      if (sun)  sun.style.display  = isLight ? 'none'  : 'block';
-      if (moon) moon.style.display = isLight ? 'block' : 'none';
-    });
-    var label = isLight ? 'Switch to dark mode' : 'Switch to light mode';
-    ['theme-btn','mob-theme-btn'].forEach(function(id){
-      var b = document.getElementById(id);
-      if (b) b.setAttribute('aria-label', label);
+  function syncIcons(light) {
+    [['ico-sun','ico-moon'],['mob-ico-sun','mob-ico-moon']].forEach(function(p){
+      var s = document.getElementById(p[0]);
+      var m = document.getElementById(p[1]);
+      if (s) s.style.display = light ? 'none'  : 'block';
+      if (m) m.style.display = light ? 'block' : 'none';
     });
   }
 
-  function applyTheme(isLight) {
-    if (isLight) {
-      html.classList.add('light');
-    } else {
-      html.classList.remove('light');
-    }
-    try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
-    syncAllIcons(isLight);
-    /* NOTE: The reflow hack (html.style.display = 'none' / void offsetHeight / display = '')
-       has been intentionally removed — it was causing the toggle to fight itself. */
+  function applyTheme(light) {
+    html.classList.toggle('light', light);
+    try { localStorage.setItem('mfwai-theme', light ? 'light' : 'dark'); } catch(e){}
+    syncIcons(light);
   }
 
-  /* Sync icons on load */
-  syncAllIcons(html.classList.contains('light'));
+  syncIcons(html.classList.contains('light'));
 
-  /* Wire up both buttons — desktop and mobile */
-  ['theme-btn', 'mob-theme-btn'].forEach(function(id) {
-    var btn = document.getElementById(id);
-    if (btn) {
-      btn.addEventListener('click', function() {
-        applyTheme(!html.classList.contains('light'));
-      });
-    }
+  ['theme-btn','mob-theme-btn'].forEach(function(id){
+    var b = document.getElementById(id);
+    if (b) b.addEventListener('click', function(){ applyTheme(!html.classList.contains('light')); });
   });
 })();
 
-/* ══════════════════════════════════════════════════════
-   STICKY NAV SHADOW
-══════════════════════════════════════════════════════ */
-window.addEventListener('scroll', function () {
-  var nav = document.getElementById('sitenav');
-  if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
+/* ── STICKY NAV ───────────────────────────────────── */
+window.addEventListener('scroll', function(){
+  var n = document.getElementById('sitenav');
+  if (n) n.classList.toggle('scrolled', window.scrollY > 24);
 }, { passive: true });
 
-/* ══════════════════════════════════════════════════════
-   FIX 2 — HAMBURGER MENU
-   JS only toggles .open class — never touches display style.
-   CSS handles visibility via opacity/visibility/pointer-events.
-══════════════════════════════════════════════════════ */
-(function () {
+/* ── MOBILE MENU ──────────────────────────────────── */
+(function(){
   var btn  = document.getElementById('hbg');
   var menu = document.getElementById('mob');
   if (!btn || !menu) return;
 
-  function openMenu() {
+  /* Hide menu properly at all sizes until opened */
+  /* The CSS already does opacity:0/visibility:hidden.
+     We also force display:none via JS until opened so it
+     cannot intercept any clicks at desktop size. */
+  menu.style.display = 'none';
+
+  function open() {
+    menu.style.display = 'flex';
+    /* Force reflow so the transition fires */
+    void menu.offsetHeight;
     menu.classList.add('open');
     btn.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-    btn.setAttribute('aria-label', 'Close navigation menu');
+    btn.setAttribute('aria-expanded','true');
     document.body.style.overflow = 'hidden';
   }
 
-  function closeMenu() {
+  function close() {
     menu.classList.remove('open');
     btn.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.setAttribute('aria-label', 'Open navigation menu');
+    btn.setAttribute('aria-expanded','false');
     document.body.style.overflow = '';
+    /* Wait for transition then hide */
+    setTimeout(function(){ if (!menu.classList.contains('open')) menu.style.display = 'none'; }, 300);
   }
 
-  btn.addEventListener('click', function (e) {
+  btn.addEventListener('click', function(e){
     e.stopPropagation();
-    if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); }
+    menu.classList.contains('open') ? close() : open();
   });
 
-  /* Close when any link inside the mobile menu is tapped */
-  menu.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () { closeMenu(); });
-  });
+  menu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', close); });
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && menu.classList.contains('open')) {
-      closeMenu(); btn.focus();
-    }
-  });
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape') close(); });
 
-  document.addEventListener('click', function (e) {
-    if (menu.classList.contains('open') &&
-        !menu.contains(e.target) &&
-        e.target !== btn &&
-        !btn.contains(e.target)) {
-      closeMenu();
-    }
+  document.addEventListener('click', function(e){
+    if (menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) close();
   });
 })();
 
-/* ══════════════════════════════════════════════════════
-   FIX 3 — DESKTOP DROPDOWN MENUS
-   Uses e.target.closest('.nav-drop') instead of the old
-   dropIds.some() loop — prevents the race condition where
-   the document click fired before stopPropagation took effect.
-══════════════════════════════════════════════════════ */
-(function () {
-  var dropIds = ['drop-compare', 'drop-roles'];
+/* ── DESKTOP DROPDOWNS ────────────────────────────── */
+(function(){
+  var drops = ['drop-compare','drop-roles'].map(function(id){ return document.getElementById(id); }).filter(Boolean);
 
-  function closeAll() {
-    dropIds.forEach(function(id) {
-      var drop = document.getElementById(id);
-      if (!drop) return;
-      drop.classList.remove('open');
-      var btn = drop.querySelector('.nav-drop-btn');
-      if (btn) btn.setAttribute('aria-expanded', 'false');
+  function closeAll(){
+    drops.forEach(function(d){
+      d.classList.remove('open');
+      var b = d.querySelector('.nav-drop-btn');
+      if (b) b.setAttribute('aria-expanded','false');
     });
   }
 
-  dropIds.forEach(function(id) {
-    var drop = document.getElementById(id);
-    if (!drop) return;
+  var skipNext = false;
+
+  drops.forEach(function(drop){
     var btn = drop.querySelector('.nav-drop-btn');
     if (!btn) return;
-
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var isOpen = drop.classList.contains('open');
+    btn.addEventListener('click', function(){
+      var wasOpen = drop.classList.contains('open');
       closeAll();
-      if (!isOpen) {
+      if (!wasOpen) {
         drop.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
+        btn.setAttribute('aria-expanded','true');
+        skipNext = true;          /* tell document listener to ignore this event's bubble */
+        setTimeout(function(){ skipNext = false; }, 0);
       }
     });
   });
 
-  /* Only close if the click is entirely outside any .nav-drop element */
-  document.addEventListener('click', function(e) {
-    var insideDrop = e.target.closest('.nav-drop');
-    if (!insideDrop) closeAll();
+  document.addEventListener('click', function(e){
+    if (skipNext) return;
+    /* Walk up from target — safe for SVG children */
+    var el = e.target;
+    while (el && el !== document.body) {
+      if (el.classList && el.classList.contains('nav-drop')) return;
+      el = el.parentElement;
+    }
+    closeAll();
   });
 
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAll();
-  });
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape') closeAll(); });
 })();
 
-/* ══════════════════════════════════════════════════════
-   SCROLL REVEAL
-══════════════════════════════════════════════════════ */
-(function () {
+/* ── SCROLL REVEAL ────────────────────────────────── */
+(function(){
   if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
   var els = document.querySelectorAll('.rv');
   if (!els.length) return;
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
-      }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting){ entry.target.classList.add('visible'); io.unobserve(entry.target); }
     });
-  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-  els.forEach(function (el, i) {
-    el.style.transitionDelay = (i % 4 * 0.07) + 's';
-    io.observe(el);
-  });
+  }, { threshold:0.08, rootMargin:'0px 0px -30px 0px' });
+  els.forEach(function(el, i){ el.style.transitionDelay = (i%4*0.07)+'s'; io.observe(el); });
 })();
 
-/* ══════════════════════════════════════════════════════
-   SEARCH OVERLAY
-   Fetches /api/tools on first keystroke (lazy load)
-══════════════════════════════════════════════════════ */
-(function() {
-  var allTools    = null;
-  var loading     = false;
-  var sov         = document.getElementById('sov');
-  var sovCount    = document.getElementById('sov-count');
-  var sovRes      = document.getElementById('sov-results');
-  var searchInput = document.getElementById('search-input');
-  var searchTimer;
+/* ── SEARCH OVERLAY ───────────────────────────────── */
+(function(){
+  var allTools=null, loading=false;
+  var sov=document.getElementById('sov');
+  var sovCount=document.getElementById('sov-count');
+  var sovRes=document.getElementById('sov-results');
+  var inp=document.getElementById('search-input');
+  var timer;
+  if (!sov||!inp) return;
 
-  if (!sov || !searchInput) return;
-
-  function loadTools(cb) {
-    if (allTools !== null) { cb(); return; }
+  function loadTools(cb){
+    if (allTools!==null){cb();return;}
     if (loading) return;
-    loading = true;
-    fetch('/api/tools')
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        allTools = d.tools || [];
-        loading = false;
-        cb();
-      })
-      .catch(function(){
-        allTools = [];
-        loading = false;
-        cb();
+    loading=true;
+    fetch('/api/tools').then(function(r){return r.json();}).then(function(d){allTools=d.tools||[];loading=false;cb();}).catch(function(){allTools=[];loading=false;cb();});
+  }
+
+  function closeSov(){ sov.classList.remove('open'); document.body.style.overflow=''; }
+
+  function miniCard(t){
+    var hi=t.score>=88;
+    var bg=hi?'var(--green-d)':'var(--cyan-d)'; var bdr=hi?'var(--green-g)':'var(--cyan-g)'; var col=hi?'var(--green)':'var(--cyan)';
+    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'\'">'
+      +'<div class="tc-accent-bar"></div><div class="tc-body"><div class="tc-meta"><div class="tc-cat">'+t.category+'</div>'
+      +'<div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+t.score+'</div></div>'
+      +'<a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a><p class="tc-tagline">'+(t.tagline||'')+'</p>'
+      +'</div><div class="tc-footer"><div class="tc-pricing"><span class="tc-price">'+(t.starting_price||'')+'</span></div></div></div>';
+  }
+
+  function runSearch(q){
+    if (!q||q.length<2){closeSov();return;}
+    loadTools(function(){
+      var ql=q.toLowerCase();
+      var hits=allTools.filter(function(t){
+        return (t.name||'').toLowerCase().includes(ql)||(t.category||'').toLowerCase().includes(ql)||(t.tagline||'').toLowerCase().includes(ql)||(t.tags||[]).join(' ').toLowerCase().includes(ql);
       });
-  }
-
-  function closeSov() {
-    sov.classList.remove('open');
-    document.body.style.overflow = '';
-    if (searchInput) searchInput.setAttribute('aria-expanded', 'false');
-  }
-
-  function miniCard(t) {
-    var sc   = t.score;
-    var isHi = sc >= 88;
-    var bg   = isHi ? 'var(--green-d)' : 'var(--cyan-d)';
-    var bdr  = isHi ? 'var(--green-g)' : 'var(--cyan-g)';
-    var col  = isHi ? 'var(--green)'   : 'var(--cyan)';
-    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/' + t.slug + '\'">'
-      + '<div class="tc-accent-bar"></div>'
-      + '<div class="tc-body">'
-      + '<div class="tc-meta">'
-      + '<div class="tc-cat">' + (t.category||'') + '</div>'
-      + '<div class="tc-score" style="background:' + bg + ';border:1px solid ' + bdr + ';color:' + col + '">' + sc + '</div>'
-      + '</div>'
-      + '<a href="/tool/' + t.slug + '" class="tc-name">' + t.name + '</a>'
-      + '<p class="tc-tagline">' + (t.tagline||'') + '</p>'
-      + '</div>'
-      + '<div class="tc-footer">'
-      + '<div class="tc-pricing"><span class="tc-price">' + (t.starting_price||'') + '</span></div>'
-      + '</div>'
-      + '</div>';
-  }
-
-  function runSearch(q) {
-    if (!q || q.length < 2) { closeSov(); return; }
-    loadTools(function() {
-      var ql   = q.toLowerCase();
-      var hits = allTools.filter(function(t) {
-        return (t.name     || '').toLowerCase().includes(ql)
-            || (t.category || '').toLowerCase().includes(ql)
-            || (t.tagline  || '').toLowerCase().includes(ql)
-            || (t.tags     || []).join(' ').toLowerCase().includes(ql);
-      });
-      sovCount.textContent = '// ' + hits.length + ' result' + (hits.length !== 1 ? 's' : '') + ' for "' + q + '"';
-      sovRes.innerHTML = hits.length
-        ? hits.map(miniCard).join('')
-        : '<div class="sov-empty">// No tools found for "' + q + '"</div>';
-      sov.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      searchInput.setAttribute('aria-expanded', 'true');
+      sovCount.textContent='// '+hits.length+' result'+(hits.length!==1?'s':'')+' for "'+q+'"';
+      sovRes.innerHTML=hits.length?hits.map(miniCard).join(''):'<div class="sov-empty">// No tools found for "'+q+'"</div>';
+      sov.classList.add('open'); document.body.style.overflow='hidden';
     });
   }
 
-  searchInput.addEventListener('input', function(e) {
-    clearTimeout(searchTimer);
-    var q = e.target.value.trim();
-    searchTimer = setTimeout(function() { runSearch(q); }, 160);
-  });
-
-  searchInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeSov(); searchInput.value = ''; }
-  });
-
-  document.getElementById('sov-close').addEventListener('click', closeSov);
-
-  sov.addEventListener('click', function(e) { if (e.target === sov) closeSov(); });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSov();
-  });
+  inp.addEventListener('input',function(e){ clearTimeout(timer); var q=e.target.value.trim(); timer=setTimeout(function(){runSearch(q);},160); });
+  inp.addEventListener('keydown',function(e){ if(e.key==='Escape'){closeSov();inp.value='';} });
+  document.getElementById('sov-close').addEventListener('click',closeSov);
+  sov.addEventListener('click',function(e){if(e.target===sov)closeSov();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSov();});
 })();
 
-/* ══════════════════════════════════════════════════════
-   COOKIE BANNER
-══════════════════════════════════════════════════════ */
-(function () {
-  var KEY = 'mfwai_consent_v2';
-  var bar = document.getElementById('ckbar');
-  try {
-    if (!localStorage.getItem(KEY)) {
-      setTimeout(function () { bar.classList.add('show'); }, 1800);
-    }
-  } catch (e) { bar.classList.add('show'); }
-  function dismiss(v) {
-    try { localStorage.setItem(KEY, v); } catch (e) {}
-    bar.classList.remove('show');
-  }
-  document.getElementById('ck-ok').addEventListener('click',  function () { dismiss('all'); });
-  document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
+/* ── COOKIE BANNER ────────────────────────────────── */
+(function(){
+  var KEY='mfwai_consent_v2', bar=document.getElementById('ckbar');
+  try{ if(!localStorage.getItem(KEY)) setTimeout(function(){bar.classList.add('show');},1800); }catch(e){bar.classList.add('show');}
+  function dismiss(v){ try{localStorage.setItem(KEY,v);}catch(e){} bar.classList.remove('show'); }
+  document.getElementById('ck-ok').addEventListener('click',function(){dismiss('all');});
+  document.getElementById('ck-ess').addEventListener('click',function(){dismiss('ess');});
 })();
 
-/* ══════════════════════════════════════════════════════
-   EMAIL FORM
-══════════════════════════════════════════════════════ */
-var ef = document.getElementById('email-form');
-if (ef) {
-  ef.addEventListener('submit', function (e) {
+/* ── EMAIL FORM ───────────────────────────────────── */
+(function(){
+  var ef=document.getElementById('email-form');
+  if (!ef) return;
+  ef.addEventListener('submit',function(e){
     e.preventDefault();
-    var btn = ef.querySelector('button[type="submit"]');
-    var em  = ef.querySelector('input[type="email"]');
-    if (!em || !em.value) return;
-    btn.textContent = 'Subscribed ✓';
-    btn.style.background = 'var(--green)';
-    btn.disabled = true;
-    em.disabled  = true;
+    var btn=ef.querySelector('button[type="submit"]'), em=ef.querySelector('input[type="email"]');
+    if (!em||!em.value) return;
+    btn.textContent='Subscribed ✓'; btn.style.background='var(--green)'; btn.disabled=true; em.disabled=true;
   });
-}
+})();
 </script>
 
 </body>
