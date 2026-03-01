@@ -1001,7 +1001,16 @@ BASE = """<!DOCTYPE html>
 </script>
 
 <style>{{ css|safe }}</style>
-</head>
+<!-- Google tag (gtag.js) -->
+<meta name="google-site-verification" content="U4OV71VLG-_zLDoFNbwH9ghMzxs-fQEPOkrKresvHOU" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBH27VXH8M"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-TBH27VXH8M');
+</script>
 <body>
 
 <!-- Ticker -->
