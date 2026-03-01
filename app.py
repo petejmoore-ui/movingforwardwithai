@@ -18,27 +18,7 @@ app        = Flask(__name__)
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
 
-def render(title, desc, content, schema=None, bcs=None):
-    """Central render function — wraps all pages in your base HTML template."""
-    full_html = f"""<!DOCTYPE html>
-<html lang="en" data-theme="light">  <!-- or use your theme toggle logic -->
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
-    <meta name="description" content="{desc}">
-    <link rel="stylesheet" href="/static/css/style.css">  <!-- assuming you have CSS -->
-    <!-- Add your meta tags, favicon, etc. here -->
-    {f'<script type="application/ld+json">{schema}</script>' if schema else ''}
-    {f'<script type="application/ld+json">{bcs}</script>' if bcs else ''}
-</head>
-<body>
-    <!-- Your header / nav / hamburger menu HTML here -->
-    <main>{content}</main>
-    <!-- Footer, scripts, etc. -->
-</body>
-</html>"""
-    return render_template_string(full_html)
+
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -3839,11 +3819,17 @@ def compare_custom():
     slug_b = request.args.get('b', '')
     ta = get_tool(slug_a) if slug_a else None
     tb = get_tool(slug_b) if slug_b else None
-    verdict = generate_comparison_verdict(ta, tb) if ta and tb else ''
+
+    # Fallback to first two tools if invalid
+    if not ta or not tb:
+        ta, tb = TOOLS[0], TOOLS[1]
+        slug_a, slug_b = ta['slug'], tb['slug']
+
+    verdict = generate_comparison_verdict(ta, tb)
     sorted_tools = sorted(TOOLS, key=lambda t: t['name'])
     content = build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b)
-    ttl = f'{ta["name"]} vs {tb["name"]} — Compare AI Tools | Moving Forward With AI' if ta and tb else 'Compare Any Two AI Tools — Moving Forward With AI'
-    dsc = f'Side-by-side comparison of {ta["name"]} and {tb["name"]}. Scores, pricing, pros, cons and a clear verdict.' if ta and tb else 'Instantly compare any two AI tools side by side. Scores, pricing, pros, cons and a clear verdict — no signup required.'
+    ttl = f'{ta["name"]} vs {tb["name"]} — Compare AI Tools | Moving Forward With AI'
+    dsc = f'Side-by-side comparison of {ta["name"]} and {tb["name"]}. Scores, pricing, pros, cons and a clear verdict.'
     return render(title=ttl, desc=dsc, content=content)
 
 
