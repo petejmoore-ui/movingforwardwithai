@@ -1813,7 +1813,6 @@ BLOG_POSTS = {
         "related_tools": ["getresponse", "mailchimp"],
         "related_role": "marketers",
     },
-]
 
 }
 
@@ -1927,5 +1926,5 @@ ROLES = [
         "tool_slugs": ["claude-pro", "perplexity-pro", "frase", "surfer-seo", "grammarly", "koala-ai", "quillbot"],
         "top_pick": "claude-pro",
     },
-} 
+] 
     
