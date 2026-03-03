@@ -1,20 +1,4 @@
-# MOVING FORWARD WITH AI — app.py v3.3
-# Changes v3.3 (bug fixes only — no UI rewrites):
-#   FIX 1: .nav-drop — added `position: relative` so .drop-menu (position:absolute)
-#           positions itself correctly below its own button, not relative to the nav.
-#   FIX 2: #mob — raised z-index from 190 → 210 so the mobile menu renders ABOVE
-#           the sticky nav (z-index:200) and is fully interactive when open.
-#   FIX 3: BASE template — added missing `</head>` closing tag before <body>
-#           to prevent browser mis-parsing of the document structure.
-# ============================================================================
-# Changes v3.2:
-#   1. Theme toggle works on BOTH mobile and desktop (single shared button logic)
-#   2. Mobile hamburger menu fixed — proper open/close, body scroll lock
-#   3. Desktop dropdowns (Compare + Who it's for) fixed
-#   4. Email section simplified to newsletter signup only
-#   5. Search overlay fixed — fetches /api/tools and renders results
-#   6. Star ratings REMOVED — fabricated data replaced with MFWAI score only
-# ============================================================================
+
 
 import os, json, re, datetime
 from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
