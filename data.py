@@ -171,7 +171,7 @@ TOOLS = [
         "free_tier": False,
         "free_trial": True,
         "trial_days": 7,
-        "affiliate_url": "https://frase.io",
+        "affiliate_url": "https://www.frase.io/?via=peter79",
         "rating": 4.8,
         "review_count": "297",
         "best_for": [
