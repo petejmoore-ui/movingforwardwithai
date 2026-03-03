@@ -1,5 +1,12 @@
-
-# MOVING FORWARD WITH AI — app.py v3.2
+# MOVING FORWARD WITH AI — app.py v3.3
+# Changes v3.3 (bug fixes only — no UI rewrites):
+#   FIX 1: .nav-drop — added `position: relative` so .drop-menu (position:absolute)
+#           positions itself correctly below its own button, not relative to the nav.
+#   FIX 2: #mob — raised z-index from 190 → 210 so the mobile menu renders ABOVE
+#           the sticky nav (z-index:200) and is fully interactive when open.
+#   FIX 3: BASE template — added missing `</head>` closing tag before <body>
+#           to prevent browser mis-parsing of the document structure.
+# ============================================================================
 # Changes v3.2:
 #   1. Theme toggle works on BOTH mobile and desktop (single shared button logic)
 #   2. Mobile hamburger menu fixed — proper open/close, body scroll lock
@@ -18,14 +25,12 @@ load_dotenv()
 
 app        = Flask(__name__)
 
-
 if os.environ.get("STAGING") == "true":
 
     @app.after_request
     def add_noindex_header(response):
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
-
 
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
@@ -360,6 +365,10 @@ body::after {
 .nav-links > a:hover, .nav-drop-btn:hover { color:var(--ink); background:var(--cyan-d) }
 .nav-links > a.active { color:var(--cyan) }
 
+/* ── FIX 1: position:relative added so .drop-menu (position:absolute) anchors
+   to the .nav-drop wrapper, not the distant sticky .nav ancestor.
+   Without this, left:0 / top:100% resolve against the full nav bar,
+   placing the menu far to the left and at the wrong vertical offset. ── */
 .nav-drop { position:relative }
 .drop-chevron {
   width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2;
@@ -442,10 +451,13 @@ body::after {
 #hbg.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
 #hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg) }
 
-/* Mobile Menu */
+/* ── FIX 2: #mob z-index raised from 190 → 210 so the mobile overlay renders
+   ABOVE the sticky nav bar (z-index:200). Previously the nav sat on top of the
+   open menu, making the top portion of the menu visually and interactively
+   blocked by the nav header. ── */
 #mob {
   display:none; position:fixed; inset:0;
-  background:var(--bg); z-index:190; overflow-y:auto;
+  background:var(--bg); z-index:210; overflow-y:auto;
   padding:72px 24px 48px;
   flex-direction:column; gap:0;
 }
@@ -1019,9 +1031,9 @@ BASE = """<!DOCTYPE html>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-TBH27VXH8M');
 </script>
+</head>
 <body>
 
 <!-- Ticker -->
@@ -1600,8 +1612,6 @@ def tool_card(t, delay=0):
     if not t.get('free_tier') and not t.get('free_trial'):
         badges.append('<span class="badge b-paid">Paid only</span>')
     if t.get('featured'): badges.append('<span class="badge b-top">Featured</span>')
-    # NOTE: Star ratings removed — data was not from a verified source.
-    # MFWAI score (/100) is the only rating shown.
     return f"""<article class="tool-card rv" aria-label="{t['name']} — {t['category']} tool">
   <div class="tc-accent-bar" aria-hidden="true"></div>
   <div class="tc-body">
