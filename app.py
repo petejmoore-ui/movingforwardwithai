@@ -23,15 +23,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app        = Flask(__name__
-
-if os.environ.get("STAGING") == "true":
-    @app.after_request
-    def add_header(response):
-        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
-        return response
-
-                   
+app        = Flask(__name__)
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
 
