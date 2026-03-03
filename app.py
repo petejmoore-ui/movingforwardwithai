@@ -1034,19 +1034,19 @@ BASE = """<!DOCTYPE html>
     <span class="ticker-sep">◆</span>
     <span class="ticker-item">Marketers</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">SEO Professionals</span>
+    <span class="ticker-item accent">SEO Professionals</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item accent">Content Creators</span>
+    <span class="ticker-item">Content Creators</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">Small Business Owners</span>
+    <span class="ticker-item accent">Small Business Owners</span>
     <span class="ticker-sep">◆</span>
     <span class="ticker-item">Freelance Writers</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">Compare AI Tools</span>
+    <span class="ticker-item accent">Compare AI Tools</span>
     <span class="ticker-sep">◆</span>
     <span class="ticker-item">AI Tool Guides</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">Moving Forward With AI</span>
+    <span class="ticker-item accent">Moving Forward With AI</span>
     <span class="ticker-sep">◆</span>
     {% endfor %}
   </div>
