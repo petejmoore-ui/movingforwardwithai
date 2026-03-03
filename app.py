@@ -1020,15 +1020,23 @@ BASE = """<!DOCTYPE html>
     {% for _ in range(2) %}
     <span class="ticker-item">Independent AI Reviews</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item accent">Updated Weekly</span>
+    <span class="ticker-item accent">Freelancers</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">No Paid Placements</span>
+    <span class="ticker-item">Marketers</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">Transparent Verdicts</span>
+    <span class="ticker-item">SEO Professionals</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item accent">Moving Forward With AI</span>
+    <span class="ticker-item accent">Content Creators</span>
     <span class="ticker-sep">◆</span>
-    <span class="ticker-item">Affiliate Commissions Fund This Site</span>
+    <span class="ticker-item">Small Business Owners</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">Freelance Writers</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">Compare AI Tools</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">AI Tool Guides</span>
+    <span class="ticker-sep">◆</span>
+    <span class="ticker-item">Moving Forward With AI</span>
     <span class="ticker-sep">◆</span>
     {% endfor %}
   </div>
@@ -1929,7 +1937,7 @@ def tools_all():
     <div class="page" style="padding-top:32px;padding-bottom:24px">
       <div class="sec-eyebrow">All tools · {len(TOOLS)} reviewed</div>
       <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3.2rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px">
-        Every AI tool, <em style="color:var(--cyan);font-style:normal">independently reviewed</em>
+        Best AI tools, <em style="color:var(--cyan);font-style:normal">independently reviewed</em>
       </h1>
       <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:500px;line-height:1.75">
         No sponsored rankings. No paid placements. Just thorough, independent reviews scored on merit.
