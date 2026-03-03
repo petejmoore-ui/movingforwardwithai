@@ -923,8 +923,12 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 @media (max-width:768px) {
   .nav-in { padding:0 20px; height:56px }
   .nav-links, .nav-search { display:none }
+
+  #theme-btn { display:none; }   /* ✅ hide desktop theme toggle */
+  #mob-theme-btn { display:flex; }
+
   #hbg { display:flex }
-  #mob-theme-btn { display:flex }
+
   .page, .page-narrow { padding:0 20px }
   .affil-in { padding:10px 20px }
   .email-inner { padding:0 20px }
