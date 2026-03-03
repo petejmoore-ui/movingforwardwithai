@@ -23,7 +23,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app        = Flask(__name__)
+app        = Flask(__name__
+
+if os.environ.get("STAGING") == "true":
+    @app.after_request
+    def add_header(response):
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        return response
+
+                   
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
 
@@ -1241,10 +1249,10 @@ BASE = """<!DOCTYPE html>
 </div>
 
 <script>
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    SHARED THEME LOGIC
    Works for BOTH desktop (#theme-btn) and mobile (#mob-theme-btn)
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   var html = document.documentElement;
 
@@ -1294,17 +1302,17 @@ BASE = """<!DOCTYPE html>
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    STICKY NAV SHADOW
-══════════════════════════════════════════════════════ */
+====================================================== */
 window.addEventListener('scroll', function () {
   var nav = document.getElementById('sitenav');
   if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
 }, { passive: true });
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    HAMBURGER MENU
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   var btn  = document.getElementById('hbg');
   var menu = document.getElementById('mob');
@@ -1352,10 +1360,10 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    DESKTOP DROPDOWN MENUS
-   Uses explicit IDs — no fragile querySelectorAll
-══════════════════════════════════════════════════════ */
+   Uses explicit IDs -- no fragile querySelectorAll
+====================================================== */
 (function () {
   var dropIds = ['drop-compare', 'drop-roles'];
 
@@ -1400,9 +1408,9 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    SCROLL REVEAL
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
@@ -1422,10 +1430,10 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    SEARCH OVERLAY
    Fetches /api/tools on first keystroke (lazy load)
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function() {
   var allTools   = null;   /* null = not yet loaded */
   var loading    = false;
@@ -1522,9 +1530,9 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    COOKIE BANNER
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   var KEY = 'mfwai_consent_v2';
   var bar = document.getElementById('ckbar');
@@ -1541,9 +1549,9 @@ window.addEventListener('scroll', function () {
   document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    EMAIL FORM
-══════════════════════════════════════════════════════ */
+====================================================== */
 var ef = document.getElementById('email-form');
 if (ef) {
   ef.addEventListener('submit', function (e) {
@@ -1551,7 +1559,7 @@ if (ef) {
     var btn = ef.querySelector('button[type="submit"]');
     var em  = ef.querySelector('input[type="email"]');
     if (!em || !em.value) return;
-    btn.textContent = 'Subscribed ✓';
+    btn.textContent = 'Subscribed!';
     btn.style.background = 'var(--green)';
     btn.disabled = true;
     em.disabled  = true;
