@@ -1,13 +1,4 @@
 
-# MOVING FORWARD WITH AI — app.py v3.2
-# Changes v3.2:
-#   1. Theme toggle works on BOTH mobile and desktop (single shared button logic)
-#   2. Mobile hamburger menu fixed — proper open/close, body scroll lock
-#   3. Desktop dropdowns (Compare + Who it's for) fixed
-#   4. Email section simplified to newsletter signup only
-#   5. Search overlay fixed — fetches /api/tools and renders results
-#   6. Star ratings REMOVED — fabricated data replaced with MFWAI score only
-# ============================================================================
 
 import os, json, re, datetime
 from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
@@ -350,6 +341,10 @@ body::after {
 .nav-links > a:hover, .nav-drop-btn:hover { color:var(--ink); background:var(--cyan-d) }
 .nav-links > a.active { color:var(--cyan) }
 
+/* ── FIX 1: position:relative added so .drop-menu (position:absolute) anchors
+   to the .nav-drop wrapper, not the distant sticky .nav ancestor.
+   Without this, left:0 / top:100% resolve against the full nav bar,
+   placing the menu far to the left and at the wrong vertical offset. ── */
 .nav-drop { position:relative }
 .drop-chevron {
   width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2;
@@ -432,10 +427,13 @@ body::after {
 #hbg.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
 #hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg) }
 
-/* Mobile Menu */
+/* ── FIX 2: #mob z-index raised from 190 → 210 so the mobile overlay renders
+   ABOVE the sticky nav bar (z-index:200). Previously the nav sat on top of the
+   open menu, making the top portion of the menu visually and interactively
+   blocked by the nav header. ── */
 #mob {
   display:none; position:fixed; inset:0;
-  background:var(--bg); z-index:190; overflow-y:auto;
+  background:var(--bg); z-index:210; overflow-y:auto;
   padding:72px 24px 48px;
   flex-direction:column; gap:0;
 }
@@ -1009,9 +1007,9 @@ BASE = """<!DOCTYPE html>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-TBH27VXH8M');
 </script>
+</head>
 <body>
 
 <!-- Ticker -->
@@ -1227,10 +1225,10 @@ BASE = """<!DOCTYPE html>
 </div>
 
 <script>
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    SHARED THEME LOGIC
    Works for BOTH desktop (#theme-btn) and mobile (#mob-theme-btn)
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   var html = document.documentElement;
 
@@ -1280,17 +1278,17 @@ BASE = """<!DOCTYPE html>
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    STICKY NAV SHADOW
-══════════════════════════════════════════════════════ */
+====================================================== */
 window.addEventListener('scroll', function () {
   var nav = document.getElementById('sitenav');
   if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
 }, { passive: true });
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    HAMBURGER MENU
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   var btn  = document.getElementById('hbg');
   var menu = document.getElementById('mob');
@@ -1338,10 +1336,10 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    DESKTOP DROPDOWN MENUS
-   Uses explicit IDs — no fragile querySelectorAll
-══════════════════════════════════════════════════════ */
+   Uses explicit IDs -- no fragile querySelectorAll
+====================================================== */
 (function () {
   var dropIds = ['drop-compare', 'drop-roles'];
 
@@ -1386,9 +1384,9 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    SCROLL REVEAL
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
@@ -1408,10 +1406,10 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    SEARCH OVERLAY
    Fetches /api/tools on first keystroke (lazy load)
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function() {
   var allTools   = null;   /* null = not yet loaded */
   var loading    = false;
@@ -1453,20 +1451,20 @@ window.addEventListener('scroll', function () {
     var bg   = isHi ? 'var(--green-d)' : 'var(--cyan-d)';
     var bdr  = isHi ? 'var(--green-g)' : 'var(--cyan-g)';
     var col  = isHi ? 'var(--green)'   : 'var(--cyan)';
-    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/' + t.slug + '\'">'
-      + '<div class="tc-accent-bar"></div>'
-      + '<div class="tc-body">'
-      + '<div class="tc-meta">'
-      + '<div class="tc-cat">' + (t.category||'') + '</div>'
-      + '<div class="tc-score" style="background:' + bg + ';border:1px solid ' + bdr + ';color:' + col + '">' + sc + '</div>'
-      + '</div>'
-      + '<a href="/tool/' + t.slug + '" class="tc-name">' + t.name + '</a>'
-      + '<p class="tc-tagline">' + (t.tagline||'') + '</p>'
-      + '</div>'
-      + '<div class="tc-footer">'
-      + '<div class="tc-pricing"><span class="tc-price">' + (t.starting_price||'') + '</span></div>'
-      + '</div>'
-      + '</div>';
+    return `<div class="tool-card" style="cursor:pointer" onclick="location.href='/tool/${t.slug}'">
+  <div class="tc-accent-bar"></div>
+  <div class="tc-body">
+    <div class="tc-meta">
+      <div class="tc-cat">${t.category || ''}</div>
+      <div class="tc-score" style="background:${bg};border:1px solid ${bdr};color:${col}">${sc}</div>
+    </div>
+    <a href="/tool/${t.slug}" class="tc-name">${t.name}</a>
+    <p class="tc-tagline">${t.tagline || ''}</p>
+  </div>
+  <div class="tc-footer">
+    <div class="tc-pricing"><span class="tc-price">${t.starting_price || ''}</span></div>
+  </div>
+</div>`;
   }
 
   function runSearch(q) {
@@ -1508,9 +1506,9 @@ window.addEventListener('scroll', function () {
   });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    COOKIE BANNER
-══════════════════════════════════════════════════════ */
+====================================================== */
 (function () {
   var KEY = 'mfwai_consent_v2';
   var bar = document.getElementById('ckbar');
@@ -1527,9 +1525,9 @@ window.addEventListener('scroll', function () {
   document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
 })();
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    EMAIL FORM
-══════════════════════════════════════════════════════ */
+====================================================== */
 var ef = document.getElementById('email-form');
 if (ef) {
   ef.addEventListener('submit', function (e) {
@@ -1537,7 +1535,7 @@ if (ef) {
     var btn = ef.querySelector('button[type="submit"]');
     var em  = ef.querySelector('input[type="email"]');
     if (!em || !em.value) return;
-    btn.textContent = 'Subscribed ✓';
+    btn.textContent = 'Subscribed!';
     btn.style.background = 'var(--green)';
     btn.disabled = true;
     em.disabled  = true;
@@ -1590,8 +1588,6 @@ def tool_card(t, delay=0):
     if not t.get('free_tier') and not t.get('free_trial'):
         badges.append('<span class="badge b-paid">Paid only</span>')
     if t.get('featured'): badges.append('<span class="badge b-top">Featured</span>')
-    # NOTE: Star ratings removed — data was not from a verified source.
-    # MFWAI score (/100) is the only rating shown.
     return f"""<article class="tool-card rv" aria-label="{t['name']} — {t['category']} tool">
   <div class="tc-accent-bar" aria-hidden="true"></div>
   <div class="tc-body">
