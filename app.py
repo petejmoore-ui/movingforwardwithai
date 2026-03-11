@@ -1108,6 +1108,419 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 ::-webkit-scrollbar-thumb:hover { background:var(--cyan) }
 ::selection { background:var(--cyan-d); color:var(--cyan2) }
 :focus-visible { outline:2px solid var(--cyan); outline-offset:2px; border-radius:var(--r1); }
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL REVIEW PAGE v2 — Quick Verdict, Pricing, FAQ, Alternatives
+   Added: March 2026
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Quick Verdict Box */
+.verdict-box {
+  background:var(--surf);
+  border:1px solid var(--bdr2);
+  border-radius:var(--r4);
+  padding:32px 36px;
+  margin-bottom:24px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:var(--sh1);
+}
+.verdict-box::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:3px;
+  background:linear-gradient(90deg, var(--green), var(--cyan), var(--violet));
+}
+.verdict-box-grid {
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:28px;
+  align-items:center;
+}
+.vb-score-ring {
+  width:100px; height:100px;
+  border-radius:50%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  flex-shrink:0;
+  position:relative;
+}
+.vb-score-ring::before {
+  content:'';
+  position:absolute; inset:0;
+  border-radius:50%;
+  border:3px solid var(--bdr);
+}
+.vb-score-ring::after {
+  content:'';
+  position:absolute; inset:0;
+  border-radius:50%;
+  border:3px solid transparent;
+  border-top-color:currentColor;
+  border-right-color:currentColor;
+  transform:rotate(-45deg);
+}
+.vb-score-num {
+  font-family:var(--font-display);
+  font-size:2.4rem;
+  font-weight:800;
+  letter-spacing:-.06em;
+  line-height:1;
+}
+.vb-score-max {
+  font-family:var(--font-mono);
+  font-size:.58rem;
+  color:var(--ink4);
+  letter-spacing:.06em;
+  margin-top:2px;
+}
+.vb-content { min-width:0 }
+.vb-label {
+  font-family:var(--font-mono);
+  font-size:.62rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  margin-bottom:8px;
+  display:flex; align-items:center; gap:6px;
+}
+.vb-label::before { content:'//'; opacity:.5 }
+.vb-verdict {
+  font-family:var(--font-display);
+  font-size:1.15rem;
+  font-weight:600;
+  color:var(--ink);
+  line-height:1.5;
+  margin-bottom:14px;
+  letter-spacing:-.02em;
+}
+.vb-meta-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px 20px;
+}
+.vb-meta-item {
+  display:flex; align-items:center; gap:8px;
+  font-size:.84rem; color:var(--ink3); line-height:1.5;
+}
+.vb-meta-label {
+  font-family:var(--font-mono);
+  font-size:.62rem;
+  color:var(--ink4);
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  flex-shrink:0;
+  min-width:72px;
+}
+.vb-meta-value { color:var(--ink2); font-weight:500 }
+.vb-cta-col {
+  display:flex; flex-direction:column;
+  align-items:stretch; gap:10px;
+  flex-shrink:0; min-width:180px;
+}
+
+/* Pros & Cons v2 */
+.pc-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+  background:var(--surf);
+  border:1px solid var(--bdr);
+  border-radius:var(--r3);
+  overflow:hidden;
+  margin-bottom:24px;
+  box-shadow:var(--sh0);
+}
+.pc-col { padding:24px 28px }
+.pc-col + .pc-col { border-left:1px solid var(--div) }
+.pc-col-title {
+  font-family:var(--font-mono);
+  font-size:.62rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  margin-bottom:16px;
+  display:flex; align-items:center; gap:8px;
+}
+.pc-col-title.pro-title { color:var(--green) }
+.pc-col-title.con-title { color:var(--rose) }
+.pc-col-title::before { content:''; width:14px; height:1px; background:currentColor }
+
+/* Pricing Breakdown */
+.pricing-section {
+  background:var(--surf);
+  border:1px solid var(--bdr);
+  border-radius:var(--r3);
+  overflow:hidden;
+  margin-bottom:24px;
+  box-shadow:var(--sh0);
+}
+.pricing-section-hdr {
+  padding:20px 28px;
+  border-bottom:1px solid var(--div);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.pricing-table {
+  width:100%;
+  border-collapse:collapse;
+}
+.pricing-table th {
+  text-align:left;
+  padding:12px 20px;
+  font-family:var(--font-mono);
+  font-size:.62rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink4);
+  background:var(--bg3);
+  border-bottom:1px solid var(--div);
+  font-weight:500;
+}
+.pricing-table td {
+  padding:14px 20px;
+  font-size:.88rem;
+  color:var(--ink3);
+  border-bottom:1px solid var(--div);
+  vertical-align:top;
+}
+.pricing-table tr:last-child td { border-bottom:none }
+.pricing-table td:first-child {
+  font-weight:600;
+  color:var(--ink);
+  white-space:nowrap;
+}
+.pricing-verified {
+  font-family:var(--font-mono);
+  font-size:.58rem;
+  color:var(--ink5);
+  letter-spacing:.04em;
+  display:flex; align-items:center; gap:6px;
+}
+.pricing-verified::before {
+  content:'';
+  width:5px; height:5px;
+  border-radius:50%;
+  background:var(--green);
+  flex-shrink:0;
+}
+
+/* Who Should Use This */
+.who-section {
+  background:var(--surf);
+  border:1px solid var(--bdr);
+  border-radius:var(--r3);
+  padding:28px;
+  margin-bottom:24px;
+  box-shadow:var(--sh0);
+}
+.who-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+.who-list { list-style:none; display:flex; flex-direction:column; gap:10px }
+.who-list li {
+  font-size:.88rem;
+  line-height:1.65;
+  color:var(--ink3);
+  padding-left:22px;
+  position:relative;
+}
+.who-list.who-yes li::before {
+  content:'✓';
+  position:absolute; left:0;
+  color:var(--green);
+  font-weight:700;
+}
+.who-list.who-no li::before {
+  content:'→';
+  position:absolute; left:0;
+  color:var(--amber);
+  font-family:var(--font-mono);
+  font-size:.72rem;
+}
+
+/* FAQ Section */
+.faq-section {
+  background:var(--surf);
+  border:1px solid var(--bdr);
+  border-radius:var(--r3);
+  overflow:hidden;
+  margin-bottom:24px;
+  box-shadow:var(--sh0);
+}
+.faq-section-hdr {
+  padding:20px 28px;
+  border-bottom:1px solid var(--div);
+}
+.faq-item {
+  border-bottom:1px solid var(--div);
+}
+.faq-item:last-child { border-bottom:none }
+.faq-q {
+  width:100%;
+  text-align:left;
+  padding:18px 28px;
+  font-family:var(--font-display);
+  font-size:1rem;
+  font-weight:600;
+  color:var(--ink);
+  letter-spacing:-.02em;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  cursor:pointer;
+  background:none;
+  border:none;
+  transition:background .15s, color .15s;
+}
+.faq-q:hover { background:var(--cyan-d) }
+.faq-chevron {
+  width:18px; height:18px;
+  stroke:var(--ink4);
+  fill:none;
+  stroke-width:2;
+  flex-shrink:0;
+  transition:transform .25s var(--ease);
+}
+.faq-item.open .faq-chevron { transform:rotate(180deg) }
+.faq-a {
+  display:none;
+  padding:0 28px 20px;
+  font-size:.9rem;
+  line-height:1.78;
+  color:var(--ink3);
+}
+.faq-item.open .faq-a { display:block }
+
+/* Alternatives Section */
+.alts-section {
+  background:var(--surf);
+  border:1px solid var(--bdr);
+  border-radius:var(--r3);
+  padding:28px;
+  margin-bottom:24px;
+  box-shadow:var(--sh0);
+}
+.alt-card {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:16px 0;
+  border-bottom:1px solid var(--div);
+}
+.alt-card:last-child { border-bottom:none }
+.alt-card:first-child { padding-top:0 }
+.alt-info { flex:1; min-width:0 }
+.alt-name {
+  font-family:var(--font-display);
+  font-size:1rem;
+  font-weight:700;
+  color:var(--ink);
+  letter-spacing:-.02em;
+}
+.alt-desc {
+  font-size:.84rem;
+  color:var(--ink3);
+  margin-top:3px;
+  line-height:1.6;
+}
+.alt-links {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-shrink:0;
+}
+.alt-link {
+  font-family:var(--font-mono);
+  font-size:.66rem;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  padding:6px 12px;
+  border-radius:var(--r1);
+  border:1px solid var(--bdr);
+  color:var(--ink3);
+  transition:all .18s;
+  white-space:nowrap;
+}
+.alt-link:hover {
+  background:var(--cyan-d);
+  border-color:var(--bdr2);
+  color:var(--cyan);
+}
+.alt-score {
+  font-family:var(--font-mono);
+  font-size:.72rem;
+  font-weight:600;
+  padding:4px 10px;
+  border-radius:var(--r1);
+  flex-shrink:0;
+}
+
+/* Bottom CTA bar */
+.bottom-cta {
+  background:var(--surf);
+  border:1px solid var(--bdr2);
+  border-radius:var(--r3);
+  padding:28px 32px;
+  margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  flex-wrap:wrap;
+  box-shadow:var(--sh1);
+}
+.bottom-cta-text {
+  flex:1; min-width:200px;
+}
+.bottom-cta-name {
+  font-family:var(--font-display);
+  font-size:1.2rem;
+  font-weight:700;
+  color:var(--ink);
+  letter-spacing:-.03em;
+}
+.bottom-cta-sub {
+  font-size:.86rem;
+  color:var(--ink3);
+  margin-top:4px;
+}
+
+/* Review page section headers */
+.review-section-hdr {
+  font-family:var(--font-mono);
+  font-size:.62rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  margin-bottom:16px;
+  display:flex; align-items:center; gap:6px;
+}
+.review-section-hdr::before { content:'//'; opacity:.5 }
+
+/* Responsive tweaks for review v2 */
+@media (max-width:768px) {
+  .verdict-box { padding:24px 20px }
+  .verdict-box-grid {
+    grid-template-columns:1fr;
+    gap:20px;
+    text-align:center;
+  }
+  .vb-score-ring { margin:0 auto }
+  .vb-meta-grid { grid-template-columns:1fr; text-align:left }
+  .vb-cta-col { min-width:100% }
+  .pc-grid { grid-template-columns:1fr }
+  .pc-col + .pc-col { border-left:none; border-top:1px solid var(--div) }
+  .who-grid { grid-template-columns:1fr }
+  .alt-card { flex-direction:column; align-items:flex-start }
+  .alt-links { width:100% }
+  .bottom-cta { flex-direction:column; text-align:center }
+}
+@media (max-width:520px) {
+  .vb-meta-grid { grid-template-columns:1fr }
+}
 """
 
 
@@ -2170,101 +2583,290 @@ def tool_detail(slug):
     sc     = t['score']
     sc_col = score_color(sc)
     sc_lbl = score_label(sc)
+    name   = t['name']
+
+    # Badges
     badges = []
     if t.get('free_tier'):  badges.append('<span class="badge b-free">Free tier</span>')
     if t.get('free_trial'): badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
 
+    # ── 0. Page header ──────────────────────────────────────────────────────
+    header = f"""
+    <header class="td-header">
+      <div class="td-header-grid">
+        <div>
+          <div class="td-eyebrow">{t['category'].upper()} REVIEW</div>
+          <h1 class="td-h1">{name}</h1>
+          <p class="td-tagline">{t['tagline']}</p>
+          <div class="td-meta-row">{''.join(badges)}</div>
+        </div>
+        <div class="td-score-block" aria-label="MFWAI score: {sc} out of 100">
+          <div class="td-score-num" style="color:{sc_col}">{sc}</div>
+          <div class="td-score-label" style="color:{sc_col}">{sc_lbl}</div>
+          <div class="td-score-sub">MFWAI score / 100</div>
+        </div>
+      </div>
+    </header>"""
+
+    # ── 1. Quick Verdict Box ─────────────────────────────────────────────────
+    free_tier_text = 'Yes' if t.get('free_tier') else 'No'
+    best_for_line  = t['best_for'][0] if t['best_for'] else ''
+    not_ideal_items = t.get('not_ideal_for', [])
+    not_ideal_line  = not_ideal_items[0] if not_ideal_items else (t['cons'][0] if t['cons'] else '')
+
+    verdict_box = f"""
+    <section class="verdict-box rv" aria-labelledby="quick-verdict-heading">
+      <div class="verdict-box-grid">
+        <div class="vb-score-ring" style="color:{sc_col}" aria-label="Score: {sc} out of 100">
+          <div class="vb-score-num" style="color:{sc_col}">{sc}</div>
+          <div class="vb-score-max">/ 100</div>
+        </div>
+        <div class="vb-content">
+          <div class="vb-label" id="quick-verdict-heading">Quick verdict</div>
+          <p class="vb-verdict">{t['verdict']}</p>
+          <div class="vb-meta-grid">
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Best for</span>
+              <span class="vb-meta-value">{best_for_line}</span>
+            </div>
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Not ideal for</span>
+              <span class="vb-meta-value">{not_ideal_line}</span>
+            </div>
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Starting at</span>
+              <span class="vb-meta-value">{t['starting_price']}</span>
+            </div>
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Free tier</span>
+              <span class="vb-meta-value">{free_tier_text}</span>
+            </div>
+          </div>
+        </div>
+        <div class="vb-cta-col">
+          <a href="{t['affiliate_url']}" target="_blank"
+             rel="nofollow sponsored noopener noreferrer"
+             class="btn-td-cta" aria-label="Try {name} — opens in new tab">
+            Try {name}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15,3 21,3 21,9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
+          <div class="trust-items" role="list" style="margin-top:4px">
+            <div class="trust-item" role="listitem">
+              <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              No extra cost to you
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>"""
+
+    # ── 2. Pros & Cons ───────────────────────────────────────────────────────
     pros_html = '\n'.join(f'<li>{p}</li>' for p in t['pros'])
     cons_html = '\n'.join(f'<li>{c}</li>' for c in t['cons'])
-    best_html = '\n'.join(f'<div class="best-for-item">{b}</div>' for b in t['best_for'])
 
+    pros_cons = f"""
+    <section class="pc-grid rv" aria-labelledby="pros-heading cons-heading">
+      <div class="pc-col">
+        <h2 class="pc-col-title pro-title" id="pros-heading">What we like</h2>
+        <ul class="plist pros" aria-label="Pros">{pros_html}</ul>
+      </div>
+      <div class="pc-col">
+        <h2 class="pc-col-title con-title" id="cons-heading">Where it falls short</h2>
+        <ul class="plist cons" aria-label="Cons">{cons_html}</ul>
+      </div>
+    </section>"""
+
+    # ── 3. Pricing Breakdown ─────────────────────────────────────────────────
+    pricing_tiers = t.get('pricing_tiers', [])
+    if pricing_tiers:
+        rows = ''
+        for tier in pricing_tiers:
+            monthly  = tier.get('monthly', '\u2014')
+            annual   = tier.get('annual', '\u2014')
+            features = tier.get('features', '\u2014')
+            rows += f'<tr><td>{tier["name"]}</td><td>{monthly}</td><td>{annual}</td><td>{features}</td></tr>'
+        pricing_table = f"""
+        <table class="pricing-table">
+          <thead><tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>What\u2019s included</th></tr></thead>
+          <tbody>{rows}</tbody>
+        </table>"""
+    else:
+        free_row = ''
+        if t.get('free_tier'):
+            free_row = '<tr><td>Free</td><td>$0</td><td>$0</td><td>Limited features \u2014 free forever</td></tr>'
+        pricing_table = f"""
+        <table class="pricing-table">
+          <thead><tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>What\u2019s included</th></tr></thead>
+          <tbody>
+            {free_row}
+            <tr><td>Paid</td><td>{t['starting_price']}</td><td>\u2014</td><td>{t['pricing_model']}</td></tr>
+          </tbody>
+        </table>"""
+
+    date_verified = t.get('date_added', '2026')
+    pricing_section = f"""
+    <section class="pricing-section rv" aria-labelledby="pricing-heading">
+      <div class="pricing-section-hdr">
+        <h2 class="review-section-hdr" id="pricing-heading">{name} pricing</h2>
+        <div class="pricing-verified">Prices verified {date_verified}</div>
+      </div>
+      {pricing_table}
+    </section>"""
+
+    # ── 4. Who Should Use This? ──────────────────────────────────────────────
+    yes_items = '\n'.join(f'<li>{b}</li>' for b in t['best_for'])
+    not_ideal_list = t.get('not_ideal_for', t['cons'][:3])
+    no_items = '\n'.join(f'<li>{n}</li>' for n in not_ideal_list)
+
+    who_section = f"""
+    <section class="who-section rv" aria-labelledby="who-heading">
+      <h2 class="review-section-hdr" id="who-heading">Who should use {name}?</h2>
+      <div class="who-grid">
+        <div>
+          <div class="panel-label" style="color:var(--green)">\u2714 This tool is right for you if\u2026</div>
+          <ul class="who-list who-yes">{yes_items}</ul>
+        </div>
+        <div>
+          <div class="panel-label" style="color:var(--amber)">\u2192 Consider an alternative if\u2026</div>
+          <ul class="who-list who-no">{no_items}</ul>
+        </div>
+      </div>
+    </section>"""
+
+    # ── 5. FAQ Section ───────────────────────────────────────────────────────
+    faqs = t.get('faqs', [])
+    if not faqs:
+        faqs = [
+            (f'Is {name} worth it in 2026?',
+             f'{name} scores {sc}/100 in our independent review. {t["verdict"]}'),
+            (f'What is {name} best for?',
+             'Based on our testing, ' + '; '.join(t['best_for'][:3]) + '.'),
+            (f'How much does {name} cost?',
+             f'{name} starts at {t["starting_price"]} ({t["pricing_model"]}). '
+             + ('A free tier is available.' if t.get('free_tier') else 'No free tier is available.')),
+            (f'Does {name} offer a free trial?',
+             (f'Yes \u2014 {name} offers a {t.get("trial_days","")}-day free trial.'
+              if t.get('free_trial')
+              else f'Currently, {name} does not offer a free trial.'
+                   + (' However, it does have a free tier.' if t.get('free_tier') else ''))),
+            (f'What are the main downsides of {name}?',
+             'The key limitations are: ' + '; '.join(t['cons'][:3]) + '.'),
+        ]
+    else:
+        faqs = [(f['q'], f['a']) for f in faqs]
+
+    faq_items = ''
+    for i, (q, a) in enumerate(faqs):
+        faq_items += f"""<div class="faq-item" id="faq-{i}">
+          <button class="faq-q" type="button" aria-expanded="false"
+                  aria-controls="faq-a-{i}"
+                  onclick="this.parentElement.classList.toggle('open');this.setAttribute('aria-expanded',this.parentElement.classList.contains('open'))">
+            {q}
+            <svg class="faq-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-{i}" role="region">{a}</div>
+        </div>"""
+
+    faq_html = f"""
+    <section class="faq-section rv" aria-labelledby="faq-heading">
+      <div class="faq-section-hdr">
+        <h2 class="review-section-hdr" id="faq-heading">Frequently asked questions</h2>
+      </div>
+      {faq_items}
+    </section>"""
+
+    faq_sd = faq_schema(faqs)
+
+    # ── 6. Alternatives Section ──────────────────────────────────────────────
+    alt_slugs = t.get('alternatives', [])
+    if alt_slugs:
+        alt_tools = [get_tool(s) for s in alt_slugs if get_tool(s)]
+    else:
+        alt_tools = [x for x in TOOLS if x['slug'] != slug and x['category'] == t['category']]
+        if len(alt_tools) < 2:
+            alt_tools += [x for x in TOOLS if x['slug'] != slug and x not in alt_tools
+                          and any(r in x.get('roles', []) for r in t.get('roles', []))]
+        alt_tools = sorted(alt_tools, key=lambda x: -x['score'])[:3]
+
+    alt_cards = ''
+    for alt in alt_tools:
+        asc  = alt['score']
+        abg  = 'var(--green-d)' if asc >= 88 else 'var(--cyan-d)'
+        abdr = 'var(--green-g)' if asc >= 88 else 'var(--cyan-g)'
+        acol = 'var(--green)'   if asc >= 88 else 'var(--cyan)'
+        comp_link = ''
+        for comp in COMPARISONS:
+            if (comp['tool_a'] == slug and comp['tool_b'] == alt['slug']) or \
+               (comp['tool_b'] == slug and comp['tool_a'] == alt['slug']):
+                comp_link = f'<a href="/compare/{comp["slug"]}" class="alt-link">Compare \u2192</a>'
+                break
+        alt_cards += f"""<div class="alt-card">
+          <div class="alt-score" style="background:{abg};border:1px solid {abdr};color:{acol}">{asc}/100</div>
+          <div class="alt-info">
+            <div class="alt-name">{alt['name']}</div>
+            <div class="alt-desc">{alt['tagline']}</div>
+          </div>
+          <div class="alt-links">
+            <a href="/tool/{alt['slug']}" class="alt-link">Full review \u2192</a>
+            {comp_link}
+          </div>
+        </div>"""
+
+    alts_html = f"""
+    <section class="alts-section rv" aria-labelledby="alts-heading">
+      <h2 class="review-section-hdr" id="alts-heading">Alternatives to {name}</h2>
+      {alt_cards}
+    </section>"""
+
+    # ── 7. Bottom CTA ────────────────────────────────────────────────────────
+    bottom_cta = f"""
+    <section class="bottom-cta rv">
+      <div class="bottom-cta-text">
+        <div class="bottom-cta-name">Ready to try {name}?</div>
+        <div class="bottom-cta-sub">
+          {sc}/100 MFWAI score \u00b7 Starts at {t['starting_price']}
+          {' \u00b7 Free tier available' if t.get('free_tier') else ''}
+          {' \u00b7 ' + str(t.get('trial_days','')) + '-day free trial' if t.get('free_trial') else ''}
+        </div>
+      </div>
+      <a href="{t['affiliate_url']}" target="_blank"
+         rel="nofollow sponsored noopener noreferrer"
+         class="btn-td-cta" style="width:auto;flex-shrink:0"
+         aria-label="Try {name} \u2014 opens in new tab">
+        Try {name}
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15,3 21,3 21,9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </a>
+    </section>"""
+
+    # ── Related tools ────────────────────────────────────────────────────────
     related = [x for x in TOOLS if x['slug']!=slug and any(r in x.get('roles',[]) for r in t.get('roles',[]))][:3]
     if len(related) < 3:
         extra = [x for x in TOOLS if x['slug']!=slug and x not in related]
         related += extra[:3-len(related)]
     rel_cards = '\n'.join(tool_card(r) for r in related[:3])
 
+    # ── Assemble page ────────────────────────────────────────────────────────
     content = f"""
     {breadcrumb_html([('Home','/'),('Tools','/tools'),(t['category'],f'/category/{slugify(t["category"])}'),
                       (t['name'],f'/tool/{slug}')])}
     <div class="page">
       <div class="td-wrapper">
-        <header class="td-header">
-          <div class="td-header-grid">
-            <div>
-              <div class="td-eyebrow">{t['category'].upper()}</div>
-              <h1 class="td-h1">{t['name']}</h1>
-              <p class="td-tagline">{t['tagline']}</p>
-              <div class="td-meta-row">
-                {''.join(badges)}
-              </div>
-            </div>
-            <div class="td-score-block" aria-label="MFWAI score: {sc} out of 100">
-              <div class="td-score-num" style="color:{sc_col}">{sc}</div>
-              <div class="td-score-label" style="color:{sc_col}">{sc_lbl}</div>
-              <div class="td-score-sub">MFWAI score / 100</div>
-            </div>
-          </div>
-        </header>
-
-        <div class="td-layout">
-          <div>
-            <div class="td-panel">
-              <div class="panel-label">Our verdict</div>
-              <p class="verdict-text">{t['verdict']}</p>
-            </div>
-            <div class="td-panel">
-              <div class="pros-cons-grid">
-                <div>
-                  <div class="panel-label">Pros</div>
-                  <ul class="plist pros" aria-label="Pros">{pros_html}</ul>
-                </div>
-                <div>
-                  <div class="panel-label">Cons</div>
-                  <ul class="plist cons" aria-label="Cons">{cons_html}</ul>
-                </div>
-              </div>
-            </div>
-            <div class="td-panel">
-              <div class="panel-label">Best for</div>
-              <div class="best-for-list">{best_html}</div>
-            </div>
-          </div>
-          <aside class="td-sidebar" aria-label="Pricing and actions">
-            <div class="td-panel">
-              <div class="price-box">
-                <div class="price-from">Starting from</div>
-                <div class="price-value">{t['starting_price']}</div>
-                <div class="price-period">{t['pricing_model']}</div>
-              </div>
-              <a href="{t['affiliate_url']}" target="_blank"
-                 rel="nofollow sponsored noopener noreferrer"
-                 class="btn-td-cta">
-                Try {t['name']}
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                  <polyline points="15,3 21,3 21,9"/>
-                  <line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-              </a>
-              <div class="trust-items" role="list">
-                <div class="trust-item" role="listitem">
-                  <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  Affiliate link — no extra cost to you
-                </div>
-                {'<div class="trust-item" role="listitem"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'+str(t["trial_days"])+"-day free trial available</div>" if t.get('free_trial') else ''}
-                <div class="trust-item" role="listitem">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                  Reviewed {t.get('date_added', '2026')}
-                </div>
-                <div class="trust-item" role="listitem">
-                  <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  Independent editorial
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
+        {header}
+        {verdict_box}
+        {pros_cons}
+        {pricing_section}
+        {who_section}
+        {faq_html}
+        {alts_html}
+        {bottom_cta}
       </div>
     </div>
     <div class="page">
@@ -2282,9 +2884,9 @@ def tool_detail(slug):
         desc=f'{t["name"]}: {t["tagline"][:100]}. Score: {sc}/100. From {t["starting_price"]}. Read the full review.',
         content=content,
         schema=tool_schema(t),
+        schema2=faq_sd,
         bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]),
         og_type='article')
-
 
 @app.route('/compare')
 def compare_index():
