@@ -1,5 +1,3 @@
-
-
 import os, json, re, datetime
 from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
 from flask import Flask, render_template_string, request, abort, Response, jsonify
@@ -18,6 +16,7 @@ if os.environ.get("STAGING") == "true":
 
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
+OG_IMAGE   = SITE_URL + "/static/og-default.png"
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -44,16 +43,168 @@ def score_label(s):
     return 'Decent'
 
 def tool_schema(t):
-    return json.dumps({"@context":"https://schema.org","@type":"SoftwareApplication",
-        "name":t['name'],"description":t['tagline'],
-        "applicationCategory":"BusinessApplication",
-        "offers":{"@type":"Offer","priceCurrency":"USD"}})
+    """SoftwareApplication + Review JSON-LD for /tool/[slug] pages."""
+    sc = t['score']
+    price_str = re.sub(r'[^0-9.]', '', t['starting_price'].split('/')[0]) or "0"
+    review_count = t.get('review_count', '1').replace(',', '').replace('+', '') or "1"
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": t['name'],
+        "description": t['tagline'],
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "USD",
+            "price": price_str,
+            "url": t['affiliate_url']
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": str(round(sc / 20, 1)),
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": review_count
+        },
+        "review": {
+            "@type": "Review",
+            "author": {
+                "@type": "Organization",
+                "name": SITE_NAME
+            },
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": str(round(sc / 20, 1)),
+                "bestRating": "5",
+                "worstRating": "1"
+            },
+            "reviewBody": t['verdict']
+        }
+    })
 
 def bc_schema(crumbs):
     return json.dumps({"@context":"https://schema.org","@type":"BreadcrumbList",
         "itemListElement":[{"@type":"ListItem","position":i+1,"name":n,
         "item":(SITE_URL+u if not u.startswith('http') else u)}
         for i,(n,u) in enumerate(crumbs)]})
+
+
+def website_schema():
+    """WebSite + SearchAction JSON-LD — appears on every page."""
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": SITE_NAME,
+        "url": SITE_URL + "/",
+        "description": "Independent AI tool reviews with transparent scores for freelancers, marketers, and builders.",
+        "publisher": {"@type": "Organization", "name": SITE_NAME, "url": SITE_URL + "/"},
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": {"@type": "EntryPoint", "urlTemplate": SITE_URL + "/tools?q={search_term_string}"},
+            "query-input": "required name=search_term_string"
+        }
+    })
+
+
+def faq_schema(pairs):
+    """FAQPage JSON-LD from a list of (question, answer) tuples."""
+    if not pairs:
+        return ''
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {"@type": "Question", "name": q,
+             "acceptedAnswer": {"@type": "Answer", "text": a}}
+            for q, a in pairs
+        ]
+    })
+
+
+def itemlist_schema(tools_list, list_name="AI Tools"):
+    """ItemList JSON-LD for directory/index pages."""
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": list_name,
+        "numberOfItems": len(tools_list),
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "name": t['name'],
+             "url": SITE_URL + "/tool/" + t['slug']}
+            for i, t in enumerate(tools_list[:50])
+        ]
+    })
+
+
+def comparison_schema(ta, tb, c):
+    """Comparison page structured data."""
+    def app_entry(t):
+        return {
+            "@type": "SoftwareApplication", "name": t['name'],
+            "description": t['tagline'], "applicationCategory": "BusinessApplication",
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": str(round(t['score'] / 20, 1)),
+                "bestRating": "5", "worstRating": "1",
+                "ratingCount": t.get('review_count', '1').replace(',', '').replace('+', '') or "1"
+            }
+        }
+    return json.dumps({
+        "@context": "https://schema.org", "@type": "WebPage",
+        "name": c['headline'], "description": c.get('meta_description', c['description']),
+        "about": [app_entry(ta), app_entry(tb)]
+    })
+
+
+def extract_faq_from_blog(post):
+    """Extract FAQ pairs from blog content H2/H3 headings phrased as questions."""
+    content = post.get('content', '')
+    pairs = []
+    pattern = r'<h[23][^>]*>(.*?\?.*?)</h[23]>\s*<p>(.*?)</p>'
+    matches = re.findall(pattern, content, re.DOTALL | re.IGNORECASE)
+    for q, a in matches:
+        clean_q = re.sub(r'<[^>]+>', '', q).strip()
+        clean_a = re.sub(r'<[^>]+>', '', a).strip()
+        if clean_q and clean_a and len(clean_a) > 30:
+            pairs.append((clean_q, clean_a[:500]))
+    title = post.get('heading', post.get('title', ''))
+    desc = post.get('description', '')
+    if desc and len(desc) > 40:
+        if 'best' in title.lower():
+            pairs.insert(0, (f"What are the {title.split('—')[0].strip().lower()}?", desc[:500]))
+        elif 'how to' in title.lower():
+            pairs.insert(0, (title.split('—')[0].strip() + '?', desc[:500]))
+    return pairs[:5]
+
+
+def tool_meta_title(t):
+    """SEO-optimized meta title for tool pages. Max ~60 chars."""
+    name = t['name']
+    cat = t['category']
+    title = f"{name} Review 2026 — {cat} | MFWAI"
+    if len(title) <= 60: return title
+    title = f"{name} Review 2026 | Moving Forward With AI"
+    if len(title) <= 60: return title
+    return f"{name} Review 2026 | MFWAI"
+
+
+def comp_meta_title(ta_name, tb_name):
+    """SEO-optimized meta title for comparison pages. Max ~60 chars."""
+    title = f"{ta_name} vs {tb_name} 2026 — Which Is Better? | MFWAI"
+    if len(title) <= 60: return title
+    title = f"{ta_name} vs {tb_name} 2026 | MFWAI"
+    if len(title) <= 60: return title
+    return f"{ta_name} vs {tb_name} | MFWAI"
+
+
+def blog_meta_title(post):
+    """Meta title for blog posts. Max ~60 chars."""
+    base = post['title']
+    full = f"{base} | MFWAI"
+    if len(full) <= 60: return full
+    return base[:55] + chr(8230)
+
 
 def generate_comparison_verdict(ta, tb):
     if not ta or not tb:
@@ -349,10 +500,6 @@ body::after {
 .nav-links > a:hover, .nav-drop-btn:hover { color:var(--ink); background:var(--cyan-d) }
 .nav-links > a.active { color:var(--cyan) }
 
-/* ── FIX 1: position:relative added so .drop-menu (position:absolute) anchors
-   to the .nav-drop wrapper, not the distant sticky .nav ancestor.
-   Without this, left:0 / top:100% resolve against the full nav bar,
-   placing the menu far to the left and at the wrong vertical offset. ── */
 .nav-drop { position:relative }
 .drop-chevron {
   width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2;
@@ -408,7 +555,7 @@ body::after {
 .nav-icon-btn:hover { background:var(--cyan-d); border-color:var(--bdr2) }
 .nav-icon-btn svg { width:15px; height:15px; stroke:var(--ink3); fill:none; stroke-width:1.8 }
 
-/* Mobile theme toggle — shown on mobile alongside hamburger */
+/* Mobile theme toggle */
 #mob-theme-btn {
   display:none;
   width:36px; height:36px; border-radius:var(--r2);
@@ -435,10 +582,6 @@ body::after {
 #hbg.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
 #hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg) }
 
-/* ── FIX 2: #mob z-index raised from 190 → 210 so the mobile overlay renders
-   ABOVE the sticky nav bar (z-index:200). Previously the nav sat on top of the
-   open menu, making the top portion of the menu visually and interactively
-   blocked by the nav header. ── */
 #mob {
   display:none; position:fixed; inset:0;
   background:var(--bg); z-index:210; overflow-y:auto;
@@ -710,7 +853,7 @@ body::after {
 .blog-link { font-family:var(--font-mono); font-size:.66rem; color:var(--amber); display:inline-flex; align-items:center; gap:5px; transition:gap .2s; letter-spacing:.04em; text-transform:uppercase; }
 .blog-card:hover .blog-link { gap:9px }
 
-/* ── Newsletter / Email Section (simplified) ─────── */
+/* Newsletter / Email Section */
 .email-sec {
   position:relative; z-index:1;
   background:var(--surf);
@@ -931,12 +1074,9 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 @media (max-width:768px) {
   .nav-in { padding:0 20px; height:56px }
   .nav-links, .nav-search { display:none }
-
-  #theme-btn { display:none; }   /* ✅ hide desktop theme toggle */
+  #theme-btn { display:none; }
   #mob-theme-btn { display:flex; }
-
   #hbg { display:flex }
-
   .page, .page-narrow { padding:0 20px }
   .affil-in { padding:10px 20px }
   .email-inner { padding:0 20px }
@@ -986,14 +1126,23 @@ BASE = """<!DOCTYPE html>
 <link rel="canonical" href="{{ canon }}">
 <meta property="og:title" content="{{ title }}">
 <meta property="og:description" content="{{ desc[:200] }}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{ og_type }}">
 <meta property="og:url" content="{{ canon }}">
 <meta property="og:site_name" content="Moving Forward With AI">
-<meta property="og:locale" content="en">
+<meta property="og:locale" content="en_GB">
+<meta property="og:image" content="{{ og_image }}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ title }}">
+<meta name="twitter:description" content="{{ desc[:200] }}">
+<meta name="twitter:image" content="{{ og_image }}">
 <meta name="theme-color" content="#060810">
-{% if schema %}<script type="application/ld+json">{{ schema|safe }}</script>{% endif %}
+<!-- Structured Data: WebSite (sitewide) -->
+<script type="application/ld+json">{{ ws_schema|safe }}</script>
+<!-- Structured Data: BreadcrumbList -->
 {% if bcs %}<script type="application/ld+json">{{ bcs|safe }}</script>{% endif %}
+<!-- Structured Data: Page-specific -->
+{% if schema %}<script type="application/ld+json">{{ schema|safe }}</script>{% endif %}
+{% if schema2 %}<script type="application/ld+json">{{ schema2|safe }}</script>{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
@@ -1239,7 +1388,6 @@ BASE = """<!DOCTYPE html>
 <script>
 /* ======================================================
    SHARED THEME LOGIC
-   Works for BOTH desktop (#theme-btn) and mobile (#mob-theme-btn)
 ====================================================== */
 (function () {
   var html = document.documentElement;
@@ -1270,16 +1418,13 @@ BASE = """<!DOCTYPE html>
     }
     try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
     syncAllIcons(isLight);
-    /* Force reflow for Safari */
     html.style.display = 'none';
     void html.offsetHeight;
     html.style.display = '';
   }
 
-  /* Sync icons on load */
   syncAllIcons(html.classList.contains('light'));
 
-  /* Wire up both buttons */
   ['theme-btn', 'mob-theme-btn'].forEach(function(id) {
     var btn = document.getElementById(id);
     if (btn) {
@@ -1327,7 +1472,6 @@ window.addEventListener('scroll', function () {
     if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); }
   });
 
-  /* Close when any link inside the mobile menu is tapped */
   menu.querySelectorAll('a').forEach(function (a) {
     a.addEventListener('click', function () { closeMenu(); });
   });
@@ -1350,7 +1494,6 @@ window.addEventListener('scroll', function () {
 
 /* ======================================================
    DESKTOP DROPDOWN MENUS
-   Uses explicit IDs -- no fragile querySelectorAll
 ====================================================== */
 (function () {
   var dropIds = ['drop-compare', 'drop-roles'];
@@ -1383,7 +1526,6 @@ window.addEventListener('scroll', function () {
   });
 
   document.addEventListener('click', function(e) {
-    /* Close if click is outside any dropdown */
     var insideDrop = dropIds.some(function(id) {
       var drop = document.getElementById(id);
       return drop && drop.contains(e.target);
@@ -1420,10 +1562,9 @@ window.addEventListener('scroll', function () {
 
 /* ======================================================
    SEARCH OVERLAY
-   Fetches /api/tools on first keystroke (lazy load)
 ====================================================== */
 (function() {
-  var allTools   = null;   /* null = not yet loaded */
+  var allTools   = null;
   var loading    = false;
   var sov        = document.getElementById('sov');
   var sovCount   = document.getElementById('sov-count');
@@ -1563,12 +1704,14 @@ if (ef) {
 # COMPONENT BUILDERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def render(title, desc, content, schema='', bcs=''):
+def render(title, desc, content, schema='', bcs='', schema2='', og_type='website', og_image=''):
     canon = SITE_URL + (request.path.rstrip('/') or '/')
     return render_template_string(BASE,
         title=title, desc=desc, content=content,
         css=CSS, roles=ROLES, slugify=slugify,
-        canon=canon, schema=schema, bcs=bcs)
+        canon=canon, schema=schema, bcs=bcs, schema2=schema2,
+        og_type=og_type, og_image=og_image or OG_IMAGE,
+        ws_schema=website_schema())
 
 
 def breadcrumb_html(crumbs):
@@ -1926,8 +2069,9 @@ def home():
 
     return render(
         title='Moving Forward With AI — Independent AI Tool Reviews 2026',
-        desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders.',
-        content=content)
+        desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders. No paid placements.',
+        content=content,
+        bcs=bc_schema([('Home', '/')]))
 
 
 @app.route('/tools')
@@ -1955,9 +2099,10 @@ def tools_all():
     <div class="page" style="padding-top:40px"><div class="tools-grid">{cards}</div></div>
     {pager}"""
     return render(
-        title='All AI Tools Reviewed — Moving Forward With AI',
-        desc=f'Browse all {len(TOOLS)} AI tools reviewed on Moving Forward With AI.',
+        title=f'Best AI Tools 2026 — {len(TOOLS)} Independently Reviewed | MFWAI',
+        desc=f'Browse all {len(TOOLS)} AI tools reviewed independently. Transparent scores, honest verdicts, zero paid placements.',
         content=content,
+        schema=itemlist_schema(TOOLS, "AI Tools Directory"),
         bcs=bc_schema([('Home', '/'), ('All Tools', '/tools')]))
 
 
@@ -2133,11 +2278,12 @@ def tool_detail(slug):
     </div>"""
 
     return render(
-        title=f'{t["name"]} Review 2026 — Score & Verdict | Moving Forward With AI',
-        desc=f'{t["name"]}: {t["tagline"]}. MFWAI score: {sc}/100. From {t["starting_price"]}.',
+        title=tool_meta_title(t),
+        desc=f'{t["name"]}: {t["tagline"][:100]}. Score: {sc}/100. From {t["starting_price"]}. Read the full review.',
         content=content,
         schema=tool_schema(t),
-        bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]))
+        bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]),
+        og_type='article')
 
 
 @app.route('/compare')
@@ -2171,9 +2317,10 @@ def compare_index():
       <div class="comp-grid">{cards}</div>
     </div>"""
     return render(
-        'Compare AI Tools Side by Side — Moving Forward With AI',
-        'Head-to-head AI tool comparisons with clear verdicts.',
-        content)
+        'Compare AI Tools Side by Side 2026 | MFWAI',
+        f'Head-to-head AI tool comparisons with clear verdicts. {len(COMPARISONS)} matchups reviewed independently.',
+        content,
+        bcs=bc_schema([('Home', '/'), ('Compare', '/compare')]))
 
 
 @app.route('/compare/<slug>')
@@ -2247,10 +2394,12 @@ def compare_detail(slug):
     {email_capture()}"""
 
     return render(
-        title=f'{c["headline"]} 2026 — Which Is Better? | Moving Forward With AI',
-        desc=c.get('meta_description', c['description']),
+        title=comp_meta_title(ta['name'], tb['name']),
+        desc=c.get('meta_description', c['description'])[:155],
         content=content,
-        bcs=bc_schema([('Home', '/'), ('Compare', '/compare'), (c['headline'], f'/compare/{slug}')]))
+        schema=comparison_schema(ta, tb, c),
+        bcs=bc_schema([('Home', '/'), ('Compare', '/compare'), (c['headline'], f'/compare/{slug}')]),
+        og_type='article')
 
 
 @app.route('/compare/custom')
@@ -2292,9 +2441,10 @@ def blog():
     </div>
     <div class="page"><div class="blog-grid">{cards}</div></div>"""
     return render(
-        'AI Tool Guides for Freelancers & Marketers — Moving Forward With AI',
-        'In-depth guides, comparisons and how-tos for AI tools.',
-        content)
+        'AI Tool Guides for Freelancers & Marketers 2026 | MFWAI',
+        'In-depth guides, comparisons and how-tos for AI tools. Updated weekly.',
+        content,
+        bcs=bc_schema([('Home', '/'), ('Guides', '/blog')]))
 
 
 @app.route('/blog/<slug>')
@@ -2332,11 +2482,18 @@ def blog_detail(slug):
     </div>
     {'<div class="page"><section class="sec" aria-labelledby="blog-tools-heading"><div class="sec-top"><div><div class="sec-eyebrow">Mentioned in this guide</div><h2 class="sec-h2" id="blog-tools-heading">Related <em>tools</em></h2></div></div><div class="tools-grid">'+rel_cards+'</div></section></div>' if rel_cards else ''}
     {email_capture()}"""
+
+    # Extract FAQ pairs for structured data
+    faq_pairs = extract_faq_from_blog(post)
+    faq_sd = faq_schema(faq_pairs) if faq_pairs else ''
+
     return render(
-        title=post['title'] + ' — Moving Forward With AI',
-        desc=post.get('meta_description', post.get('description', '')),
+        title=blog_meta_title(post),
+        desc=post.get('meta_description', post.get('description', ''))[:155],
         content=content,
-        bcs=bc_schema([('Home', '/'), ('Guides', '/blog'), (post['title'], f'/blog/{slug}')]))
+        schema=faq_sd,
+        bcs=bc_schema([('Home', '/'), ('Guides', '/blog'), (post['title'], f'/blog/{slug}')]),
+        og_type='article')
 
 
 @app.route('/category/<cat_slug>')
@@ -2355,9 +2512,10 @@ def category(cat_slug):
     </div>
     <div class="page"><div class="tools-grid">{cards}</div></div>"""
     return render(
-        f'Best {cat_name} AI Tools 2026 | Moving Forward With AI',
-        f'Independent reviews of the best {cat_name.lower()} AI tools in 2026.',
+        f'Best {cat_name} AI Tools 2026 | MFWAI',
+        f'Independent reviews of the best {cat_name.lower()} AI tools in 2026. Transparent scores and honest verdicts.',
         content,
+        schema=itemlist_schema(tools, f"{cat_name} AI Tools"),
         bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (cat_name, f'/category/{cat_slug}')]))
 
 
@@ -2372,7 +2530,8 @@ def affiliate_disclosure():
       <h2>Contact</h2>
       <p>Questions? <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a></p>
     </div>"""
-    return render('Affiliate Disclosure — Moving Forward With AI', 'How MFWAI earns commissions while maintaining editorial independence.', content)
+    return render('Affiliate Disclosure — Moving Forward With AI', 'How MFWAI earns commissions while maintaining editorial independence.', content,
+                  bcs=bc_schema([('Home', '/'), ('Affiliate Disclosure', '/affiliate-disclosure')]))
 
 
 @app.route('/privacy')
@@ -2387,7 +2546,8 @@ def privacy():
       <h2>Your rights</h2>
       <p>Contact <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a> to exercise data rights.</p>
     </div>"""
-    return render('Privacy Policy — Moving Forward With AI', 'Privacy policy for Moving Forward With AI.', content)
+    return render('Privacy Policy — Moving Forward With AI', 'Privacy policy for Moving Forward With AI.', content,
+                  bcs=bc_schema([('Home', '/'), ('Privacy Policy', '/privacy')]))
 
 
 @app.route('/terms')
@@ -2400,7 +2560,8 @@ def terms():
       <h2>Affiliate links</h2>
       <p>See our <a href="/affiliate-disclosure" style="color:var(--cyan)">Affiliate Disclosure</a>.</p>
     </div>"""
-    return render('Terms of Service — Moving Forward With AI', 'Terms for Moving Forward With AI.', content)
+    return render('Terms of Service — Moving Forward With AI', 'Terms for Moving Forward With AI.', content,
+                  bcs=bc_schema([('Home', '/'), ('Terms', '/terms')]))
 
 
 @app.route('/api/tools')
