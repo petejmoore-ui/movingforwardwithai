@@ -2334,6 +2334,7 @@ def build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b):
 
 @app.route('/')
 def home():
+    # ── Panel data (unchanged) ───────────────────────────────────────────────
     panel_tools = sorted(TOOLS, key=lambda t: -t['score'])[:4]
     panel_items = ''
     for i, t in enumerate(panel_tools):
@@ -2348,10 +2349,17 @@ def home():
           <div class="ptool-score {sc_cls}">{sc}</div>
         </a>"""
 
-    role_chips = '\n'.join(
-        f'<a href="/for/{r["slug"]}" class="role-chip"><span class="chip-icon" aria-hidden="true">{r["icon"]}</span>{r["name"]}</a>'
-        for r in ROLES)
-
+    # ── 1. HERO — problem-first, keyword-led H1, two distinct CTAs ───────────
+    #
+    # CONVERSION REASONING:
+    # The old H1 ("Cutting through the AI noise") is clever but invisible to
+    # search engines and ambiguous to first-time visitors. Visitors need to
+    # understand the value proposition in <3 seconds. Problem-first framing
+    # (agitate the pain → present the solution) is the highest-converting
+    # homepage pattern for information products. The two CTAs serve different
+    # intent stages: "Find my stack" captures undecided visitors (higher intent),
+    # "Browse all tools" serves browsers. Separating them avoids choice paralysis.
+    #
     hero = f"""<div class="page">
   <section class="hero" aria-labelledby="hero-heading">
     <div>
@@ -2359,38 +2367,27 @@ def home():
         <div class="hero-eyebrow-dot" aria-hidden="true"></div>
         Independent AI Tool Reviews · Updated 2026
       </div>
+
       <h1 class="hero-h1" id="hero-heading">
-        Cutting through<br>the <em>AI noise</em>
-        <span class="serif-accent">Clear verdicts. Real results.</span>
+        Independent <em>AI tool reviews</em>
+        <span class="serif-accent">Cut through the noise. Find what works.</span>
       </h1>
-      <p class="hero-sub">Independent reviews, transparent scores, and clear verdicts — helping freelancers, marketers, and business owners find AI tools that actually work.</p>
-      <div class="role-selector" aria-label="Browse by role">
-        <div class="role-label" id="role-label">// I am a</div>
-        <div class="role-chips" role="list" aria-labelledby="role-label">{role_chips}</div>
-      </div>
+
+      <p class="hero-sub">
+        Hundreds of AI tools, impossible to evaluate them all — we do it for you.
+        Transparent scores, honest verdicts, zero paid placements. Built for
+        freelancers, marketers, and business owners who need answers, not hype.
+      </p>
+
       <div class="hero-ctas">
-        <a href="/tools" class="btn-primary">Browse all tools →</a>
-        <a href="/compare" class="btn-ghost">Compare tools</a>
-      </div>
-      <div class="stats-row" aria-label="Site statistics">
-        <div class="stat-item">
-          <div class="stat-num">{len(TOOLS)}<em>+</em></div>
-          <div class="stat-lbl">tools reviewed</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">{len(ROLES)}<em>+</em></div>
-          <div class="stat-lbl">role guides</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num"><em>$0</em></div>
-          <div class="stat-lbl">paid placements</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">{len(COMPARISONS)}<em>+</em></div>
-          <div class="stat-lbl">comparisons</div>
-        </div>
+        <a href="#tool-finder" class="btn-primary">
+          Find my tool stack
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/tools" class="btn-ghost">Browse all {len(TOOLS)} tools</a>
       </div>
     </div>
+
     <aside class="hero-panel" aria-label="Top rated tools leaderboard">
       <div class="panel-hdr">
         <div class="panel-title">Top-rated tools</div>
@@ -2402,7 +2399,144 @@ def home():
   </section>
 </div>"""
 
-    role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv">
+    # ── 2. TRUST / SOCIAL PROOF BAR ──────────────────────────────────────────
+    #
+    # CONVERSION REASONING:
+    # Trust signals immediately after the hero reduce bounce. Numbers are
+    # concrete and scannable — they answer "why should I trust this site?"
+    # before the visitor has to scroll. "$0 paid placements" directly addresses
+    # the #1 objection to review sites (that reviews are bought). "Updated
+    # weekly" signals freshness, which matters for fast-moving AI tool landscape.
+    #
+    trust_bar = f"""<div class="page" style="padding-top:0;padding-bottom:0" role="note" aria-label="Site statistics">
+  <div style="
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:0;
+    padding:18px 0 24px;
+    border-bottom:1px solid var(--div);
+  ">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--cyan)">{len(TOOLS)}+</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">tools<br>reviewed</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--cyan)">{len(COMPARISONS)}+</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">head-to-head<br>comparisons</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--green)">$0</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">paid<br>placements</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--amber)">Weekly</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">updates &amp;<br>new reviews</span>
+    </div>
+  </div>
+</div>"""
+
+    # ── 3. TOOL FINDER — role dropdown → /for/[role] ─────────────────────────
+    #
+    # CONVERSION REASONING:
+    # "Not sure where to start?" is the most common mental state of a first-time
+    # visitor. A single-question dropdown is frictionless — it takes one click
+    # and one button press to get a personalised recommendation. This dramatically
+    # reduces cognitive load vs presenting a 30-tool grid. Placing it prominently
+    # above the product grid captures undecided visitors before they bounce.
+    # The select + button pattern converts better than chips because it forces
+    # commitment (you pick one) and has a clear, singular action.
+    #
+    role_options = '\n'.join(
+        f'<option value="/for/{r["slug"]}">{r["icon"]} {r["name"]}</option>'
+        for r in ROLES
+    )
+
+    tool_finder = f"""<div class="page" id="tool-finder">
+  <section style="
+    background:var(--surf);
+    border:1px solid var(--bdr2);
+    border-radius:var(--r4);
+    padding:36px 40px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:32px;
+    align-items:center;
+    box-shadow:var(--sh1);
+    position:relative;
+    overflow:hidden;
+    margin-top:clamp(40px,5vw,64px);
+  " aria-labelledby="finder-heading">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan),var(--violet))"></div>
+    <div>
+      <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <span style="display:inline-block;width:16px;height:1px;background:var(--amber)"></span>
+        Not sure where to start?
+      </div>
+      <h2 id="finder-heading" style="font-family:var(--font-display);font-size:clamp(1.4rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;color:var(--ink);margin-bottom:8px;line-height:1.1">
+        Find your <em style="font-style:normal;color:var(--cyan)">recommended stack</em>
+      </h2>
+      <p style="font-size:.9rem;color:var(--ink3);line-height:1.7;max-width:420px">
+        Tell us your role and we'll show you the exact tools our reviewers recommend — scored and ranked.
+      </p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="role-finder-select" style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4)">I am a&hellip;</label>
+        <select id="role-finder-select"
+          style="
+            background:var(--bg3);
+            border:1px solid var(--bdr2);
+            border-radius:var(--r2);
+            padding:12px 44px 12px 16px;
+            color:var(--ink);
+            font-family:var(--font-body);
+            font-size:.92rem;
+            font-weight:500;
+            outline:none;
+            cursor:pointer;
+            appearance:none;
+            -webkit-appearance:none;
+            min-width:240px;
+            background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%237c8db5' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\");
+            background-repeat:no-repeat;
+            background-position:right 14px center;
+            transition:border-color .2s,box-shadow .2s;
+          "
+          onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px var(--cyan-d)'"
+          onblur="this.style.borderColor='var(--bdr2)';this.style.boxShadow='none'"
+          aria-label="Select your role">
+          <option value="" disabled selected>Select your role…</option>
+          {role_options}
+        </select>
+      </div>
+      <div style="padding-top:22px">
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="var v=document.getElementById('role-finder-select').value;if(v)window.location.href=v;"
+          aria-label="Go to my recommended tool stack">
+          Show my stack
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>"""
+
+    # ── 4. ROLE CARDS — repositioned above tools grid, scannable ─────────────
+    #
+    # CONVERSION REASONING:
+    # The original role chips were small pills buried in the hero — decorative,
+    # not actionable. Dedicated cards with icon + title + tool count + one-line
+    # description are far more scannable and communicate value instantly.
+    # Positioning role cards BEFORE the tools grid means undecided visitors get
+    # personalised routing before being confronted with a wall of 12 tool cards.
+    # The tool count ("6 recommended tools") sets expectation and builds
+    # confidence that a curated list exists.
+    #
+    role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv" aria-label="{r['name']}: {len(r['tool_slugs'])} recommended tools">
       <span class="rc-icon" aria-hidden="true">{r['icon']}</span>
       <div class="rc-name">{r['name']}</div>
       <div class="rc-desc">{r['description']}</div>
@@ -2413,27 +2547,33 @@ def home():
     roles_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="roles-heading">
     <div class="sec-top">
-      <div><div class="sec-eyebrow">Built for your role</div>
-      <h2 class="sec-h2" id="roles-heading">Find your <em>perfect stack</em></h2></div>
+      <div>
+        <div class="sec-eyebrow">Built for your role</div>
+        <h2 class="sec-h2" id="roles-heading">Find your <em>perfect stack</em></h2>
+      </div>
       <a href="/tools" class="sec-link">All tools →</a>
     </div>
     <div class="roles-grid">{role_cards}</div>
   </section>
 </div>"""
 
+    # ── Top tools grid (unchanged, now positioned after roles) ───────────────
     featured  = [t for t in TOOLS if t.get('featured')]
     cards_html = '\n'.join(tool_card(t) for t in featured)
     tools_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="featured-heading">
     <div class="sec-top">
-      <div><div class="sec-eyebrow">Highest rated · Featured picks</div>
-      <h2 class="sec-h2" id="featured-heading">Top <em>AI tools</em> right now</h2></div>
-      <a href="/tools" class="sec-link">All tools →</a>
+      <div>
+        <div class="sec-eyebrow">Highest rated · Featured picks</div>
+        <h2 class="sec-h2" id="featured-heading">Top <em>AI tools</em> right now</h2>
+      </div>
+      <a href="/tools" class="sec-link">All {len(TOOLS)} tools →</a>
     </div>
     <div class="tools-grid">{cards_html}</div>
   </section>
 </div>"""
 
+    # ── Comparisons section (unchanged) ─────────────────────────────────────
     comp_cards = '\n'.join(f"""<a href="/compare/{c['slug']}" class="comp-card rv">
       <div class="comp-vs">
         <span class="comp-tool-name">{get_tool(c['tool_a'])['name']}</span>
@@ -2447,42 +2587,89 @@ def home():
     comp_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="compare-heading">
     <div class="sec-top">
-      <div><div class="sec-eyebrow">Head to head · High intent</div>
-      <h2 class="sec-h2" id="compare-heading"><em>Compare</em> tools side by side</h2></div>
-      <a href="/compare" class="sec-link">All comparisons →</a>
+      <div>
+        <div class="sec-eyebrow">Head to head · High intent</div>
+        <h2 class="sec-h2" id="compare-heading"><em>Compare</em> tools side by side</h2>
+      </div>
+      <a href="/compare" class="sec-link">All {len(COMPARISONS)} comparisons →</a>
     </div>
     <div class="comp-grid">{comp_cards}</div>
   </section>
 </div>"""
 
-    posts = sorted([{**v, 'slug': k} for k, v in BLOG_POSTS.items()], key=lambda x: x['date'], reverse=True)
-    blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv">
+    # ── 5. LATEST GUIDES — richer cards, promoted position ───────────────────
+    #
+    # CONVERSION REASONING:
+    # Guides are high-intent SEO traffic drivers and the best way to build
+    # topical authority. Promoting them prominently (with category tag, date,
+    # and description) gives search-arrival visitors a clear next step, reducing
+    # pogo-stick bounce. The category tag + date combo signals freshness and
+    # specificity. Placing guides BEFORE the email capture means visitors who
+    # engage with a guide are warmer when they hit the newsletter ask.
+    #
+    posts = sorted(
+        [{**v, 'slug': k} for k, v in BLOG_POSTS.items()],
+        key=lambda x: x['date'], reverse=True
+    )
+    blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv"
+        aria-label="Guide: {p['title']}">
       <div class="blog-card-accent"></div>
       <div class="blog-card-body">
-        <div class="blog-eyebrow">{datetime.datetime.strptime(p['date'],'%Y-%m-%d').strftime('%d %b %Y')} · {p.get('category','Guide')}</div>
+        <div class="blog-eyebrow">
+          {datetime.datetime.strptime(p['date'],'%Y-%m-%d').strftime('%d %b %Y')}
+          &nbsp;·&nbsp;{p.get('category','Guide')}
+        </div>
         <div class="blog-title">{p['title']}</div>
         <div class="blog-desc">{p.get('description','')}</div>
-        <div class="blog-link">Read guide →</div>
+        <div class="blog-link" aria-hidden="true">Read guide →</div>
       </div>
     </a>""" for p in posts[:3])
 
     blog_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="guides-heading">
     <div class="sec-top">
-      <div><div class="sec-eyebrow">Guides · Analysis · How-tos</div>
-      <h2 class="sec-h2" id="guides-heading">Latest <em>guides</em></h2></div>
+      <div>
+        <div class="sec-eyebrow">Guides · Analysis · How-tos</div>
+        <h2 class="sec-h2" id="guides-heading">Latest <em>guides</em></h2>
+      </div>
       <a href="/blog" class="sec-link">All guides →</a>
     </div>
     <div class="blog-grid">{blog_cards}</div>
   </section>
 </div>"""
 
-    content = (hero + affil_strip() + roles_sec + tools_sec + comp_sec
-               + email_capture() + blog_sec + '<div style="height:56px"></div>')
+    # ── Final page assembly — new section order ───────────────────────────────
+    #
+    # ORDER RATIONALE:
+    #   hero           → establish what the site is, hook the visitor
+    #   trust_bar      → immediately validate credibility
+    #   affil_strip    → transparency (legal + trust)
+    #   tool_finder    → capture undecided visitors early
+    #   roles_sec      → personalised routing before the full grid
+    #   tools_sec      → featured products for visitors who are ready to browse
+    #   comp_sec       → decision-stage content
+    #   blog_sec       → promotes guides / SEO / authority building
+    #   email_capture  → warmed-up visitors are more likely to subscribe
+    #
+    content = (
+        hero
+        + trust_bar
+        + affil_strip()
+        + tool_finder
+        + roles_sec
+        + tools_sec
+        + comp_sec
+        + blog_sec
+        + email_capture()
+        + '<div style="height:56px"></div>'
+    )
 
     return render(
-        title='Moving Forward With AI — Independent AI Tool Reviews 2026',
-        desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders. No paid placements.',
+        title='Independent AI Tool Reviews 2026 — Moving Forward With AI',
+        desc=(
+            f'Independent reviews of {len(TOOLS)}+ AI tools with transparent scores. '
+            'No paid placements. Built for freelancers, marketers, and business owners.'
+        ),
         content=content,
         bcs=bc_schema([('Home', '/')]))
 
