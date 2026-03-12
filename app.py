@@ -1,17 +1,28 @@
-
-
 import os, json, re, datetime
 from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
 from flask import Flask, render_template_string, request, abort, Response, jsonify
+from flask_caching import Cache
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app        = Flask(__name__)
 
+# ── Flask-Caching Configuration ──────────────────────────────────────────────
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+cache = Cache(app)
+
+if os.environ.get("STAGING") == "true":
+    @app.after_request
+    def add_header(response):
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        return response
+
 
 SITE_URL   = "https://www.movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
+OG_IMAGE   = SITE_URL + "/static/og-default.png"
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -38,16 +49,159 @@ def score_label(s):
     return 'Decent'
 
 def tool_schema(t):
-    return json.dumps({"@context":"https://schema.org","@type":"SoftwareApplication",
-        "name":t['name'],"description":t['tagline'],
-        "applicationCategory":"BusinessApplication",
-        "offers":{"@type":"Offer","priceCurrency":"USD"}})
+    sc = t['score']
+    price_str = re.sub(r'[^0-9.]', '', t['starting_price'].split('/')[0]) or "0"
+    review_count = t.get('review_count', '1').replace(',', '').replace('+', '') or "1"
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": t['name'],
+        "description": t['tagline'],
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "USD",
+            "price": price_str,
+            "url": t['affiliate_url']
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": str(round(sc / 20, 1)),
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": review_count
+        },
+        "review": {
+            "@type": "Review",
+            "author": {
+                "@type": "Organization",
+                "name": SITE_NAME
+            },
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": str(round(sc / 20, 1)),
+                "bestRating": "5",
+                "worstRating": "1"
+            },
+            "reviewBody": t['verdict']
+        }
+    })
 
 def bc_schema(crumbs):
     return json.dumps({"@context":"https://schema.org","@type":"BreadcrumbList",
         "itemListElement":[{"@type":"ListItem","position":i+1,"name":n,
         "item":(SITE_URL+u if not u.startswith('http') else u)}
         for i,(n,u) in enumerate(crumbs)]})
+
+
+def website_schema():
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": SITE_NAME,
+        "url": SITE_URL + "/",
+        "description": "Independent AI tool reviews with transparent scores for freelancers, marketers, and builders.",
+        "publisher": {"@type": "Organization", "name": SITE_NAME, "url": SITE_URL + "/"},
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": {"@type": "EntryPoint", "urlTemplate": SITE_URL + "/tools?q={search_term_string}"},
+            "query-input": "required name=search_term_string"
+        }
+    })
+
+
+def faq_schema(pairs):
+    if not pairs:
+        return ''
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {"@type": "Question", "name": q,
+             "acceptedAnswer": {"@type": "Answer", "text": a}}
+            for q, a in pairs
+        ]
+    })
+
+
+def itemlist_schema(tools_list, list_name="AI Tools"):
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": list_name,
+        "numberOfItems": len(tools_list),
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "name": t['name'],
+             "url": SITE_URL + "/tool/" + t['slug']}
+            for i, t in enumerate(tools_list[:50])
+        ]
+    })
+
+
+def comparison_schema(ta, tb, c):
+    def app_entry(t):
+        return {
+            "@type": "SoftwareApplication", "name": t['name'],
+            "description": t['tagline'], "applicationCategory": "BusinessApplication",
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": str(round(t['score'] / 20, 1)),
+                "bestRating": "5", "worstRating": "1",
+                "ratingCount": t.get('review_count', '1').replace(',', '').replace('+', '') or "1"
+            }
+        }
+    return json.dumps({
+        "@context": "https://schema.org", "@type": "WebPage",
+        "name": c['headline'], "description": c.get('meta_description', c['description']),
+        "about": [app_entry(ta), app_entry(tb)]
+    })
+
+
+def extract_faq_from_blog(post):
+    content = post.get('content', '')
+    pairs = []
+    pattern = r'<h[23][^>]*>(.*?\?.*?)</h[23]>\s*<p>(.*?)</p>'
+    matches = re.findall(pattern, content, re.DOTALL | re.IGNORECASE)
+    for q, a in matches:
+        clean_q = re.sub(r'<[^>]+>', '', q).strip()
+        clean_a = re.sub(r'<[^>]+>', '', a).strip()
+        if clean_q and clean_a and len(clean_a) > 30:
+            pairs.append((clean_q, clean_a[:500]))
+    title = post.get('heading', post.get('title', ''))
+    desc = post.get('description', '')
+    if desc and len(desc) > 40:
+        if 'best' in title.lower():
+            pairs.insert(0, (f"What are the {title.split('—')[0].strip().lower()}?", desc[:500]))
+        elif 'how to' in title.lower():
+            pairs.insert(0, (title.split('—')[0].strip() + '?', desc[:500]))
+    return pairs[:5]
+
+
+def tool_meta_title(t):
+    name = t['name']
+    cat = t['category']
+    title = f"{name} Review 2026 — {cat} | MFWAI"
+    if len(title) <= 60: return title
+    title = f"{name} Review 2026 | Moving Forward With AI"
+    if len(title) <= 60: return title
+    return f"{name} Review 2026 | MFWAI"
+
+
+def comp_meta_title(ta_name, tb_name):
+    title = f"{ta_name} vs {tb_name} 2026 — Which Is Better? | MFWAI"
+    if len(title) <= 60: return title
+    title = f"{ta_name} vs {tb_name} 2026 | MFWAI"
+    if len(title) <= 60: return title
+    return f"{ta_name} vs {tb_name} | MFWAI"
+
+
+def blog_meta_title(post):
+    base = post['title']
+    full = f"{base} | MFWAI"
+    if len(full) <= 60: return full
+    return base[:55] + chr(8230)
+
 
 def generate_comparison_verdict(ta, tb):
     if not ta or not tb:
@@ -124,12 +278,527 @@ def generate_comparison_verdict(ta, tb):
     )
 
 
+# ── Tool Finder Quiz: Matching Profiles ──────────────────────────────────────
+TOOL_FINDER_PROFILES = {
+    # ── AI Writing ─────────────────────────────────────────────────────────
+    'jasper': {
+        'roles':        ['marketer', 'content-creator', 'small-business-owner'],
+        'goals':        ['create-content', 'grow-business'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'not-technical'],
+    },
+    'copy-ai': {
+        'roles':        ['marketer', 'freelancer', 'freelance-writer', 'small-business-owner'],
+        'goals':        ['create-content', 'grow-business'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'not-technical'],
+    },
+    'writesonic': {
+        'roles':        ['content-creator', 'freelance-writer', 'marketer'],
+        'goals':        ['create-content', 'improve-seo'],
+        'max_budget':   'low',
+        'skill_levels': ['basic', 'not-technical'],
+    },
+    # ── SEO Tools ──────────────────────────────────────────────────────────
+    'surfer-seo': {
+        'roles':        ['seo-professional', 'content-creator', 'marketer'],
+        'goals':        ['improve-seo', 'create-content'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'fairly-technical'],
+    },
+    'semrush': {
+        'roles':        ['seo-professional', 'marketer', 'small-business-owner'],
+        'goals':        ['improve-seo', 'research-data', 'grow-business'],
+        'max_budget':   'high',
+        'skill_levels': ['basic', 'fairly-technical', 'developer'],
+    },
+    'ahrefs': {
+        'roles':        ['seo-professional', 'marketer', 'content-creator'],
+        'goals':        ['improve-seo', 'research-data'],
+        'max_budget':   'high',
+        'skill_levels': ['basic', 'fairly-technical', 'developer'],
+    },
+    # ── AI Assistants / General ────────────────────────────────────────────
+    'chatgpt': {
+        'roles':        ['marketer', 'content-creator', 'freelancer', 'freelance-writer',
+                         'seo-professional', 'small-business-owner'],
+        'goals':        ['create-content', 'research-data', 'automate-workflow', 'write-code'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical', 'developer'],
+    },
+    'claude': {
+        'roles':        ['marketer', 'content-creator', 'freelancer', 'freelance-writer',
+                         'seo-professional', 'small-business-owner'],
+        'goals':        ['create-content', 'research-data', 'write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical', 'developer'],
+    },
+    'gemini': {
+        'roles':        ['marketer', 'content-creator', 'freelancer', 'small-business-owner'],
+        'goals':        ['create-content', 'research-data', 'automate-workflow'],
+        'max_budget':   'free',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    # ── Code / Developer ───────────────────────────────────────────────────
+    'github-copilot': {
+        'roles':        ['freelancer'],
+        'goals':        ['write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['fairly-technical', 'developer'],
+    },
+    'cursor': {
+        'roles':        ['freelancer'],
+        'goals':        ['write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['fairly-technical', 'developer'],
+    },
+    # ── Automation ─────────────────────────────────────────────────────────
+    'zapier': {
+        'roles':        ['marketer', 'small-business-owner', 'freelancer'],
+        'goals':        ['automate-workflow', 'grow-business'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'not-technical', 'fairly-technical'],
+    },
+    'make': {
+        'roles':        ['marketer', 'freelancer', 'small-business-owner'],
+        'goals':        ['automate-workflow', 'grow-business'],
+        'max_budget':   'low',
+        'skill_levels': ['basic', 'fairly-technical'],
+    },
+    # ── Design / Image ─────────────────────────────────────────────────────
+    'midjourney': {
+        'roles':        ['content-creator', 'marketer', 'freelancer'],
+        'goals':        ['create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    'canva': {
+        'roles':        ['marketer', 'content-creator', 'small-business-owner', 'freelancer'],
+        'goals':        ['create-content', 'grow-business'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic'],
+    },
+    # ── Research / Data ────────────────────────────────────────────────────
+    'perplexity': {
+        'roles':        ['seo-professional', 'marketer', 'freelancer', 'content-creator',
+                         'freelance-writer'],
+        'goals':        ['research-data', 'create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical', 'developer'],
+    },
+    'notion-ai': {
+        'roles':        ['freelancer', 'small-business-owner', 'marketer', 'content-creator'],
+        'goals':        ['automate-workflow', 'create-content', 'research-data'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    'grammarly': {
+        'roles':        ['freelance-writer', 'content-creator', 'marketer', 'freelancer'],
+        'goals':        ['create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic'],
+    },
+}
+
+BUDGET_ORDER = {'free': 0, 'low': 1, 'mid': 2, 'high': 3}
+
+
+def match_tools_for_quiz(role, goal, budget, skill_level, tools_list):
+    user_budget_tier = BUDGET_ORDER.get(budget, 1)
+    scored = []
+
+    for t in tools_list:
+        slug = t['slug']
+        profile = TOOL_FINDER_PROFILES.get(slug)
+        if not profile:
+            continue
+
+        tool_budget_tier = BUDGET_ORDER.get(profile.get('max_budget', 'low'), 1)
+        if user_budget_tier < tool_budget_tier and not t.get('free_tier'):
+            continue
+
+        points = 0.0
+
+        if role in profile.get('roles', []):
+            points += 3
+
+        if goal in profile.get('goals', []):
+            points += 3
+
+        if skill_level in profile.get('skill_levels', []):
+            points += 1
+
+        points += t['score'] / 50.0
+
+        if points > (t['score'] / 50.0):
+            scored.append((points, t))
+
+    scored.sort(key=lambda x: -x[0])
+    return [t for _, t in scored[:4]]
+
+
+TOOL_FINDER_TEMPLATE = """
+{{ breadcrumb|safe }}
+
+<div class="page">
+  <div class="tf-wrap" id="tool-finder-app">
+
+    <!-- Progress Bar -->
+    <div class="tf-progress" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="4" aria-label="Quiz progress">
+      <div class="tf-progress-bar" id="tf-bar" style="width:25%"></div>
+      <div class="tf-progress-steps">
+        <span class="tf-step active" data-step="1">1</span>
+        <span class="tf-step" data-step="2">2</span>
+        <span class="tf-step" data-step="3">3</span>
+        <span class="tf-step" data-step="4">4</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Role -->
+    <div class="tf-screen active" id="tf-step-1" role="group" aria-labelledby="tf-q1">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 1 of 4</div>
+        <h2 class="tf-question" id="tf-q1">What best describes you?</h2>
+        <p class="tf-hint">Pick the role closest to your day-to-day work.</p>
+      </div>
+      <div class="tf-options" role="radiogroup" aria-labelledby="tf-q1">
+        <button class="tf-option" data-key="role" data-value="marketer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4E3;</span>
+          <span class="tf-opt-text">Marketer</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="seo-professional" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F50D;</span>
+          <span class="tf-opt-text">SEO Professional</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="content-creator" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x270D;&#xFE0F;</span>
+          <span class="tf-opt-text">Content Creator</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="freelancer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4BC;</span>
+          <span class="tf-opt-text">Freelancer</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="small-business-owner" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F3EA;</span>
+          <span class="tf-opt-text">Small Business Owner</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="freelance-writer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4DD;</span>
+          <span class="tf-opt-text">Freelance Writer</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Goal -->
+    <div class="tf-screen" id="tf-step-2" role="group" aria-labelledby="tf-q2">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 2 of 4</div>
+        <h2 class="tf-question" id="tf-q2">What's your main goal right now?</h2>
+        <p class="tf-hint">We'll match tools to what you actually need to get done.</p>
+      </div>
+      <div class="tf-options" role="radiogroup" aria-labelledby="tf-q2">
+        <button class="tf-option" data-key="goal" data-value="create-content" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x26A1;</span>
+          <span class="tf-opt-text">Create content faster</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="improve-seo" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4C8;</span>
+          <span class="tf-opt-text">Improve SEO rankings</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="automate-workflow" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F504;</span>
+          <span class="tf-opt-text">Automate my workflow</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="write-code" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4BB;</span>
+          <span class="tf-opt-text">Write better code</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="research-data" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F52C;</span>
+          <span class="tf-opt-text">Research and analyse data</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="grow-business" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F680;</span>
+          <span class="tf-opt-text">Grow my business</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Budget -->
+    <div class="tf-screen" id="tf-step-3" role="group" aria-labelledby="tf-q3">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 3 of 4</div>
+        <h2 class="tf-question" id="tf-q3">What's your monthly budget for AI tools?</h2>
+        <p class="tf-hint">We'll only recommend tools within your price range.</p>
+      </div>
+      <div class="tf-options tf-options-narrow" role="radiogroup" aria-labelledby="tf-q3">
+        <button class="tf-option" data-key="budget" data-value="free" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F193;</span>
+          <span class="tf-opt-text">Free only</span>
+        </button>
+        <button class="tf-option" data-key="budget" data-value="low" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4B5;</span>
+          <span class="tf-opt-text">Under $50/mo</span>
+        </button>
+        <button class="tf-option" data-key="budget" data-value="mid" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4B0;</span>
+          <span class="tf-opt-text">$50 &ndash; $150/mo</span>
+        </button>
+        <button class="tf-option" data-key="budget" data-value="high" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F48E;</span>
+          <span class="tf-opt-text">$150+/mo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 4: Skill Level -->
+    <div class="tf-screen" id="tf-step-4" role="group" aria-labelledby="tf-q4">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 4 of 4</div>
+        <h2 class="tf-question" id="tf-q4">How technical are you?</h2>
+        <p class="tf-hint">This helps us match tool complexity to your comfort level.</p>
+      </div>
+      <div class="tf-options tf-options-narrow" role="radiogroup" aria-labelledby="tf-q4">
+        <button class="tf-option" data-key="skill" data-value="not-technical" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F331;</span>
+          <span class="tf-opt-text">Not technical at all</span>
+        </button>
+        <button class="tf-option" data-key="skill" data-value="basic" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F527;</span>
+          <span class="tf-opt-text">Comfortable with basic tools</span>
+        </button>
+        <button class="tf-option" data-key="skill" data-value="fairly-technical" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x2699;&#xFE0F;</span>
+          <span class="tf-opt-text">Fairly technical</span>
+        </button>
+        <button class="tf-option" data-key="skill" data-value="developer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F5A5;&#xFE0F;</span>
+          <span class="tf-opt-text">Developer-level</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="tf-screen" id="tf-loading" style="text-align:center;padding:80px 0">
+      <div class="tf-loader" aria-label="Finding your tools"></div>
+      <p style="font-family:var(--font-mono);font-size:.76rem;color:var(--ink3);margin-top:20px;letter-spacing:.06em">
+        Matching tools to your answers&hellip;
+      </p>
+    </div>
+
+    <!-- Results -->
+    <div class="tf-screen" id="tf-results">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Your results</div>
+        <h2 class="tf-question">Your recommended AI stack</h2>
+        <p class="tf-hint">Based on your role, goals, budget, and skill level &mdash; here are the tools we'd pick for you.</p>
+      </div>
+      <div class="tf-results-grid" id="tf-results-grid"></div>
+      <div class="tf-results-actions">
+        <button class="btn-ghost" id="tf-retake" type="button" onclick="tfRetake()">
+          &#8635; Retake quiz
+        </button>
+        <a href="/tools" class="btn-ghost">Browse all tools &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="tf-nav" id="tf-nav">
+      <button class="tf-back-btn" id="tf-back" type="button" style="display:none" aria-label="Go back to previous question">
+        &larr; Back
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  var currentStep = 1;
+  var totalSteps  = 4;
+  var answers     = {};
+  var bar         = document.getElementById('tf-bar');
+  var backBtn     = document.getElementById('tf-back');
+  var steps       = document.querySelectorAll('.tf-step');
+  var progressWrap= document.querySelector('.tf-progress');
+
+  function showStep(n) {
+    document.querySelectorAll('.tf-screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    var target = document.getElementById('tf-step-' + n);
+    if (target) target.classList.add('active');
+    bar.style.width = ((n / totalSteps) * 100) + '%';
+    steps.forEach(function(s) {
+      var sn = parseInt(s.getAttribute('data-step'));
+      s.classList.toggle('active', sn <= n);
+      s.classList.toggle('completed', sn < n);
+    });
+    backBtn.style.display = (n > 1) ? 'inline-flex' : 'none';
+    progressWrap.setAttribute('aria-valuenow', n);
+    currentStep = n;
+    window.scrollTo({top: document.getElementById('tool-finder-app').offsetTop - 80, behavior: 'smooth'});
+  }
+
+  document.querySelectorAll('.tf-option').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var key   = this.getAttribute('data-key');
+      var value = this.getAttribute('data-value');
+      answers[key] = value;
+      this.closest('.tf-options').querySelectorAll('.tf-option').forEach(function(b) {
+        b.classList.remove('selected');
+        b.setAttribute('aria-checked', 'false');
+      });
+      this.classList.add('selected');
+      this.setAttribute('aria-checked', 'true');
+      setTimeout(function() {
+        if (currentStep < totalSteps) {
+          showStep(currentStep + 1);
+        } else {
+          submitQuiz();
+        }
+      }, 280);
+    });
+  });
+
+  backBtn.addEventListener('click', function() {
+    if (currentStep > 1) showStep(currentStep - 1);
+  });
+
+  function submitQuiz() {
+    document.querySelectorAll('.tf-screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    document.getElementById('tf-loading').classList.add('active');
+    backBtn.style.display = 'none';
+    progressWrap.style.display = 'none';
+    var params = new URLSearchParams({
+      role: answers.role || '', goal: answers.goal || '',
+      budget: answers.budget || '', skill: answers.skill || ''
+    });
+    fetch('/api/tool-finder?' + params.toString())
+      .then(function(r) { return r.json(); })
+      .then(function(data) { renderResults(data.tools || []); })
+      .catch(function() { renderResults([]); });
+  }
+
+  function renderResults(tools) {
+    var grid = document.getElementById('tf-results-grid');
+    if (tools.length === 0) {
+      grid.innerHTML = '<div style="text-align:center;padding:40px;font-size:.9rem;color:var(--ink3)">' +
+        'No exact matches found. Try broadening your budget or <a href="/tools" style="color:var(--cyan)">browse all tools</a>.</div>';
+    } else {
+      grid.innerHTML = tools.map(function(t, i) {
+        var scCol = t.score >= 88 ? 'var(--green)' : (t.score >= 78 ? 'var(--cyan)' : 'var(--amber)');
+        var scBg  = t.score >= 88 ? 'var(--green-d)' : (t.score >= 78 ? 'var(--cyan-d)' : 'var(--amber-d)');
+        var scBdr = t.score >= 88 ? 'var(--green-g)' : (t.score >= 78 ? 'var(--cyan-g)' : 'var(--amber-g)');
+        var rank  = i === 0 ? '<div class="tf-res-rank">Best match</div>' : '';
+        return '<div class="tf-result-card' + (i === 0 ? ' tf-top-pick' : '') + '">' +
+          rank +
+          '<div class="tf-res-header">' +
+            '<div class="tf-res-info">' +
+              '<div class="tf-res-name">' + t.name + '</div>' +
+              '<div class="tf-res-cat">' + t.category + '</div>' +
+            '</div>' +
+            '<div class="tf-res-score" style="color:' + scCol + ';background:' + scBg + ';border:1px solid ' + scBdr + '">' + t.score + '/100</div>' +
+          '</div>' +
+          '<p class="tf-res-verdict">' + t.verdict + '</p>' +
+          '<div class="tf-res-footer">' +
+            '<div class="tf-res-price">' +
+              '<span class="tf-res-price-val">' + t.starting_price + '</span>' +
+              '<span class="tf-res-price-model">' + t.pricing_model + '</span>' +
+            '</div>' +
+            '<div class="tf-res-btns">' +
+              '<a href="/tool/' + t.slug + '" class="btn-outline" style="padding:8px 14px;font-size:.66rem">Full review</a>' +
+              '<a href="' + t.affiliate_url + '" target="_blank" rel="nofollow sponsored noopener noreferrer" class="btn-try" style="padding:10px 16px;font-size:.68rem">Try it &#8594;</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    document.querySelectorAll('.tf-screen').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('tf-results').classList.add('active');
+  }
+
+  window.tfRetake = function() {
+    answers = {};
+    currentStep = 1;
+    document.querySelectorAll('.tf-option').forEach(function(b) {
+      b.classList.remove('selected');
+      b.setAttribute('aria-checked', 'false');
+    });
+    progressWrap.style.display = '';
+    showStep(1);
+  };
+})();
+</script>
+"""
+
+TOOL_FINDER_CSS = """
+/* ═══════════════════════════════════════════════════════════════
+   TOOL FINDER QUIZ
+   ═══════════════════════════════════════════════════════════════ */
+.tf-wrap { max-width:680px; margin:0 auto; padding:clamp(48px,6vw,80px) 0 clamp(64px,8vw,96px) }
+.tf-progress { position:relative; height:4px; background:var(--bg4); border-radius:var(--rpill); margin-bottom:48px; overflow:visible }
+.tf-progress-bar { height:100%; background:linear-gradient(90deg, var(--cyan), var(--violet)); border-radius:var(--rpill); transition:width .4s var(--ease) }
+.tf-progress-steps { position:absolute; top:-10px; left:0; right:0; display:flex; justify-content:space-between; pointer-events:none }
+.tf-step { width:24px; height:24px; border-radius:50%; background:var(--bg4); border:2px solid var(--bdr2); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:.58rem; font-weight:600; color:var(--ink4); transition:all .3s var(--ease) }
+.tf-step.active { background:var(--cyan); border-color:var(--cyan); color:#060810; box-shadow:0 0 0 4px var(--cyan-d) }
+.tf-step.completed { background:var(--cyan); border-color:var(--cyan); color:#060810 }
+.tf-screen { display:none; animation:tfFadeIn .35s var(--ease) }
+.tf-screen.active { display:block }
+@keyframes tfFadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.tf-question-wrap { margin-bottom:32px }
+.tf-step-label { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:12px; display:flex; align-items:center; gap:8px }
+.tf-step-label::before { content:''; width:16px; height:1px; background:var(--cyan) }
+.tf-question { font-family:var(--font-display); font-size:clamp(1.6rem,3.5vw,2.4rem); font-weight:800; letter-spacing:-.05em; color:var(--ink); line-height:1.1; margin-bottom:10px }
+.tf-hint { font-size:.9rem; color:var(--ink3); line-height:1.65 }
+.tf-options { display:grid; grid-template-columns:1fr 1fr; gap:10px }
+.tf-options-narrow { grid-template-columns:1fr 1fr }
+.tf-option { display:flex; align-items:center; gap:14px; padding:18px 20px; background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); font-family:var(--font-body); font-size:.92rem; font-weight:500; color:var(--ink2); text-align:left; cursor:pointer; transition:all .2s var(--ease); position:relative; overflow:hidden }
+.tf-option::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,var(--cyan-d),transparent); opacity:0; transition:opacity .2s }
+.tf-option:hover { border-color:var(--bdr2); transform:translateY(-2px); box-shadow:var(--sh1) }
+.tf-option:hover::before { opacity:1 }
+.tf-option.selected { border-color:var(--cyan); background:var(--cyan-d); color:var(--ink); box-shadow:var(--shc) }
+.tf-option.selected::after { content:'\\2713'; position:absolute; top:10px; right:12px; font-size:.72rem; color:var(--cyan); font-weight:700 }
+.tf-opt-icon { font-size:1.4rem; flex-shrink:0; position:relative; z-index:1 }
+.tf-opt-text { position:relative; z-index:1 }
+.tf-loader { width:40px; height:40px; border:3px solid var(--bdr2); border-top-color:var(--cyan); border-radius:50%; margin:0 auto; animation:tfSpin .8s linear infinite }
+@keyframes tfSpin { to{transform:rotate(360deg)} }
+.tf-results-grid { display:flex; flex-direction:column; gap:14px; margin-bottom:32px }
+.tf-result-card { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); padding:24px; position:relative; transition:transform .25s var(--spring),box-shadow .25s }
+.tf-result-card:hover { transform:translateY(-3px); box-shadow:var(--sh2) }
+.tf-result-card.tf-top-pick { border-color:var(--green-g); box-shadow:0 0 0 1px var(--green-g),var(--shg) }
+.tf-result-card.tf-top-pick::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--green); border-radius:var(--r3) var(--r3) 0 0 }
+.tf-res-rank { position:absolute; top:14px; right:14px; background:var(--green-d); border:1px solid var(--green-g); color:var(--green); border-radius:var(--rpill); padding:3px 11px; font-family:var(--font-mono); font-size:.58rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase }
+.tf-res-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px }
+.tf-res-info { flex:1; min-width:0 }
+.tf-res-name { font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--ink); letter-spacing:-.03em }
+.tf-res-cat { font-family:var(--font-mono); font-size:.6rem; color:var(--ink4); letter-spacing:.08em; text-transform:uppercase; margin-top:2px }
+.tf-res-score { font-family:var(--font-mono); font-size:.72rem; font-weight:600; padding:4px 12px; border-radius:var(--r1); flex-shrink:0 }
+.tf-res-verdict { font-size:.88rem; line-height:1.7; color:var(--ink3); margin-bottom:16px }
+.tf-res-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-top:14px; border-top:1px solid var(--div); flex-wrap:wrap }
+.tf-res-price { display:flex; align-items:baseline; gap:8px }
+.tf-res-price-val { font-family:var(--font-display); font-size:1.05rem; font-weight:700; color:var(--ink); letter-spacing:-.03em }
+.tf-res-price-model { font-family:var(--font-mono); font-size:.6rem; color:var(--ink4); letter-spacing:.04em; text-transform:uppercase }
+.tf-res-btns { display:flex; align-items:center; gap:8px }
+.tf-results-actions { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap }
+.tf-nav { margin-top:28px }
+.tf-back-btn { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:.74rem; color:var(--ink3); letter-spacing:.04em; padding:8px 16px; border-radius:var(--rpill); border:1px solid var(--bdr); background:var(--surf); transition:all .18s; cursor:pointer }
+.tf-back-btn:hover { color:var(--ink); border-color:var(--bdr2); background:var(--cyan-d) }
+@media (max-width:520px) {
+  .tf-options, .tf-options-narrow { grid-template-columns:1fr }
+  .tf-res-footer { flex-direction:column; align-items:flex-start }
+  .tf-res-btns { width:100% }
+  .tf-res-btns a { flex:1; text-align:center; justify-content:center }
+}
+"""
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# CSS
+# CSS  (original CSS + Tool Finder CSS appended)
 # ═══════════════════════════════════════════════════════════════════════════════
 CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap');
-
 :root {
   --bg:       #060810;
   --bg2:      #090c16;
@@ -249,7 +918,7 @@ body {
 }
 a { text-decoration:none; color:inherit }
 button { font-family:inherit; cursor:pointer; border:none; background:none }
-img { display:block; max-width:100% }
+img { display:block; max-width:100%; height:auto }
 svg { flex-shrink:0 }
 
 body::before {
@@ -343,10 +1012,6 @@ body::after {
 .nav-links > a:hover, .nav-drop-btn:hover { color:var(--ink); background:var(--cyan-d) }
 .nav-links > a.active { color:var(--cyan) }
 
-/* ── FIX 1: position:relative added so .drop-menu (position:absolute) anchors
-   to the .nav-drop wrapper, not the distant sticky .nav ancestor.
-   Without this, left:0 / top:100% resolve against the full nav bar,
-   placing the menu far to the left and at the wrong vertical offset. ── */
 .nav-drop { position:relative }
 .drop-chevron {
   width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2;
@@ -402,7 +1067,7 @@ body::after {
 .nav-icon-btn:hover { background:var(--cyan-d); border-color:var(--bdr2) }
 .nav-icon-btn svg { width:15px; height:15px; stroke:var(--ink3); fill:none; stroke-width:1.8 }
 
-/* Mobile theme toggle — shown on mobile alongside hamburger */
+/* Mobile theme toggle */
 #mob-theme-btn {
   display:none;
   width:36px; height:36px; border-radius:var(--r2);
@@ -429,10 +1094,6 @@ body::after {
 #hbg.open span:nth-child(2) { opacity:0; transform:scaleX(0) }
 #hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg) }
 
-/* ── FIX 2: #mob z-index raised from 190 → 210 so the mobile overlay renders
-   ABOVE the sticky nav bar (z-index:200). Previously the nav sat on top of the
-   open menu, making the top portion of the menu visually and interactively
-   blocked by the nav header. ── */
 #mob {
   display:none; position:fixed; inset:0;
   background:var(--bg); z-index:210; overflow-y:auto;
@@ -704,7 +1365,7 @@ body::after {
 .blog-link { font-family:var(--font-mono); font-size:.66rem; color:var(--amber); display:inline-flex; align-items:center; gap:5px; transition:gap .2s; letter-spacing:.04em; text-transform:uppercase; }
 .blog-card:hover .blog-link { gap:9px }
 
-/* ── Newsletter / Email Section (simplified) ─────── */
+/* Newsletter / Email Section */
 .email-sec {
   position:relative; z-index:1;
   background:var(--surf);
@@ -925,12 +1586,9 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 @media (max-width:768px) {
   .nav-in { padding:0 20px; height:56px }
   .nav-links, .nav-search { display:none }
-
-  #theme-btn { display:none; }   /* ✅ hide desktop theme toggle */
+  #theme-btn { display:none; }
   #mob-theme-btn { display:flex; }
-
   #hbg { display:flex }
-
   .page, .page-narrow { padding:0 20px }
   .affil-in { padding:10px 20px }
   .email-inner { padding:0 20px }
@@ -962,7 +1620,121 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 ::-webkit-scrollbar-thumb:hover { background:var(--cyan) }
 ::selection { background:var(--cyan-d); color:var(--cyan2) }
 :focus-visible { outline:2px solid var(--cyan); outline-offset:2px; border-radius:var(--r1); }
-"""
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL REVIEW PAGE v2 — Quick Verdict, Pricing, FAQ, Alternatives
+   ═══════════════════════════════════════════════════════════════ */
+
+.verdict-box {
+  background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--r4);
+  padding:32px 36px; margin-bottom:24px; position:relative; overflow:hidden; box-shadow:var(--sh1);
+}
+.verdict-box::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--green), var(--cyan), var(--violet));
+}
+.verdict-box-grid { display:grid; grid-template-columns:auto 1fr auto; gap:28px; align-items:center; }
+.vb-score-ring {
+  width:100px; height:100px; border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  flex-shrink:0; position:relative;
+}
+.vb-score-ring::before { content:''; position:absolute; inset:0; border-radius:50%; border:3px solid var(--bdr); }
+.vb-score-ring::after {
+  content:''; position:absolute; inset:0; border-radius:50%;
+  border:3px solid transparent; border-top-color:currentColor; border-right-color:currentColor;
+  transform:rotate(-45deg);
+}
+.vb-score-num { font-family:var(--font-display); font-size:2.4rem; font-weight:800; letter-spacing:-.06em; line-height:1; }
+.vb-score-max { font-family:var(--font-mono); font-size:.58rem; color:var(--ink4); letter-spacing:.06em; margin-top:2px; }
+.vb-content { min-width:0 }
+.vb-label { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.vb-label::before { content:'//'; opacity:.5 }
+.vb-verdict { font-family:var(--font-display); font-size:1.15rem; font-weight:600; color:var(--ink); line-height:1.5; margin-bottom:14px; letter-spacing:-.02em; }
+.vb-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+.vb-meta-item { display:flex; align-items:center; gap:8px; font-size:.84rem; color:var(--ink3); line-height:1.5; }
+.vb-meta-label { font-family:var(--font-mono); font-size:.62rem; color:var(--ink4); letter-spacing:.06em; text-transform:uppercase; flex-shrink:0; min-width:72px; }
+.vb-meta-value { color:var(--ink2); font-weight:500 }
+.vb-cta-col { display:flex; flex-direction:column; align-items:stretch; gap:10px; flex-shrink:0; min-width:180px; }
+
+.pc-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:0;
+  background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3);
+  overflow:hidden; margin-bottom:24px; box-shadow:var(--sh0);
+}
+.pc-col { padding:24px 28px }
+.pc-col + .pc-col { border-left:1px solid var(--div) }
+.pc-col-title { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.pc-col-title.pro-title { color:var(--green) }
+.pc-col-title.con-title { color:var(--rose) }
+.pc-col-title::before { content:''; width:14px; height:1px; background:currentColor }
+
+.pricing-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); overflow:hidden; margin-bottom:24px; box-shadow:var(--sh0); }
+.pricing-section-hdr { padding:20px 28px; border-bottom:1px solid var(--div); display:flex; align-items:center; justify-content:space-between; }
+.pricing-table { width:100%; border-collapse:collapse; }
+.pricing-table th { text-align:left; padding:12px 20px; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink4); background:var(--bg3); border-bottom:1px solid var(--div); font-weight:500; }
+.pricing-table td { padding:14px 20px; font-size:.88rem; color:var(--ink3); border-bottom:1px solid var(--div); vertical-align:top; }
+.pricing-table tr:last-child td { border-bottom:none }
+.pricing-table td:first-child { font-weight:600; color:var(--ink); white-space:nowrap; }
+.pricing-verified { font-family:var(--font-mono); font-size:.58rem; color:var(--ink5); letter-spacing:.04em; display:flex; align-items:center; gap:6px; }
+.pricing-verified::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); flex-shrink:0; }
+
+.who-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); padding:28px; margin-bottom:24px; box-shadow:var(--sh0); }
+.who-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.who-list { list-style:none; display:flex; flex-direction:column; gap:10px }
+.who-list li { font-size:.88rem; line-height:1.65; color:var(--ink3); padding-left:22px; position:relative; }
+.who-list.who-yes li::before { content:'✓'; position:absolute; left:0; color:var(--green); font-weight:700; }
+.who-list.who-no li::before { content:'→'; position:absolute; left:0; color:var(--amber); font-family:var(--font-mono); font-size:.72rem; }
+
+.faq-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); overflow:hidden; margin-bottom:24px; box-shadow:var(--sh0); }
+.faq-section-hdr { padding:20px 28px; border-bottom:1px solid var(--div); }
+.faq-item { border-bottom:1px solid var(--div); }
+.faq-item:last-child { border-bottom:none }
+.faq-q { width:100%; text-align:left; padding:18px 28px; font-family:var(--font-display); font-size:1rem; font-weight:600; color:var(--ink); letter-spacing:-.02em; display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; background:none; border:none; transition:background .15s, color .15s; }
+.faq-q:hover { background:var(--cyan-d) }
+.faq-chevron { width:18px; height:18px; stroke:var(--ink4); fill:none; stroke-width:2; flex-shrink:0; transition:transform .25s var(--ease); }
+.faq-item.open .faq-chevron { transform:rotate(180deg) }
+.faq-a { display:none; padding:0 28px 20px; font-size:.9rem; line-height:1.78; color:var(--ink3); }
+.faq-item.open .faq-a { display:block }
+
+.alts-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); padding:28px; margin-bottom:24px; box-shadow:var(--sh0); }
+.alt-card { display:flex; align-items:center; gap:16px; padding:16px 0; border-bottom:1px solid var(--div); }
+.alt-card:last-child { border-bottom:none }
+.alt-card:first-child { padding-top:0 }
+.alt-info { flex:1; min-width:0 }
+.alt-name { font-family:var(--font-display); font-size:1rem; font-weight:700; color:var(--ink); letter-spacing:-.02em; }
+.alt-desc { font-size:.84rem; color:var(--ink3); margin-top:3px; line-height:1.6; }
+.alt-links { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.alt-link { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.04em; text-transform:uppercase; padding:6px 12px; border-radius:var(--r1); border:1px solid var(--bdr); color:var(--ink3); transition:all .18s; white-space:nowrap; }
+.alt-link:hover { background:var(--cyan-d); border-color:var(--bdr2); color:var(--cyan); }
+.alt-score { font-family:var(--font-mono); font-size:.72rem; font-weight:600; padding:4px 10px; border-radius:var(--r1); flex-shrink:0; }
+
+.bottom-cta { background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--r3); padding:28px 32px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; box-shadow:var(--sh1); }
+.bottom-cta-text { flex:1; min-width:200px; }
+.bottom-cta-name { font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--ink); letter-spacing:-.03em; }
+.bottom-cta-sub { font-size:.86rem; color:var(--ink3); margin-top:4px; }
+
+.review-section-hdr { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:16px; display:flex; align-items:center; gap:6px; }
+.review-section-hdr::before { content:'//'; opacity:.5 }
+
+@media (max-width:768px) {
+  .verdict-box { padding:24px 20px }
+  .verdict-box-grid { grid-template-columns:1fr; gap:20px; text-align:center; }
+  .vb-score-ring { margin:0 auto }
+  .vb-meta-grid { grid-template-columns:1fr; text-align:left }
+  .vb-cta-col { min-width:100% }
+  .pc-grid { grid-template-columns:1fr }
+  .pc-col + .pc-col { border-left:none; border-top:1px solid var(--div) }
+  .who-grid { grid-template-columns:1fr }
+  .alt-card { flex-direction:column; align-items:flex-start }
+  .alt-links { width:100% }
+  .bottom-cta { flex-direction:column; text-align:center }
+}
+@media (max-width:520px) {
+  .vb-meta-grid { grid-template-columns:1fr }
+}
+""" + TOOL_FINDER_CSS
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -980,33 +1752,34 @@ BASE = """<!DOCTYPE html>
 <link rel="canonical" href="{{ canon }}">
 <meta property="og:title" content="{{ title }}">
 <meta property="og:description" content="{{ desc[:200] }}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{ og_type }}">
 <meta property="og:url" content="{{ canon }}">
 <meta property="og:site_name" content="Moving Forward With AI">
-<meta property="og:locale" content="en">
+<meta property="og:locale" content="en_GB">
+<meta property="og:image" content="{{ og_image }}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ title }}">
+<meta name="twitter:description" content="{{ desc[:200] }}">
+<meta name="twitter:image" content="{{ og_image }}">
 <meta name="theme-color" content="#060810">
-{% if schema %}<script type="application/ld+json">{{ schema|safe }}</script>{% endif %}
+<script type="application/ld+json">{{ ws_schema|safe }}</script>
 {% if bcs %}<script type="application/ld+json">{{ bcs|safe }}</script>{% endif %}
+{% if schema %}<script type="application/ld+json">{{ schema|safe }}</script>{% endif %}
+{% if schema2 %}<script type="application/ld+json">{{ schema2|safe }}</script>{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<!-- Theme: applied before paint to prevent flash -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap">
 <script>
 (function(){
   try {
     var saved = localStorage.getItem('mfwai-theme');
     var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
     var isLight = saved === 'light' || (saved === null && preferLight);
-    if (isLight) {
-      document.documentElement.classList.add('light');
-    }
+    if (isLight) { document.documentElement.classList.add('light'); }
   } catch(e) {}
 })();
 </script>
-
 <style>{{ css|safe }}</style>
-<!-- Google tag (gtag.js) -->
 <meta name="google-site-verification" content="U4OV71VLG-_zLDoFNbwH9ghMzxs-fQEPOkrKresvHOU" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TBH27VXH8M"></script>
 <script>
@@ -1018,7 +1791,6 @@ BASE = """<!DOCTYPE html>
 </head>
 <body>
 
-<!-- Ticker -->
 <div class="ticker" aria-hidden="true" role="presentation">
   <div class="ticker-track">
     {% for _ in range(2) %}
@@ -1046,7 +1818,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Navigation -->
 <header class="nav" id="sitenav" role="banner">
   <div class="nav-in">
     <a href="/" class="nav-logo" aria-label="Moving Forward With AI — Home">
@@ -1056,6 +1827,7 @@ BASE = """<!DOCTYPE html>
 
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="/">Home</a>
+      <a href="/tool-finder">Tool Finder</a>
       <a href="/tools">All Tools</a>
       <div class="nav-drop" id="drop-compare">
         <button class="nav-drop-btn" type="button" aria-expanded="false" aria-haspopup="true" id="btn-drop-compare">
@@ -1088,7 +1860,6 @@ BASE = """<!DOCTYPE html>
     </nav>
 
     <div class="nav-right">
-      <!-- Desktop search -->
       <div class="nav-search" role="search">
         <svg class="search-ico" viewBox="0 0 16 16" aria-hidden="true">
           <circle cx="6.5" cy="6.5" r="4.5"/>
@@ -1097,8 +1868,6 @@ BASE = """<!DOCTYPE html>
         <input type="search" id="search-input" placeholder="Search tools…" autocomplete="off"
           aria-label="Search AI tools" aria-controls="sov" aria-expanded="false">
       </div>
-
-      <!-- Desktop theme toggle -->
       <button class="nav-icon-btn" id="theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
@@ -1108,8 +1877,6 @@ BASE = """<!DOCTYPE html>
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
-
-      <!-- Mobile theme toggle (shown only on mobile, next to hamburger) -->
       <button id="mob-theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="mob-ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
@@ -1119,7 +1886,6 @@ BASE = """<!DOCTYPE html>
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
-
       <button id="hbg" aria-label="Open navigation menu" aria-expanded="false" type="button">
         <span></span><span></span><span></span>
       </button>
@@ -1127,11 +1893,11 @@ BASE = """<!DOCTYPE html>
   </div>
 </header>
 
-<!-- Mobile Menu -->
 <div id="mob" role="dialog" aria-modal="true" aria-label="Navigation menu">
   <div class="mob-section">
     <nav class="mob-primary-links" aria-label="Mobile primary navigation">
       <a href="/" class="mob-link">Home</a>
+      <a href="/tool-finder" class="mob-link">Tool Finder</a>
       <a href="/tools" class="mob-link">All Tools</a>
       <a href="/compare" class="mob-link">Compare</a>
       <a href="/blog" class="mob-link">Guides</a>
@@ -1160,12 +1926,10 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Page Content -->
 <main id="main-content" tabindex="-1">
 {{ content|safe }}
 </main>
 
-<!-- Footer -->
 <footer class="footer" role="contentinfo">
   <div class="footer-in">
     <div class="footer-top">
@@ -1180,6 +1944,7 @@ BASE = """<!DOCTYPE html>
       <div class="f-col">
         <div class="f-col-title">Explore</div>
         <a href="/">Home</a>
+        <a href="/tool-finder">Tool Finder</a>
         <a href="/tools">All Tools</a>
         <a href="/compare">Compare</a>
         <a href="/blog">Guides</a>
@@ -1206,7 +1971,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </footer>
 
-<!-- Search Overlay -->
 <div id="sov" role="dialog" aria-modal="true" aria-label="Search results">
   <div class="sov-panel">
     <div class="sov-hdr">
@@ -1218,7 +1982,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Cookie Consent -->
 <div id="ckbar" role="dialog" aria-label="Cookie consent">
   <div class="ck-text">
     // We use essential cookies &amp; affiliate tracking.
@@ -1231,18 +1994,10 @@ BASE = """<!DOCTYPE html>
 </div>
 
 <script>
-/* ======================================================
-   SHARED THEME LOGIC
-   Works for BOTH desktop (#theme-btn) and mobile (#mob-theme-btn)
-====================================================== */
 (function () {
   var html = document.documentElement;
-
   function syncAllIcons(isLight) {
-    var pairs = [
-      ['ico-sun',     'ico-moon'],
-      ['mob-ico-sun', 'mob-ico-moon']
-    ];
+    var pairs = [['ico-sun','ico-moon'],['mob-ico-sun','mob-ico-moon']];
     pairs.forEach(function(p) {
       var sun  = document.getElementById(p[0]);
       var moon = document.getElementById(p[1]);
@@ -1255,296 +2010,154 @@ BASE = """<!DOCTYPE html>
       if (b) b.setAttribute('aria-label', label);
     });
   }
-
   function applyTheme(isLight) {
-    if (isLight) {
-      html.classList.add('light');
-    } else {
-      html.classList.remove('light');
-    }
+    if (isLight) { html.classList.add('light'); } else { html.classList.remove('light'); }
     try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
     syncAllIcons(isLight);
-    /* Force reflow for Safari */
-    html.style.display = 'none';
-    void html.offsetHeight;
-    html.style.display = '';
+    html.style.display = 'none'; void html.offsetHeight; html.style.display = '';
   }
-
-  /* Sync icons on load */
   syncAllIcons(html.classList.contains('light'));
-
-  /* Wire up both buttons */
   ['theme-btn', 'mob-theme-btn'].forEach(function(id) {
     var btn = document.getElementById(id);
-    if (btn) {
-      btn.addEventListener('click', function() {
-        applyTheme(!html.classList.contains('light'));
-      });
-    }
+    if (btn) { btn.addEventListener('click', function() { applyTheme(!html.classList.contains('light')); }); }
   });
 })();
 
-/* ======================================================
-   STICKY NAV SHADOW
-====================================================== */
 window.addEventListener('scroll', function () {
   var nav = document.getElementById('sitenav');
   if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
 }, { passive: true });
 
-/* ======================================================
-   HAMBURGER MENU
-====================================================== */
 (function () {
   var btn  = document.getElementById('hbg');
   var menu = document.getElementById('mob');
   if (!btn || !menu) return;
-
   function openMenu() {
-    menu.classList.add('open');
-    btn.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-    btn.setAttribute('aria-label', 'Close navigation menu');
+    menu.classList.add('open'); btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Close navigation menu');
     document.body.style.overflow = 'hidden';
   }
-
   function closeMenu() {
-    menu.classList.remove('open');
-    btn.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.setAttribute('aria-label', 'Open navigation menu');
+    menu.classList.remove('open'); btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Open navigation menu');
     document.body.style.overflow = '';
   }
-
-  btn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); }
-  });
-
-  /* Close when any link inside the mobile menu is tapped */
-  menu.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () { closeMenu(); });
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && menu.classList.contains('open')) {
-      closeMenu(); btn.focus();
-    }
-  });
-
+  btn.addEventListener('click', function (e) { e.stopPropagation(); if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); } });
+  menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { closeMenu(); }); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.classList.contains('open')) { closeMenu(); btn.focus(); } });
   document.addEventListener('click', function (e) {
-    if (menu.classList.contains('open') &&
-        !menu.contains(e.target) &&
-        e.target !== btn &&
-        !btn.contains(e.target)) {
-      closeMenu();
-    }
+    if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) { closeMenu(); }
   });
 })();
 
-/* ======================================================
-   DESKTOP DROPDOWN MENUS
-   Uses explicit IDs -- no fragile querySelectorAll
-====================================================== */
 (function () {
   var dropIds = ['drop-compare', 'drop-roles'];
-
   function closeAll() {
     dropIds.forEach(function(id) {
-      var drop = document.getElementById(id);
-      if (!drop) return;
+      var drop = document.getElementById(id); if (!drop) return;
       drop.classList.remove('open');
-      var btn = drop.querySelector('.nav-drop-btn');
-      if (btn) btn.setAttribute('aria-expanded', 'false');
+      var btn = drop.querySelector('.nav-drop-btn'); if (btn) btn.setAttribute('aria-expanded', 'false');
     });
   }
-
   dropIds.forEach(function(id) {
-    var drop = document.getElementById(id);
-    if (!drop) return;
-    var btn = drop.querySelector('.nav-drop-btn');
-    if (!btn) return;
-
+    var drop = document.getElementById(id); if (!drop) return;
+    var btn = drop.querySelector('.nav-drop-btn'); if (!btn) return;
     btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var isOpen = drop.classList.contains('open');
-      closeAll();
-      if (!isOpen) {
-        drop.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
-      }
+      e.stopPropagation(); var isOpen = drop.classList.contains('open'); closeAll();
+      if (!isOpen) { drop.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
     });
   });
-
   document.addEventListener('click', function(e) {
-    /* Close if click is outside any dropdown */
-    var insideDrop = dropIds.some(function(id) {
-      var drop = document.getElementById(id);
-      return drop && drop.contains(e.target);
-    });
+    var insideDrop = dropIds.some(function(id) { var drop = document.getElementById(id); return drop && drop.contains(e.target); });
     if (!insideDrop) closeAll();
   });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAll();
-  });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAll(); });
 })();
 
-/* ======================================================
-   SCROLL REVEAL
-====================================================== */
 (function () {
   if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
   var els = document.querySelectorAll('.rv');
   if (!els.length) return;
   var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
-      }
-    });
+    entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('visible'); io.unobserve(entry.target); } });
   }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-  els.forEach(function (el, i) {
-    el.style.transitionDelay = (i % 4 * 0.07) + 's';
-    io.observe(el);
-  });
+  els.forEach(function (el, i) { el.style.transitionDelay = (i % 4 * 0.07) + 's'; io.observe(el); });
 })();
 
-/* ======================================================
-   SEARCH OVERLAY
-   Fetches /api/tools on first keystroke (lazy load)
-====================================================== */
 (function() {
-  var allTools   = null;   /* null = not yet loaded */
-  var loading    = false;
-  var sov        = document.getElementById('sov');
-  var sovCount   = document.getElementById('sov-count');
-  var sovRes     = document.getElementById('sov-results');
-  var searchInput = document.getElementById('search-input');
+  var allTools = null, loading = false;
+  var sov = document.getElementById('sov'), sovCount = document.getElementById('sov-count');
+  var sovRes = document.getElementById('sov-results'), searchInput = document.getElementById('search-input');
   var searchTimer;
-
   if (!sov || !searchInput) return;
-
   function loadTools(cb) {
     if (allTools !== null) { cb(); return; }
-    if (loading) return;
-    loading = true;
-    fetch('/api/tools')
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        allTools = d.tools || [];
-        loading = false;
-        cb();
-      })
-      .catch(function(){
-        allTools = [];
-        loading = false;
-        cb();
-      });
+    if (loading) return; loading = true;
+    fetch('/api/tools').then(function(r){ return r.json(); }).then(function(d){ allTools = d.tools || []; loading = false; cb(); }).catch(function(){ allTools = []; loading = false; cb(); });
   }
+  function closeSov() { sov.classList.remove('open'); document.body.style.overflow = ''; if (searchInput) searchInput.setAttribute('aria-expanded', 'false'); }
+    function miniCard(t) {
+  var sc = t.score, isHi = sc >= 88;
+  var bg  = isHi ? 'var(--green-d)' : 'var(--cyan-d)',
+      bdr = isHi ? 'var(--green-g)' : 'var(--cyan-g)',
+      col  = isHi ? 'var(--green)' : 'var(--cyan)';
 
-  function closeSov() {
-    sov.classList.remove('open');
-    document.body.style.overflow = '';
-    if (searchInput) searchInput.setAttribute('aria-expanded', 'false');
-  }
+  return '<div class="tool-card" style="cursor:pointer" data-slug="'+t.slug+'">'+
+           '<div class="tc-accent-bar"></div>'+
+           '<div class="tc-body">'+
+             '<div class="tc-meta">'+
+               '<div class="tc-cat">'+(t.category||'')+'</div>'+
+               '<div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div>'+
+             '</div>'+
+             '<a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a>'+
+             '<p class="tc-tagline">'+(t.tagline||'')+'</p>'+
+           '</div>'+
+           '<div class="tc-footer">'+
+             '<div class="tc-pricing">'+
+               '<span class="tc-price">'+(t.starting_price||'')+'</span>'+
+             '</div>'+
+           '</div>'+
+         '</div>';
+}
 
-  function miniCard(t) {
-    var sc   = t.score;
-    var isHi = sc >= 88;
-    var bg   = isHi ? 'var(--green-d)' : 'var(--cyan-d)';
-    var bdr  = isHi ? 'var(--green-g)' : 'var(--cyan-g)';
-    var col  = isHi ? 'var(--green)'   : 'var(--cyan)';
-    return `<div class="tool-card" style="cursor:pointer" onclick="location.href='/tool/${t.slug}'">
-  <div class="tc-accent-bar"></div>
-  <div class="tc-body">
-    <div class="tc-meta">
-      <div class="tc-cat">${t.category || ''}</div>
-      <div class="tc-score" style="background:${bg};border:1px solid ${bdr};color:${col}">${sc}</div>
-    </div>
-    <a href="/tool/${t.slug}" class="tc-name">${t.name}</a>
-    <p class="tc-tagline">${t.tagline || ''}</p>
-  </div>
-  <div class="tc-footer">
-    <div class="tc-pricing"><span class="tc-price">${t.starting_price || ''}</span></div>
-  </div>
-</div>`;
-  }
-
+// Attach click handler safely via JS
+document.addEventListener('click', function(e){
+  const card = e.target.closest('.tool-card');
+  if(card) location.href = '/tool/' + encodeURIComponent(card.dataset.slug);
+});
   function runSearch(q) {
     if (!q || q.length < 2) { closeSov(); return; }
     loadTools(function() {
-      var ql   = q.toLowerCase();
-      var hits = allTools.filter(function(t) {
-        return (t.name     || '').toLowerCase().includes(ql)
-            || (t.category || '').toLowerCase().includes(ql)
-            || (t.tagline  || '').toLowerCase().includes(ql)
-            || (t.tags     || []).join(' ').toLowerCase().includes(ql);
-      });
-      sovCount.textContent = '// ' + hits.length + ' result' + (hits.length !== 1 ? 's' : '') + ' for "' + q + '"';
-      sovRes.innerHTML = hits.length
-        ? hits.map(miniCard).join('')
-        : '<div class="sov-empty">// No tools found for "' + q + '"</div>';
-      sov.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      searchInput.setAttribute('aria-expanded', 'true');
+      var ql = q.toLowerCase();
+      var hits = allTools.filter(function(t) { return (t.name||'').toLowerCase().includes(ql)||(t.category||'').toLowerCase().includes(ql)||(t.tagline||'').toLowerCase().includes(ql)||(t.tags||[]).join(' ').toLowerCase().includes(ql); });
+      sovCount.textContent = '// '+hits.length+' result'+(hits.length!==1?'s':'')+' for "'+q+'"';
+      sovRes.innerHTML = hits.length ? hits.map(miniCard).join('') : '<div class="sov-empty">// No tools found for "'+q+'"</div>';
+      sov.classList.add('open'); document.body.style.overflow = 'hidden'; searchInput.setAttribute('aria-expanded', 'true');
     });
   }
-
-  searchInput.addEventListener('input', function(e) {
-    clearTimeout(searchTimer);
-    var q = e.target.value.trim();
-    searchTimer = setTimeout(function() { runSearch(q); }, 160);
-  });
-
-  searchInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeSov(); searchInput.value = ''; }
-  });
-
+  searchInput.addEventListener('input', function(e) { clearTimeout(searchTimer); var q = e.target.value.trim(); searchTimer = setTimeout(function() { runSearch(q); }, 160); });
+  searchInput.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeSov(); searchInput.value = ''; } });
   document.getElementById('sov-close').addEventListener('click', closeSov);
-
   sov.addEventListener('click', function(e) { if (e.target === sov) closeSov(); });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSov();
-  });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSov(); });
 })();
 
-/* ======================================================
-   COOKIE BANNER
-====================================================== */
 (function () {
-  var KEY = 'mfwai_consent_v2';
-  var bar = document.getElementById('ckbar');
-  try {
-    if (!localStorage.getItem(KEY)) {
-      setTimeout(function () { bar.classList.add('show'); }, 1800);
-    }
-  } catch (e) { bar.classList.add('show'); }
-  function dismiss(v) {
-    try { localStorage.setItem(KEY, v); } catch (e) {}
-    bar.classList.remove('show');
-  }
+  var KEY = 'mfwai_consent_v2', bar = document.getElementById('ckbar');
+  try { if (!localStorage.getItem(KEY)) { setTimeout(function () { bar.classList.add('show'); }, 1800); } } catch (e) { bar.classList.add('show'); }
+  function dismiss(v) { try { localStorage.setItem(KEY, v); } catch (e) {} bar.classList.remove('show'); }
   document.getElementById('ck-ok').addEventListener('click',  function () { dismiss('all'); });
   document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
 })();
 
-/* ======================================================
-   EMAIL FORM
-====================================================== */
 var ef = document.getElementById('email-form');
 if (ef) {
   ef.addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn = ef.querySelector('button[type="submit"]');
-    var em  = ef.querySelector('input[type="email"]');
+    var btn = ef.querySelector('button[type="submit"]'), em = ef.querySelector('input[type="email"]');
     if (!em || !em.value) return;
-    btn.textContent = 'Subscribed!';
-    btn.style.background = 'var(--green)';
-    btn.disabled = true;
-    em.disabled  = true;
+    btn.textContent = 'Subscribed!'; btn.style.background = 'var(--green)'; btn.disabled = true; em.disabled = true;
   });
 }
 </script>
@@ -1557,12 +2170,14 @@ if (ef) {
 # COMPONENT BUILDERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def render(title, desc, content, schema='', bcs=''):
+def render(title, desc, content, schema='', bcs='', schema2='', og_type='website', og_image=''):
     canon = SITE_URL + (request.path.rstrip('/') or '/')
     return render_template_string(BASE,
         title=title, desc=desc, content=content,
         css=CSS, roles=ROLES, slugify=slugify,
-        canon=canon, schema=schema, bcs=bcs)
+        canon=canon, schema=schema, bcs=bcs, schema2=schema2,
+        og_type=og_type, og_image=og_image or OG_IMAGE,
+        ws_schema=website_schema())
 
 
 def breadcrumb_html(crumbs):
@@ -1625,7 +2240,6 @@ def tool_card(t, delay=0):
 
 
 def email_capture():
-    """Simplified newsletter section — no guide promises, just a clean signup."""
     return """<section class="email-sec" aria-labelledby="newsletter-heading">
   <div class="email-inner">
     <div class="email-left">
@@ -1637,14 +2251,8 @@ def email_capture():
     </div>
     <div class="email-right">
       <form id="email-form" novalidate style="display:contents">
-        <input
-          class="email-input"
-          type="email"
-          placeholder="your@email.com"
-          required
-          aria-label="Your email address"
-          autocomplete="email"
-        >
+        <input class="email-input" type="email" placeholder="your@email.com" required
+          aria-label="Your email address" autocomplete="email">
         <button type="submit" class="btn-email">Subscribe</button>
       </form>
       <p class="email-notice">// No spam. Unsubscribe any time.</p>
@@ -1681,15 +2289,13 @@ def build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b):
     selector_html = f"""
 <div class="page" style="padding-top:32px;padding-bottom:28px">
   <div class="sec-eyebrow">Custom comparison · Any two tools</div>
-  <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;
-             letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
+  <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
     Compare any two <em style="color:var(--cyan);font-style:normal">AI tools</em>
   </h1>
   <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:520px;line-height:1.75;margin-bottom:28px">
     Select any two tools from our reviewed collection and get an instant side-by-side comparison.
   </p>
-  <div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r3);
-              padding:24px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;box-shadow:var(--sh1)">
+  <div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r3);padding:24px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;box-shadow:var(--sh1)">
     <div style="flex:1;min-width:180px">
       <label for="sel-a" style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);display:block;margin-bottom:8px">Tool A</label>
       <select id="sel-a" name="a" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:11px 14px;color:var(--ink);font-family:var(--font-body);font-size:.88rem;outline:none;appearance:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--bdr2)'">
@@ -1771,6 +2377,7 @@ def build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/')
+@cache.cached(timeout=600, query_string=True)
 def home():
     panel_tools = sorted(TOOLS, key=lambda t: -t['score'])[:4]
     panel_items = ''
@@ -1786,10 +2393,6 @@ def home():
           <div class="ptool-score {sc_cls}">{sc}</div>
         </a>"""
 
-    role_chips = '\n'.join(
-        f'<a href="/for/{r["slug"]}" class="role-chip"><span class="chip-icon" aria-hidden="true">{r["icon"]}</span>{r["name"]}</a>'
-        for r in ROLES)
-
     hero = f"""<div class="page">
   <section class="hero" aria-labelledby="hero-heading">
     <div>
@@ -1798,35 +2401,20 @@ def home():
         Independent AI Tool Reviews · Updated 2026
       </div>
       <h1 class="hero-h1" id="hero-heading">
-        Cutting through<br>the <em>AI noise</em>
-        <span class="serif-accent">Clear verdicts. Real results.</span>
+        Independent <em>AI tool reviews</em>
+        <span class="serif-accent">Cut through the noise. Find what works.</span>
       </h1>
-      <p class="hero-sub">Independent reviews, transparent scores, and clear verdicts — helping freelancers, marketers, and business owners find AI tools that actually work.</p>
-      <div class="role-selector" aria-label="Browse by role">
-        <div class="role-label" id="role-label">// I am a</div>
-        <div class="role-chips" role="list" aria-labelledby="role-label">{role_chips}</div>
-      </div>
+      <p class="hero-sub">
+        Hundreds of AI tools, impossible to evaluate them all — we do it for you.
+        Transparent scores, honest verdicts, zero paid placements. Built for
+        freelancers, marketers, and business owners who need answers, not hype.
+      </p>
       <div class="hero-ctas">
-        <a href="/tools" class="btn-primary">Browse all tools →</a>
-        <a href="/compare" class="btn-ghost">Compare tools</a>
-      </div>
-      <div class="stats-row" aria-label="Site statistics">
-        <div class="stat-item">
-          <div class="stat-num">{len(TOOLS)}<em>+</em></div>
-          <div class="stat-lbl">tools reviewed</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">{len(ROLES)}<em>+</em></div>
-          <div class="stat-lbl">role guides</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num"><em>$0</em></div>
-          <div class="stat-lbl">paid placements</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num">{len(COMPARISONS)}<em>+</em></div>
-          <div class="stat-lbl">comparisons</div>
-        </div>
+        <a href="/tool-finder" class="btn-primary">
+          Find my tool stack
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/tools" class="btn-ghost">Browse all {len(TOOLS)} tools</a>
       </div>
     </div>
     <aside class="hero-panel" aria-label="Top rated tools leaderboard">
@@ -1840,7 +2428,73 @@ def home():
   </section>
 </div>"""
 
-    role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv">
+    trust_bar = f"""<div class="page" style="padding-top:0;padding-bottom:0" role="note" aria-label="Site statistics">
+  <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;padding:18px 0 24px;border-bottom:1px solid var(--div);">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--cyan)">{len(TOOLS)}+</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">tools<br>reviewed</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--cyan)">{len(COMPARISONS)}+</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">head-to-head<br>comparisons</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--green)">$0</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">paid<br>placements</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 28px">
+      <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--amber)">Weekly</span>
+      <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">updates &amp;<br>new reviews</span>
+    </div>
+  </div>
+</div>"""
+
+    role_options = '\n'.join(
+        f'<option value="/for/{r["slug"]}">{r["icon"]} {r["name"]}</option>'
+        for r in ROLES
+    )
+
+    tool_finder = f"""<div class="page" id="tool-finder">
+  <section style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r4);padding:36px 40px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;box-shadow:var(--sh1);position:relative;overflow:hidden;margin-top:clamp(40px,5vw,64px);" aria-labelledby="finder-heading">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan),var(--violet))"></div>
+    <div>
+      <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <span style="display:inline-block;width:16px;height:1px;background:var(--amber)"></span>
+        Not sure where to start?
+      </div>
+      <h2 id="finder-heading" style="font-family:var(--font-display);font-size:clamp(1.4rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;color:var(--ink);margin-bottom:8px;line-height:1.1">
+        Find your <em style="font-style:normal;color:var(--cyan)">recommended stack</em>
+      </h2>
+      <p style="font-size:.9rem;color:var(--ink3);line-height:1.7;max-width:420px">
+        Tell us your role and we&#39;ll show you the exact tools our reviewers recommend &mdash; scored and ranked.
+        Or <a href="/tool-finder" style="color:var(--cyan)">take the full quiz →</a>
+      </p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="role-finder-select" style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4)">I am a&hellip;</label>
+        <select id="role-finder-select"
+          style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:12px 44px 12px 16px;color:var(--ink);font-family:var(--font-body);font-size:.92rem;font-weight:500;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;min-width:240px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%237c8db5' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;transition:border-color .2s,box-shadow .2s;"
+          onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px var(--cyan-d)'"
+          onblur="this.style.borderColor='var(--bdr2)';this.style.boxShadow='none'"
+          aria-label="Select your role">
+          <option value="" disabled selected>Select your role…</option>
+          {role_options}
+        </select>
+      </div>
+      <div style="padding-top:22px">
+        <button type="button" class="btn-primary"
+          onclick="var v=document.getElementById('role-finder-select').value;if(v)window.location.href=v;"
+          aria-label="Go to my recommended tool stack">
+          Show my stack
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>"""
+
+    role_cards = '\n'.join(f"""<a href="/for/{r['slug']}" class="role-card rv" aria-label="{r['name']}: {len(r['tool_slugs'])} recommended tools">
       <span class="rc-icon" aria-hidden="true">{r['icon']}</span>
       <div class="rc-name">{r['name']}</div>
       <div class="rc-desc">{r['description']}</div>
@@ -1866,7 +2520,7 @@ def home():
     <div class="sec-top">
       <div><div class="sec-eyebrow">Highest rated · Featured picks</div>
       <h2 class="sec-h2" id="featured-heading">Top <em>AI tools</em> right now</h2></div>
-      <a href="/tools" class="sec-link">All tools →</a>
+      <a href="/tools" class="sec-link">All {len(TOOLS)} tools →</a>
     </div>
     <div class="tools-grid">{cards_html}</div>
   </section>
@@ -1887,20 +2541,20 @@ def home():
     <div class="sec-top">
       <div><div class="sec-eyebrow">Head to head · High intent</div>
       <h2 class="sec-h2" id="compare-heading"><em>Compare</em> tools side by side</h2></div>
-      <a href="/compare" class="sec-link">All comparisons →</a>
+      <a href="/compare" class="sec-link">All {len(COMPARISONS)} comparisons →</a>
     </div>
     <div class="comp-grid">{comp_cards}</div>
   </section>
 </div>"""
 
     posts = sorted([{**v, 'slug': k} for k, v in BLOG_POSTS.items()], key=lambda x: x['date'], reverse=True)
-    blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv">
+    blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv" aria-label="Guide: {p['title']}">
       <div class="blog-card-accent"></div>
       <div class="blog-card-body">
-        <div class="blog-eyebrow">{datetime.datetime.strptime(p['date'],'%Y-%m-%d').strftime('%d %b %Y')} · {p.get('category','Guide')}</div>
+        <div class="blog-eyebrow">{datetime.datetime.strptime(p['date'],'%Y-%m-%d').strftime('%d %b %Y')} &nbsp;·&nbsp;{p.get('category','Guide')}</div>
         <div class="blog-title">{p['title']}</div>
         <div class="blog-desc">{p.get('description','')}</div>
-        <div class="blog-link">Read guide →</div>
+        <div class="blog-link" aria-hidden="true">Read guide →</div>
       </div>
     </a>""" for p in posts[:3])
 
@@ -1915,16 +2569,58 @@ def home():
   </section>
 </div>"""
 
-    content = (hero + affil_strip() + roles_sec + tools_sec + comp_sec
-               + email_capture() + blog_sec + '<div style="height:56px"></div>')
+    content = (
+        hero + trust_bar + affil_strip() + tool_finder + roles_sec
+        + tools_sec + comp_sec + blog_sec + email_capture()
+        + '<div style="height:56px"></div>'
+    )
 
     return render(
-        title='Moving Forward With AI — Independent AI Tool Reviews 2026',
-        desc='Independent AI tool reviews with transparent scores for freelancers, marketers, and builders.',
-        content=content)
+        title='Independent AI Tool Reviews 2026 — Moving Forward With AI',
+        desc=f'Independent reviews of {len(TOOLS)}+ AI tools with transparent scores. No paid placements. Built for freelancers, marketers, and business owners.',
+        content=content,
+        bcs=bc_schema([('Home', '/')]))
+
+
+@app.route('/tool-finder')
+@cache.cached(timeout=600)
+def tool_finder_page():
+    bc_html = breadcrumb_html([('Home', '/'), ('Tool Finder', '/tool-finder')])
+    content = render_template_string(
+        TOOL_FINDER_TEMPLATE,
+        breadcrumb=bc_html
+    )
+    return render(
+        title='AI Tool Finder Quiz 2026 — Find Your Perfect Stack | MFWAI',
+        desc='Answer 4 quick questions and get personalised AI tool recommendations based on your role, goals, budget, and skill level.',
+        content=content,
+        bcs=bc_schema([('Home', '/'), ('Tool Finder', '/tool-finder')])
+    )
+
+
+@app.route('/api/tool-finder')
+def api_tool_finder():
+    role   = request.args.get('role', '')
+    goal   = request.args.get('goal', '')
+    budget = request.args.get('budget', '')
+    skill  = request.args.get('skill', '')
+
+    matched = match_tools_for_quiz(role, goal, budget, skill, TOOLS)
+
+    return jsonify({'tools': [{
+        'slug':           t['slug'],
+        'name':           t['name'],
+        'category':       t['category'],
+        'score':          t['score'],
+        'verdict':        t['verdict'][:160],
+        'starting_price': t['starting_price'],
+        'pricing_model':  t['pricing_model'],
+        'affiliate_url':  t['affiliate_url'],
+    } for t in matched]})
 
 
 @app.route('/tools')
+@cache.cached(timeout=600, query_string=True)
 def tools_all():
     page  = int(request.args.get('page', 1))
     PER   = 12
@@ -1949,13 +2645,15 @@ def tools_all():
     <div class="page" style="padding-top:40px"><div class="tools-grid">{cards}</div></div>
     {pager}"""
     return render(
-        title='All AI Tools Reviewed — Moving Forward With AI',
-        desc=f'Browse all {len(TOOLS)} AI tools reviewed on Moving Forward With AI.',
+        title=f'Best AI Tools 2026 — {len(TOOLS)} Independently Reviewed | MFWAI',
+        desc=f'Browse all {len(TOOLS)} AI tools reviewed independently. Transparent scores, honest verdicts, zero paid placements.',
         content=content,
+        schema=itemlist_schema(TOOLS, "AI Tools Directory"),
         bcs=bc_schema([('Home', '/'), ('All Tools', '/tools')]))
 
 
 @app.route('/for/<slug>')
+@cache.cached(timeout=900)
 def role_page(slug):
     role       = get_role(slug)
     if not role: abort(404)
@@ -2013,19 +2711,254 @@ def role_page(slug):
 
 
 @app.route('/tool/<slug>')
+@cache.cached(timeout=1800)
 def tool_detail(slug):
     t = get_tool(slug)
     if not t: abort(404)
     sc     = t['score']
     sc_col = score_color(sc)
     sc_lbl = score_label(sc)
+    name   = t['name']
+
     badges = []
     if t.get('free_tier'):  badges.append('<span class="badge b-free">Free tier</span>')
     if t.get('free_trial'): badges.append(f'<span class="badge b-trial">{t["trial_days"]}-day trial</span>')
 
+    header = f"""
+    <header class="td-header">
+      <div class="td-header-grid">
+        <div>
+          <div class="td-eyebrow">{t['category'].upper()} REVIEW</div>
+          <h1 class="td-h1">{name}</h1>
+          <p class="td-tagline">{t['tagline']}</p>
+          <div class="td-meta-row">{''.join(badges)}</div>
+        </div>
+        <div class="td-score-block" aria-label="MFWAI score: {sc} out of 100">
+          <div class="td-score-num" style="color:{sc_col}">{sc}</div>
+          <div class="td-score-label" style="color:{sc_col}">{sc_lbl}</div>
+          <div class="td-score-sub">MFWAI score / 100</div>
+        </div>
+      </div>
+    </header>"""
+
+    free_tier_text = 'Yes' if t.get('free_tier') else 'No'
+    best_for_line  = t['best_for'][0] if t['best_for'] else ''
+    not_ideal_items = t.get('not_ideal_for', [])
+    not_ideal_line  = not_ideal_items[0] if not_ideal_items else (t['cons'][0] if t['cons'] else '')
+
+    verdict_box = f"""
+    <section class="verdict-box rv" aria-labelledby="quick-verdict-heading">
+      <div class="verdict-box-grid">
+        <div class="vb-score-ring" style="color:{sc_col}" aria-label="Score: {sc} out of 100">
+          <div class="vb-score-num" style="color:{sc_col}">{sc}</div>
+          <div class="vb-score-max">/ 100</div>
+        </div>
+        <div class="vb-content">
+          <div class="vb-label" id="quick-verdict-heading">Quick verdict</div>
+          <p class="vb-verdict">{t['verdict']}</p>
+          <div class="vb-meta-grid">
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Best for</span>
+              <span class="vb-meta-value">{best_for_line}</span>
+            </div>
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Not ideal for</span>
+              <span class="vb-meta-value">{not_ideal_line}</span>
+            </div>
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Starting at</span>
+              <span class="vb-meta-value">{t['starting_price']}</span>
+            </div>
+            <div class="vb-meta-item">
+              <span class="vb-meta-label">Free tier</span>
+              <span class="vb-meta-value">{free_tier_text}</span>
+            </div>
+          </div>
+        </div>
+        <div class="vb-cta-col">
+          <a href="{t['affiliate_url']}" target="_blank"
+             rel="nofollow sponsored noopener noreferrer"
+             class="btn-td-cta" aria-label="Try {name} — opens in new tab">
+            Try {name}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15,3 21,3 21,9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
+          <div class="trust-items" role="list" style="margin-top:4px">
+            <div class="trust-item" role="listitem">
+              <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              No extra cost to you
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>"""
+
     pros_html = '\n'.join(f'<li>{p}</li>' for p in t['pros'])
     cons_html = '\n'.join(f'<li>{c}</li>' for c in t['cons'])
-    best_html = '\n'.join(f'<div class="best-for-item">{b}</div>' for b in t['best_for'])
+
+    pros_cons = f"""
+    <section class="pc-grid rv" aria-labelledby="pros-heading cons-heading">
+      <div class="pc-col">
+        <h2 class="pc-col-title pro-title" id="pros-heading">What we like</h2>
+        <ul class="plist pros" aria-label="Pros">{pros_html}</ul>
+      </div>
+      <div class="pc-col">
+        <h2 class="pc-col-title con-title" id="cons-heading">Where it falls short</h2>
+        <ul class="plist cons" aria-label="Cons">{cons_html}</ul>
+      </div>
+    </section>"""
+
+    pricing_tiers = t.get('pricing_tiers', [])
+    if pricing_tiers:
+        rows = ''
+        for tier in pricing_tiers:
+            monthly  = tier.get('monthly', '\u2014')
+            annual   = tier.get('annual', '\u2014')
+            features = tier.get('features', '\u2014')
+            rows += f'<tr><td>{tier["name"]}</td><td>{monthly}</td><td>{annual}</td><td>{features}</td></tr>'
+        pricing_table = f"""
+        <table class="pricing-table">
+          <thead><tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>What\u2019s included</th></tr></thead>
+          <tbody>{rows}</tbody>
+        </table>"""
+    else:
+        free_row = ''
+        if t.get('free_tier'):
+            free_row = '<tr><td>Free</td><td>$0</td><td>$0</td><td>Limited features \u2014 free forever</td></tr>'
+        pricing_table = f"""
+        <table class="pricing-table">
+          <thead><tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>What\u2019s included</th></tr></thead>
+          <tbody>
+            {free_row}
+            <tr><td>Paid</td><td>{t['starting_price']}</td><td>\u2014</td><td>{t['pricing_model']}</td></tr>
+          </tbody>
+        </table>"""
+
+    date_verified = t.get('date_added', '2026')
+    pricing_section = f"""
+    <section class="pricing-section rv" aria-labelledby="pricing-heading">
+      <div class="pricing-section-hdr">
+        <h2 class="review-section-hdr" id="pricing-heading">{name} pricing</h2>
+        <div class="pricing-verified">Prices verified {date_verified}</div>
+      </div>
+      {pricing_table}
+    </section>"""
+
+    yes_items = '\n'.join(f'<li>{b}</li>' for b in t['best_for'])
+    not_ideal_list = t.get('not_ideal_for', t['cons'][:3])
+    no_items = '\n'.join(f'<li>{n}</li>' for n in not_ideal_list)
+
+    who_section = f"""
+    <section class="who-section rv" aria-labelledby="who-heading">
+      <h2 class="review-section-hdr" id="who-heading">Who should use {name}?</h2>
+      <div class="who-grid">
+        <div>
+          <div class="panel-label" style="color:var(--green)">\u2714 This tool is right for you if\u2026</div>
+          <ul class="who-list who-yes">{yes_items}</ul>
+        </div>
+        <div>
+          <div class="panel-label" style="color:var(--amber)">\u2192 Consider an alternative if\u2026</div>
+          <ul class="who-list who-no">{no_items}</ul>
+        </div>
+      </div>
+    </section>"""
+
+    faqs = t.get('faqs', [])
+    if not faqs:
+        faqs = [
+            (f'Is {name} worth it in 2026?', f'{name} scores {sc}/100 in our independent review. {t["verdict"]}'),
+            (f'What is {name} best for?', 'Claude Pro output indicates, ' + '; '.join(t['best_for'][:3]) + '.'),
+            (f'How much does {name} cost?', f'{name} starts at {t["starting_price"]} ({t["pricing_model"]}). ' + ('A free tier is available.' if t.get('free_tier') else 'No free tier is available.')),
+            (f'Does {name} offer a free trial?', (f'Yes \u2014 {name} offers a {t.get("trial_days","")}-day free trial.' if t.get('free_trial') else f'Currently, {name} does not offer a free trial.' + (' However, it does have a free tier.' if t.get('free_tier') else ''))),
+            (f'What are the main downsides of {name}?', 'The key limitations are: ' + '; '.join(t['cons'][:3]) + '.'),
+        ]
+    else:
+        faqs = [(f['q'], f['a']) for f in faqs]
+
+    faq_items = ''
+    for i, (q, a) in enumerate(faqs):
+        faq_items += f"""<div class="faq-item" id="faq-{i}">
+          <button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-{i}"
+                  onclick="this.parentElement.classList.toggle('open');this.setAttribute('aria-expanded',this.parentElement.classList.contains('open'))">
+            {q}
+            <svg class="faq-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="faq-a" id="faq-a-{i}" role="region">{a}</div>
+        </div>"""
+
+    faq_html = f"""
+    <section class="faq-section rv" aria-labelledby="faq-heading">
+      <div class="faq-section-hdr">
+        <h2 class="review-section-hdr" id="faq-heading">Frequently asked questions</h2>
+      </div>
+      {faq_items}
+    </section>"""
+
+    faq_sd = faq_schema(faqs)
+
+    alt_slugs = t.get('alternatives', [])
+    if alt_slugs:
+        alt_tools = [get_tool(s) for s in alt_slugs if get_tool(s)]
+    else:
+        alt_tools = [x for x in TOOLS if x['slug'] != slug and x['category'] == t['category']]
+        if len(alt_tools) < 2:
+            alt_tools += [x for x in TOOLS if x['slug'] != slug and x not in alt_tools
+                          and any(r in x.get('roles', []) for r in t.get('roles', []))]
+        alt_tools = sorted(alt_tools, key=lambda x: -x['score'])[:3]
+
+    alt_cards = ''
+    for alt in alt_tools:
+        asc  = alt['score']
+        abg  = 'var(--green-d)' if asc >= 88 else 'var(--cyan-d)'
+        abdr = 'var(--green-g)' if asc >= 88 else 'var(--cyan-g)'
+        acol = 'var(--green)'   if asc >= 88 else 'var(--cyan)'
+        comp_link = ''
+        for comp in COMPARISONS:
+            if (comp['tool_a'] == slug and comp['tool_b'] == alt['slug']) or \
+               (comp['tool_b'] == slug and comp['tool_a'] == alt['slug']):
+                comp_link = f'<a href="/compare/{comp["slug"]}" class="alt-link">Compare \u2192</a>'
+                break
+        alt_cards += f"""<div class="alt-card">
+          <div class="alt-score" style="background:{abg};border:1px solid {abdr};color:{acol}">{asc}/100</div>
+          <div class="alt-info">
+            <div class="alt-name">{alt['name']}</div>
+            <div class="alt-desc">{alt['tagline']}</div>
+          </div>
+          <div class="alt-links">
+            <a href="/tool/{alt['slug']}" class="alt-link">Full review \u2192</a>
+            {comp_link}
+          </div>
+        </div>"""
+
+    alts_html = f"""
+    <section class="alts-section rv" aria-labelledby="alts-heading">
+      <h2 class="review-section-hdr" id="alts-heading">Alternatives to {name}</h2>
+      {alt_cards}
+    </section>"""
+
+    bottom_cta = f"""
+    <section class="bottom-cta rv">
+      <div class="bottom-cta-text">
+        <div class="bottom-cta-name">Ready to try {name}?</div>
+        <div class="bottom-cta-sub">
+          {sc}/100 MFWAI score \u00b7 Starts at {t['starting_price']}
+          {' \u00b7 Free tier available' if t.get('free_tier') else ''}
+          {' \u00b7 ' + str(t.get('trial_days','')) + '-day free trial' if t.get('free_trial') else ''}
+        </div>
+      </div>
+      <a href="{t['affiliate_url']}" target="_blank" rel="nofollow sponsored noopener noreferrer"
+         class="btn-td-cta" style="width:auto;flex-shrink:0" aria-label="Try {name} \u2014 opens in new tab">
+        Try {name}
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15,3 21,3 21,9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </a>
+    </section>"""
 
     related = [x for x in TOOLS if x['slug']!=slug and any(r in x.get('roles',[]) for r in t.get('roles',[]))][:3]
     if len(related) < 3:
@@ -2038,82 +2971,14 @@ def tool_detail(slug):
                       (t['name'],f'/tool/{slug}')])}
     <div class="page">
       <div class="td-wrapper">
-        <header class="td-header">
-          <div class="td-header-grid">
-            <div>
-              <div class="td-eyebrow">{t['category'].upper()}</div>
-              <h1 class="td-h1">{t['name']}</h1>
-              <p class="td-tagline">{t['tagline']}</p>
-              <div class="td-meta-row">
-                {''.join(badges)}
-              </div>
-            </div>
-            <div class="td-score-block" aria-label="MFWAI score: {sc} out of 100">
-              <div class="td-score-num" style="color:{sc_col}">{sc}</div>
-              <div class="td-score-label" style="color:{sc_col}">{sc_lbl}</div>
-              <div class="td-score-sub">MFWAI score / 100</div>
-            </div>
-          </div>
-        </header>
-
-        <div class="td-layout">
-          <div>
-            <div class="td-panel">
-              <div class="panel-label">Our verdict</div>
-              <p class="verdict-text">{t['verdict']}</p>
-            </div>
-            <div class="td-panel">
-              <div class="pros-cons-grid">
-                <div>
-                  <div class="panel-label">Pros</div>
-                  <ul class="plist pros" aria-label="Pros">{pros_html}</ul>
-                </div>
-                <div>
-                  <div class="panel-label">Cons</div>
-                  <ul class="plist cons" aria-label="Cons">{cons_html}</ul>
-                </div>
-              </div>
-            </div>
-            <div class="td-panel">
-              <div class="panel-label">Best for</div>
-              <div class="best-for-list">{best_html}</div>
-            </div>
-          </div>
-          <aside class="td-sidebar" aria-label="Pricing and actions">
-            <div class="td-panel">
-              <div class="price-box">
-                <div class="price-from">Starting from</div>
-                <div class="price-value">{t['starting_price']}</div>
-                <div class="price-period">{t['pricing_model']}</div>
-              </div>
-              <a href="{t['affiliate_url']}" target="_blank"
-                 rel="nofollow sponsored noopener noreferrer"
-                 class="btn-td-cta">
-                Try {t['name']}
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                  <polyline points="15,3 21,3 21,9"/>
-                  <line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-              </a>
-              <div class="trust-items" role="list">
-                <div class="trust-item" role="listitem">
-                  <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  Affiliate link — no extra cost to you
-                </div>
-                {'<div class="trust-item" role="listitem"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'+str(t["trial_days"])+"-day free trial available</div>" if t.get('free_trial') else ''}
-                <div class="trust-item" role="listitem">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                  Reviewed {t.get('date_added', '2026')}
-                </div>
-                <div class="trust-item" role="listitem">
-                  <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  Independent editorial
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
+        {header}
+        {verdict_box}
+        {pros_cons}
+        {pricing_section}
+        {who_section}
+        {faq_html}
+        {alts_html}
+        {bottom_cta}
       </div>
     </div>
     <div class="page">
@@ -2127,14 +2992,17 @@ def tool_detail(slug):
     </div>"""
 
     return render(
-        title=f'{t["name"]} Review 2026 — Score & Verdict | Moving Forward With AI',
-        desc=f'{t["name"]}: {t["tagline"]}. MFWAI score: {sc}/100. From {t["starting_price"]}.',
+        title=tool_meta_title(t),
+        desc=f'{t["name"]}: {t["tagline"][:100]}. Score: {sc}/100. From {t["starting_price"]}. Read the full review.',
         content=content,
         schema=tool_schema(t),
-        bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]))
+        schema2=faq_sd,
+        bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]),
+        og_type='article')
 
 
 @app.route('/compare')
+@cache.cached(timeout=600)
 def compare_index():
     cards = '\n'.join(f"""<a href="/compare/{c['slug']}" class="comp-card rv">
       <div class="comp-vs">
@@ -2165,12 +3033,14 @@ def compare_index():
       <div class="comp-grid">{cards}</div>
     </div>"""
     return render(
-        'Compare AI Tools Side by Side — Moving Forward With AI',
-        'Head-to-head AI tool comparisons with clear verdicts.',
-        content)
+        'Compare AI Tools Side by Side 2026 | MFWAI',
+        f'Head-to-head AI tool comparisons with clear verdicts. {len(COMPARISONS)} matchups reviewed independently.',
+        content,
+        bcs=bc_schema([('Home', '/'), ('Compare', '/compare')]))
 
 
 @app.route('/compare/<slug>')
+@cache.cached(timeout=1800)
 def compare_detail(slug):
     if slug == 'custom':
         return compare_custom()
@@ -2241,10 +3111,12 @@ def compare_detail(slug):
     {email_capture()}"""
 
     return render(
-        title=f'{c["headline"]} 2026 — Which Is Better? | Moving Forward With AI',
-        desc=c.get('meta_description', c['description']),
+        title=comp_meta_title(ta['name'], tb['name']),
+        desc=c.get('meta_description', c['description'])[:155],
         content=content,
-        bcs=bc_schema([('Home', '/'), ('Compare', '/compare'), (c['headline'], f'/compare/{slug}')]))
+        schema=comparison_schema(ta, tb, c),
+        bcs=bc_schema([('Home', '/'), ('Compare', '/compare'), (c['headline'], f'/compare/{slug}')]),
+        og_type='article')
 
 
 @app.route('/compare/custom')
@@ -2265,6 +3137,7 @@ def compare_custom():
 
 
 @app.route('/blog')
+@cache.cached(timeout=600)
 def blog():
     posts = sorted([{**v, 'slug': k} for k, v in BLOG_POSTS.items()], key=lambda x: x['date'], reverse=True)
     cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv">
@@ -2286,12 +3159,14 @@ def blog():
     </div>
     <div class="page"><div class="blog-grid">{cards}</div></div>"""
     return render(
-        'AI Tool Guides for Freelancers & Marketers — Moving Forward With AI',
-        'In-depth guides, comparisons and how-tos for AI tools.',
-        content)
+        'AI Tool Guides for Freelancers & Marketers 2026 | MFWAI',
+        'In-depth guides, comparisons and how-tos for AI tools. Updated weekly.',
+        content,
+        bcs=bc_schema([('Home', '/'), ('Guides', '/blog')]))
 
 
 @app.route('/blog/<slug>')
+@cache.cached(timeout=3600)
 def blog_detail(slug):
     post = BLOG_POSTS.get(slug)
     if not post: abort(404)
@@ -2326,14 +3201,21 @@ def blog_detail(slug):
     </div>
     {'<div class="page"><section class="sec" aria-labelledby="blog-tools-heading"><div class="sec-top"><div><div class="sec-eyebrow">Mentioned in this guide</div><h2 class="sec-h2" id="blog-tools-heading">Related <em>tools</em></h2></div></div><div class="tools-grid">'+rel_cards+'</div></section></div>' if rel_cards else ''}
     {email_capture()}"""
+
+    faq_pairs = extract_faq_from_blog(post)
+    faq_sd = faq_schema(faq_pairs) if faq_pairs else ''
+
     return render(
-        title=post['title'] + ' — Moving Forward With AI',
-        desc=post.get('meta_description', post.get('description', '')),
+        title=blog_meta_title(post),
+        desc=post.get('meta_description', post.get('description', ''))[:155],
         content=content,
-        bcs=bc_schema([('Home', '/'), ('Guides', '/blog'), (post['title'], f'/blog/{slug}')]))
+        schema=faq_sd,
+        bcs=bc_schema([('Home', '/'), ('Guides', '/blog'), (post['title'], f'/blog/{slug}')]),
+        og_type='article')
 
 
 @app.route('/category/<cat_slug>')
+@cache.cached(timeout=900)
 def category(cat_slug):
     tools = [t for t in TOOLS if slugify(t['category']) == cat_slug]
     if not tools: abort(404)
@@ -2349,13 +3231,15 @@ def category(cat_slug):
     </div>
     <div class="page"><div class="tools-grid">{cards}</div></div>"""
     return render(
-        f'Best {cat_name} AI Tools 2026 | Moving Forward With AI',
-        f'Independent reviews of the best {cat_name.lower()} AI tools in 2026.',
+        f'Best {cat_name} AI Tools 2026 | MFWAI',
+        f'Independent reviews of the best {cat_name.lower()} AI tools in 2026. Transparent scores and honest verdicts.',
         content,
+        schema=itemlist_schema(tools, f"{cat_name} AI Tools"),
         bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (cat_name, f'/category/{cat_slug}')]))
 
 
 @app.route('/affiliate-disclosure')
+@cache.cached(timeout=3600)
 def affiliate_disclosure():
     content = """<div class="legal-wrap">
       <h1>Affiliate Disclosure</h1>
@@ -2366,10 +3250,12 @@ def affiliate_disclosure():
       <h2>Contact</h2>
       <p>Questions? <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a></p>
     </div>"""
-    return render('Affiliate Disclosure — Moving Forward With AI', 'How MFWAI earns commissions while maintaining editorial independence.', content)
+    return render('Affiliate Disclosure — Moving Forward With AI', 'How MFWAI earns commissions while maintaining editorial independence.', content,
+                  bcs=bc_schema([('Home', '/'), ('Affiliate Disclosure', '/affiliate-disclosure')]))
 
 
 @app.route('/privacy')
+@cache.cached(timeout=3600)
 def privacy():
     content = """<div class="legal-wrap">
       <h1>Privacy Policy</h1>
@@ -2381,10 +3267,12 @@ def privacy():
       <h2>Your rights</h2>
       <p>Contact <a href="mailto:hello@movingforwardwithai.com" style="color:var(--cyan)">hello@movingforwardwithai.com</a> to exercise data rights.</p>
     </div>"""
-    return render('Privacy Policy — Moving Forward With AI', 'Privacy policy for Moving Forward With AI.', content)
+    return render('Privacy Policy — Moving Forward With AI', 'Privacy policy for Moving Forward With AI.', content,
+                  bcs=bc_schema([('Home', '/'), ('Privacy Policy', '/privacy')]))
 
 
 @app.route('/terms')
+@cache.cached(timeout=3600)
 def terms():
     content = """<div class="legal-wrap">
       <h1>Terms of Service</h1>
@@ -2394,7 +3282,8 @@ def terms():
       <h2>Affiliate links</h2>
       <p>See our <a href="/affiliate-disclosure" style="color:var(--cyan)">Affiliate Disclosure</a>.</p>
     </div>"""
-    return render('Terms of Service — Moving Forward With AI', 'Terms for Moving Forward With AI.', content)
+    return render('Terms of Service — Moving Forward With AI', 'Terms for Moving Forward With AI.', content,
+                  bcs=bc_schema([('Home', '/'), ('Terms', '/terms')]))
 
 
 @app.route('/api/tools')
@@ -2406,7 +3295,14 @@ def api_tools():
         'featured': t.get('featured', False)} for t in TOOLS]})
 
 
+@app.route('/api/cache-clear')
+def cache_clear():
+    cache.clear()
+    return jsonify({'status': 'ok', 'message': 'Cache cleared successfully'})
+
+
 @app.route('/robots.txt')
+@cache.cached(timeout=3600)
 def robots():
     return Response(
         f'User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: {SITE_URL}/sitemap.xml\n',
@@ -2414,13 +3310,15 @@ def robots():
 
 
 @app.route('/sitemap.xml')
+@cache.cached(timeout=3600)
 def sitemap():
     today = datetime.date.today().isoformat()
     urls  = [
-        (SITE_URL + '/',        today, '1.0', 'weekly'),
-        (SITE_URL + '/tools',   today, '0.9', 'weekly'),
-        (SITE_URL + '/compare', today, '0.9', 'weekly'),
-        (SITE_URL + '/blog',    today, '0.8', 'weekly'),
+        (SITE_URL + '/',               today, '1.0', 'weekly'),
+        (SITE_URL + '/tools',          today, '0.9', 'weekly'),
+        (SITE_URL + '/tool-finder',    today, '0.8', 'weekly'),
+        (SITE_URL + '/compare',        today, '0.9', 'weekly'),
+        (SITE_URL + '/blog',           today, '0.8', 'weekly'),
     ]
     for t in TOOLS:
         urls.append((f'{SITE_URL}/tool/{t["slug"]}',    t.get('date_added', today), '0.8', 'monthly'))
