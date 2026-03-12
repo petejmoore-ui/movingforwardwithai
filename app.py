@@ -352,6 +352,12 @@ TOOL_FINDER_PROFILES = {
         'max_budget':   'low',
         'skill_levels': ['fairly-technical', 'developer'],
     },
+    'windsurf': {
+        'roles':        ['freelancer'],
+        'goals':        ['write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['fairly-technical', 'developer'],
+    },
     # ── Automation ─────────────────────────────────────────────────────────
     'zapier': {
         'roles':        ['marketer', 'small-business-owner', 'freelancer'],
@@ -364,6 +370,20 @@ TOOL_FINDER_PROFILES = {
         'goals':        ['automate-workflow', 'grow-business'],
         'max_budget':   'low',
         'skill_levels': ['basic', 'fairly-technical'],
+    },
+    # ── Website & App Builders ─────────────────────────────────────────────
+    'bolt-new': {
+        'roles':        ['small-business-owner', 'freelancer', 'marketer'],
+        'goals':        ['write-code', 'grow-business', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    # ── Video & Media ──────────────────────────────────────────────────────
+    'runway': {
+        'roles':        ['content-creator', 'marketer'],
+        'goals':        ['create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
     },
     # ── Design / Image ─────────────────────────────────────────────────────
     'midjourney': {
