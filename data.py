@@ -104,7 +104,9 @@ TOOLS = [
             {
                 "q": "Is Runway worth it for social media content?",
                 "a": "For creators who need high-quality video assets regularly, yes — especially at the Standard tier ($15/mo). The quality advantage over cheaper alternatives is real and visible in final output. Be aware of the credit constraints and plan your usage around them. For very occasional video needs, the free tier's 125 one-time credits may be sufficient.",
-            },
+            }
+        ]  
+    },
         
  
     # ── 2. BOLT.NEW ──────────────────────────────────────────────────────────
@@ -292,7 +294,9 @@ TOOLS = [
             {
                 "q": "How does the Memories system work?",
                 "a": "Windsurf's Memories feature learns patterns from your coding sessions and retains them across future sessions. This means it remembers things like your preferred naming conventions, the architecture patterns you use in your project, libraries you rely on, and common tasks you perform — reducing the amount of context you need to re-explain each time you open the editor. It is one of Windsurf's most practically useful differentiators over basic AI autocomplete tools.",
-            },
+            }
+        ]  
+    },
         
     # ========== ORIGINAL 8 TOOLS (REFRESHED & GEO-OPTIMIZED) ==========
     {
