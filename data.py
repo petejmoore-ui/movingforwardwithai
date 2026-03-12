@@ -197,7 +197,9 @@ TOOLS = [
             {
                 "q": "Is Bolt.new suitable for non-developers?",
                 "a": "Yes, within limits. For simple to moderate web applications — dashboards, landing pages, internal tools, client portals — Bolt.new is genuinely usable by non-developers. The free tier gives you enough tokens to build a real prototype and assess where the AI's autonomous capabilities end and manual guidance begins. More complex applications benefit from at least a basic understanding of how web applications are structured.",
-            },
+            }
+        ]  
+    }, 
         
  
     # ── 3. WINDSURF ──────────────────────────────────────────────────────────
