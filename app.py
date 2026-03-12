@@ -2098,10 +2098,34 @@ window.addEventListener('scroll', function () {
   }
   function closeSov() { sov.classList.remove('open'); document.body.style.overflow = ''; if (searchInput) searchInput.setAttribute('aria-expanded', 'false'); }
     function miniCard(t) {
-    var sc = t.score, isHi = sc >= 88;
-    var bg = isHi ? 'var(--green-d)' : 'var(--cyan-d)', bdr = isHi ? 'var(--green-g)' : 'var(--cyan-g)', col = isHi ? 'var(--green)' : 'var(--cyan)';
-    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'\'"><div class="tc-accent-bar"></div><div class="tc-body"><div class="tc-meta"><div class="tc-cat">'+(t.category||'')+'</div><div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div></div><a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a><p class="tc-tagline">'+(t.tagline||'')+'</p></div><div class="tc-footer"><div class="tc-pricing"><span class="tc-price">'+(t.starting_price||'')+'</span></div></div></div>';
-  }
+  var sc = t.score, isHi = sc >= 88;
+  var bg  = isHi ? 'var(--green-d)' : 'var(--cyan-d)',
+      bdr = isHi ? 'var(--green-g)' : 'var(--cyan-g)',
+      col  = isHi ? 'var(--green)' : 'var(--cyan)';
+
+  return '<div class="tool-card" style="cursor:pointer" data-slug="'+t.slug+'">'+
+           '<div class="tc-accent-bar"></div>'+
+           '<div class="tc-body">'+
+             '<div class="tc-meta">'+
+               '<div class="tc-cat">'+(t.category||'')+'</div>'+
+               '<div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div>'+
+             '</div>'+
+             '<a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a>'+
+             '<p class="tc-tagline">'+(t.tagline||'')+'</p>'+
+           '</div>'+
+           '<div class="tc-footer">'+
+             '<div class="tc-pricing">'+
+               '<span class="tc-price">'+(t.starting_price||'')+'</span>'+
+             '</div>'+
+           '</div>'+
+         '</div>';
+}
+
+// Attach click handler safely via JS
+document.addEventListener('click', function(e){
+  const card = e.target.closest('.tool-card');
+  if(card) location.href = '/tool/' + encodeURIComponent(card.dataset.slug);
+});
   function runSearch(q) {
     if (!q || q.length < 2) { closeSov(); return; }
     loadTools(function() {
