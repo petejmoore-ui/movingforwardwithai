@@ -2418,7 +2418,7 @@ def home():
     <div>
       <div class="hero-eyebrow">
         <div class="hero-eyebrow-dot" aria-hidden="true"></div>
-        Independent AI Tool Reviews · Updated 2026
+        AI Tool Reviews · Updated 2026
       </div>
       <h1 class="hero-h1" id="hero-heading"><em>AI tool reviews</em>
         <span class="serif-accent">Cut through the noise. Find what works.</span>
