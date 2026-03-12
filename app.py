@@ -9,13 +9,8 @@ load_dotenv()
 app        = Flask(__name__)
 
 # ── Flask-Caching Configuration ──────────────────────────────────────────────
-# SimpleCache stores pages in memory — no Redis/Memcached needed on Render.com.
-# Cached pages are served instantly without re-rendering Jinja2 templates.
-# Default timeout: 300s (5 min). Static content pages get longer timeouts.
-# To clear the cache after updating content: restart the Render service,
-# or hit /api/cache-clear (see route below).
 app.config['CACHE_TYPE'] = 'SimpleCache'
-app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes default
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 cache = Cache(app)
 
 if os.environ.get("STAGING") == "true":
@@ -54,7 +49,6 @@ def score_label(s):
     return 'Decent'
 
 def tool_schema(t):
-    """SoftwareApplication + Review JSON-LD for /tool/[slug] pages."""
     sc = t['score']
     price_str = re.sub(r'[^0-9.]', '', t['starting_price'].split('/')[0]) or "0"
     review_count = t.get('review_count', '1').replace(',', '').replace('+', '') or "1"
@@ -102,7 +96,6 @@ def bc_schema(crumbs):
 
 
 def website_schema():
-    """WebSite + SearchAction JSON-LD — appears on every page."""
     return json.dumps({
         "@context": "https://schema.org",
         "@type": "WebSite",
@@ -119,7 +112,6 @@ def website_schema():
 
 
 def faq_schema(pairs):
-    """FAQPage JSON-LD from a list of (question, answer) tuples."""
     if not pairs:
         return ''
     return json.dumps({
@@ -134,7 +126,6 @@ def faq_schema(pairs):
 
 
 def itemlist_schema(tools_list, list_name="AI Tools"):
-    """ItemList JSON-LD for directory/index pages."""
     return json.dumps({
         "@context": "https://schema.org",
         "@type": "ItemList",
@@ -149,7 +140,6 @@ def itemlist_schema(tools_list, list_name="AI Tools"):
 
 
 def comparison_schema(ta, tb, c):
-    """Comparison page structured data."""
     def app_entry(t):
         return {
             "@type": "SoftwareApplication", "name": t['name'],
@@ -169,7 +159,6 @@ def comparison_schema(ta, tb, c):
 
 
 def extract_faq_from_blog(post):
-    """Extract FAQ pairs from blog content H2/H3 headings phrased as questions."""
     content = post.get('content', '')
     pairs = []
     pattern = r'<h[23][^>]*>(.*?\?.*?)</h[23]>\s*<p>(.*?)</p>'
@@ -190,7 +179,6 @@ def extract_faq_from_blog(post):
 
 
 def tool_meta_title(t):
-    """SEO-optimized meta title for tool pages. Max ~60 chars."""
     name = t['name']
     cat = t['category']
     title = f"{name} Review 2026 — {cat} | MFWAI"
@@ -201,7 +189,6 @@ def tool_meta_title(t):
 
 
 def comp_meta_title(ta_name, tb_name):
-    """SEO-optimized meta title for comparison pages. Max ~60 chars."""
     title = f"{ta_name} vs {tb_name} 2026 — Which Is Better? | MFWAI"
     if len(title) <= 60: return title
     title = f"{ta_name} vs {tb_name} 2026 | MFWAI"
@@ -210,7 +197,6 @@ def comp_meta_title(ta_name, tb_name):
 
 
 def blog_meta_title(post):
-    """Meta title for blog posts. Max ~60 chars."""
     base = post['title']
     full = f"{base} | MFWAI"
     if len(full) <= 60: return full
@@ -292,17 +278,526 @@ def generate_comparison_verdict(ta, tb):
     )
 
 
+# ── Tool Finder Quiz: Matching Profiles ──────────────────────────────────────
+TOOL_FINDER_PROFILES = {
+    # ── AI Writing ─────────────────────────────────────────────────────────
+    'jasper': {
+        'roles':        ['marketer', 'content-creator', 'small-business-owner'],
+        'goals':        ['create-content', 'grow-business'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'not-technical'],
+    },
+    'copy-ai': {
+        'roles':        ['marketer', 'freelancer', 'freelance-writer', 'small-business-owner'],
+        'goals':        ['create-content', 'grow-business'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'not-technical'],
+    },
+    'writesonic': {
+        'roles':        ['content-creator', 'freelance-writer', 'marketer'],
+        'goals':        ['create-content', 'improve-seo'],
+        'max_budget':   'low',
+        'skill_levels': ['basic', 'not-technical'],
+    },
+    # ── SEO Tools ──────────────────────────────────────────────────────────
+    'surfer-seo': {
+        'roles':        ['seo-professional', 'content-creator', 'marketer'],
+        'goals':        ['improve-seo', 'create-content'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'fairly-technical'],
+    },
+    'semrush': {
+        'roles':        ['seo-professional', 'marketer', 'small-business-owner'],
+        'goals':        ['improve-seo', 'research-data', 'grow-business'],
+        'max_budget':   'high',
+        'skill_levels': ['basic', 'fairly-technical', 'developer'],
+    },
+    'ahrefs': {
+        'roles':        ['seo-professional', 'marketer', 'content-creator'],
+        'goals':        ['improve-seo', 'research-data'],
+        'max_budget':   'high',
+        'skill_levels': ['basic', 'fairly-technical', 'developer'],
+    },
+    # ── AI Assistants / General ────────────────────────────────────────────
+    'chatgpt': {
+        'roles':        ['marketer', 'content-creator', 'freelancer', 'freelance-writer',
+                         'seo-professional', 'small-business-owner'],
+        'goals':        ['create-content', 'research-data', 'automate-workflow', 'write-code'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical', 'developer'],
+    },
+    'claude': {
+        'roles':        ['marketer', 'content-creator', 'freelancer', 'freelance-writer',
+                         'seo-professional', 'small-business-owner'],
+        'goals':        ['create-content', 'research-data', 'write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical', 'developer'],
+    },
+    'gemini': {
+        'roles':        ['marketer', 'content-creator', 'freelancer', 'small-business-owner'],
+        'goals':        ['create-content', 'research-data', 'automate-workflow'],
+        'max_budget':   'free',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    # ── Code / Developer ───────────────────────────────────────────────────
+    'github-copilot': {
+        'roles':        ['freelancer'],
+        'goals':        ['write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['fairly-technical', 'developer'],
+    },
+    'cursor': {
+        'roles':        ['freelancer'],
+        'goals':        ['write-code', 'automate-workflow'],
+        'max_budget':   'low',
+        'skill_levels': ['fairly-technical', 'developer'],
+    },
+    # ── Automation ─────────────────────────────────────────────────────────
+    'zapier': {
+        'roles':        ['marketer', 'small-business-owner', 'freelancer'],
+        'goals':        ['automate-workflow', 'grow-business'],
+        'max_budget':   'mid',
+        'skill_levels': ['basic', 'not-technical', 'fairly-technical'],
+    },
+    'make': {
+        'roles':        ['marketer', 'freelancer', 'small-business-owner'],
+        'goals':        ['automate-workflow', 'grow-business'],
+        'max_budget':   'low',
+        'skill_levels': ['basic', 'fairly-technical'],
+    },
+    # ── Design / Image ─────────────────────────────────────────────────────
+    'midjourney': {
+        'roles':        ['content-creator', 'marketer', 'freelancer'],
+        'goals':        ['create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    'canva': {
+        'roles':        ['marketer', 'content-creator', 'small-business-owner', 'freelancer'],
+        'goals':        ['create-content', 'grow-business'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic'],
+    },
+    # ── Research / Data ────────────────────────────────────────────────────
+    'perplexity': {
+        'roles':        ['seo-professional', 'marketer', 'freelancer', 'content-creator',
+                         'freelance-writer'],
+        'goals':        ['research-data', 'create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical', 'developer'],
+    },
+    'notion-ai': {
+        'roles':        ['freelancer', 'small-business-owner', 'marketer', 'content-creator'],
+        'goals':        ['automate-workflow', 'create-content', 'research-data'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic', 'fairly-technical'],
+    },
+    'grammarly': {
+        'roles':        ['freelance-writer', 'content-creator', 'marketer', 'freelancer'],
+        'goals':        ['create-content'],
+        'max_budget':   'low',
+        'skill_levels': ['not-technical', 'basic'],
+    },
+}
+
+BUDGET_ORDER = {'free': 0, 'low': 1, 'mid': 2, 'high': 3}
+
+
+def match_tools_for_quiz(role, goal, budget, skill_level, tools_list):
+    user_budget_tier = BUDGET_ORDER.get(budget, 1)
+    scored = []
+
+    for t in tools_list:
+        slug = t['slug']
+        profile = TOOL_FINDER_PROFILES.get(slug)
+        if not profile:
+            continue
+
+        tool_budget_tier = BUDGET_ORDER.get(profile.get('max_budget', 'low'), 1)
+        if user_budget_tier < tool_budget_tier and not t.get('free_tier'):
+            continue
+
+        points = 0.0
+
+        if role in profile.get('roles', []):
+            points += 3
+
+        if goal in profile.get('goals', []):
+            points += 3
+
+        if skill_level in profile.get('skill_levels', []):
+            points += 1
+
+        points += t['score'] / 50.0
+
+        if points > (t['score'] / 50.0):
+            scored.append((points, t))
+
+    scored.sort(key=lambda x: -x[0])
+    return [t for _, t in scored[:4]]
+
+
+TOOL_FINDER_TEMPLATE = """
+{{ breadcrumb|safe }}
+
+<div class="page">
+  <div class="tf-wrap" id="tool-finder-app">
+
+    <!-- Progress Bar -->
+    <div class="tf-progress" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="4" aria-label="Quiz progress">
+      <div class="tf-progress-bar" id="tf-bar" style="width:25%"></div>
+      <div class="tf-progress-steps">
+        <span class="tf-step active" data-step="1">1</span>
+        <span class="tf-step" data-step="2">2</span>
+        <span class="tf-step" data-step="3">3</span>
+        <span class="tf-step" data-step="4">4</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Role -->
+    <div class="tf-screen active" id="tf-step-1" role="group" aria-labelledby="tf-q1">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 1 of 4</div>
+        <h2 class="tf-question" id="tf-q1">What best describes you?</h2>
+        <p class="tf-hint">Pick the role closest to your day-to-day work.</p>
+      </div>
+      <div class="tf-options" role="radiogroup" aria-labelledby="tf-q1">
+        <button class="tf-option" data-key="role" data-value="marketer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4E3;</span>
+          <span class="tf-opt-text">Marketer</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="seo-professional" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F50D;</span>
+          <span class="tf-opt-text">SEO Professional</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="content-creator" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x270D;&#xFE0F;</span>
+          <span class="tf-opt-text">Content Creator</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="freelancer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4BC;</span>
+          <span class="tf-opt-text">Freelancer</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="small-business-owner" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F3EA;</span>
+          <span class="tf-opt-text">Small Business Owner</span>
+        </button>
+        <button class="tf-option" data-key="role" data-value="freelance-writer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4DD;</span>
+          <span class="tf-opt-text">Freelance Writer</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Goal -->
+    <div class="tf-screen" id="tf-step-2" role="group" aria-labelledby="tf-q2">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 2 of 4</div>
+        <h2 class="tf-question" id="tf-q2">What's your main goal right now?</h2>
+        <p class="tf-hint">We'll match tools to what you actually need to get done.</p>
+      </div>
+      <div class="tf-options" role="radiogroup" aria-labelledby="tf-q2">
+        <button class="tf-option" data-key="goal" data-value="create-content" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x26A1;</span>
+          <span class="tf-opt-text">Create content faster</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="improve-seo" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4C8;</span>
+          <span class="tf-opt-text">Improve SEO rankings</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="automate-workflow" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F504;</span>
+          <span class="tf-opt-text">Automate my workflow</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="write-code" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4BB;</span>
+          <span class="tf-opt-text">Write better code</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="research-data" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F52C;</span>
+          <span class="tf-opt-text">Research and analyse data</span>
+        </button>
+        <button class="tf-option" data-key="goal" data-value="grow-business" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F680;</span>
+          <span class="tf-opt-text">Grow my business</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Budget -->
+    <div class="tf-screen" id="tf-step-3" role="group" aria-labelledby="tf-q3">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 3 of 4</div>
+        <h2 class="tf-question" id="tf-q3">What's your monthly budget for AI tools?</h2>
+        <p class="tf-hint">We'll only recommend tools within your price range.</p>
+      </div>
+      <div class="tf-options tf-options-narrow" role="radiogroup" aria-labelledby="tf-q3">
+        <button class="tf-option" data-key="budget" data-value="free" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F193;</span>
+          <span class="tf-opt-text">Free only</span>
+        </button>
+        <button class="tf-option" data-key="budget" data-value="low" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4B5;</span>
+          <span class="tf-opt-text">Under $50/mo</span>
+        </button>
+        <button class="tf-option" data-key="budget" data-value="mid" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F4B0;</span>
+          <span class="tf-opt-text">$50 &ndash; $150/mo</span>
+        </button>
+        <button class="tf-option" data-key="budget" data-value="high" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F48E;</span>
+          <span class="tf-opt-text">$150+/mo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 4: Skill Level -->
+    <div class="tf-screen" id="tf-step-4" role="group" aria-labelledby="tf-q4">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Step 4 of 4</div>
+        <h2 class="tf-question" id="tf-q4">How technical are you?</h2>
+        <p class="tf-hint">This helps us match tool complexity to your comfort level.</p>
+      </div>
+      <div class="tf-options tf-options-narrow" role="radiogroup" aria-labelledby="tf-q4">
+        <button class="tf-option" data-key="skill" data-value="not-technical" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F331;</span>
+          <span class="tf-opt-text">Not technical at all</span>
+        </button>
+        <button class="tf-option" data-key="skill" data-value="basic" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F527;</span>
+          <span class="tf-opt-text">Comfortable with basic tools</span>
+        </button>
+        <button class="tf-option" data-key="skill" data-value="fairly-technical" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x2699;&#xFE0F;</span>
+          <span class="tf-opt-text">Fairly technical</span>
+        </button>
+        <button class="tf-option" data-key="skill" data-value="developer" type="button" role="radio" aria-checked="false">
+          <span class="tf-opt-icon" aria-hidden="true">&#x1F5A5;&#xFE0F;</span>
+          <span class="tf-opt-text">Developer-level</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="tf-screen" id="tf-loading" style="text-align:center;padding:80px 0">
+      <div class="tf-loader" aria-label="Finding your tools"></div>
+      <p style="font-family:var(--font-mono);font-size:.76rem;color:var(--ink3);margin-top:20px;letter-spacing:.06em">
+        Matching tools to your answers&hellip;
+      </p>
+    </div>
+
+    <!-- Results -->
+    <div class="tf-screen" id="tf-results">
+      <div class="tf-question-wrap">
+        <div class="tf-step-label">Your results</div>
+        <h2 class="tf-question">Your recommended AI stack</h2>
+        <p class="tf-hint">Based on your role, goals, budget, and skill level &mdash; here are the tools we'd pick for you.</p>
+      </div>
+      <div class="tf-results-grid" id="tf-results-grid"></div>
+      <div class="tf-results-actions">
+        <button class="btn-ghost" id="tf-retake" type="button" onclick="tfRetake()">
+          &#8635; Retake quiz
+        </button>
+        <a href="/tools" class="btn-ghost">Browse all tools &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="tf-nav" id="tf-nav">
+      <button class="tf-back-btn" id="tf-back" type="button" style="display:none" aria-label="Go back to previous question">
+        &larr; Back
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  var currentStep = 1;
+  var totalSteps  = 4;
+  var answers     = {};
+  var bar         = document.getElementById('tf-bar');
+  var backBtn     = document.getElementById('tf-back');
+  var steps       = document.querySelectorAll('.tf-step');
+  var progressWrap= document.querySelector('.tf-progress');
+
+  function showStep(n) {
+    document.querySelectorAll('.tf-screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    var target = document.getElementById('tf-step-' + n);
+    if (target) target.classList.add('active');
+    bar.style.width = ((n / totalSteps) * 100) + '%';
+    steps.forEach(function(s) {
+      var sn = parseInt(s.getAttribute('data-step'));
+      s.classList.toggle('active', sn <= n);
+      s.classList.toggle('completed', sn < n);
+    });
+    backBtn.style.display = (n > 1) ? 'inline-flex' : 'none';
+    progressWrap.setAttribute('aria-valuenow', n);
+    currentStep = n;
+    window.scrollTo({top: document.getElementById('tool-finder-app').offsetTop - 80, behavior: 'smooth'});
+  }
+
+  document.querySelectorAll('.tf-option').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var key   = this.getAttribute('data-key');
+      var value = this.getAttribute('data-value');
+      answers[key] = value;
+      this.closest('.tf-options').querySelectorAll('.tf-option').forEach(function(b) {
+        b.classList.remove('selected');
+        b.setAttribute('aria-checked', 'false');
+      });
+      this.classList.add('selected');
+      this.setAttribute('aria-checked', 'true');
+      setTimeout(function() {
+        if (currentStep < totalSteps) {
+          showStep(currentStep + 1);
+        } else {
+          submitQuiz();
+        }
+      }, 280);
+    });
+  });
+
+  backBtn.addEventListener('click', function() {
+    if (currentStep > 1) showStep(currentStep - 1);
+  });
+
+  function submitQuiz() {
+    document.querySelectorAll('.tf-screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    document.getElementById('tf-loading').classList.add('active');
+    backBtn.style.display = 'none';
+    progressWrap.style.display = 'none';
+    var params = new URLSearchParams({
+      role: answers.role || '', goal: answers.goal || '',
+      budget: answers.budget || '', skill: answers.skill || ''
+    });
+    fetch('/api/tool-finder?' + params.toString())
+      .then(function(r) { return r.json(); })
+      .then(function(data) { renderResults(data.tools || []); })
+      .catch(function() { renderResults([]); });
+  }
+
+  function renderResults(tools) {
+    var grid = document.getElementById('tf-results-grid');
+    if (tools.length === 0) {
+      grid.innerHTML = '<div style="text-align:center;padding:40px;font-size:.9rem;color:var(--ink3)">' +
+        'No exact matches found. Try broadening your budget or <a href="/tools" style="color:var(--cyan)">browse all tools</a>.</div>';
+    } else {
+      grid.innerHTML = tools.map(function(t, i) {
+        var scCol = t.score >= 88 ? 'var(--green)' : (t.score >= 78 ? 'var(--cyan)' : 'var(--amber)');
+        var scBg  = t.score >= 88 ? 'var(--green-d)' : (t.score >= 78 ? 'var(--cyan-d)' : 'var(--amber-d)');
+        var scBdr = t.score >= 88 ? 'var(--green-g)' : (t.score >= 78 ? 'var(--cyan-g)' : 'var(--amber-g)');
+        var rank  = i === 0 ? '<div class="tf-res-rank">Best match</div>' : '';
+        return '<div class="tf-result-card' + (i === 0 ? ' tf-top-pick' : '') + '">' +
+          rank +
+          '<div class="tf-res-header">' +
+            '<div class="tf-res-info">' +
+              '<div class="tf-res-name">' + t.name + '</div>' +
+              '<div class="tf-res-cat">' + t.category + '</div>' +
+            '</div>' +
+            '<div class="tf-res-score" style="color:' + scCol + ';background:' + scBg + ';border:1px solid ' + scBdr + '">' + t.score + '/100</div>' +
+          '</div>' +
+          '<p class="tf-res-verdict">' + t.verdict + '</p>' +
+          '<div class="tf-res-footer">' +
+            '<div class="tf-res-price">' +
+              '<span class="tf-res-price-val">' + t.starting_price + '</span>' +
+              '<span class="tf-res-price-model">' + t.pricing_model + '</span>' +
+            '</div>' +
+            '<div class="tf-res-btns">' +
+              '<a href="/tool/' + t.slug + '" class="btn-outline" style="padding:8px 14px;font-size:.66rem">Full review</a>' +
+              '<a href="' + t.affiliate_url + '" target="_blank" rel="nofollow sponsored noopener noreferrer" class="btn-try" style="padding:10px 16px;font-size:.68rem">Try it &#8594;</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    document.querySelectorAll('.tf-screen').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('tf-results').classList.add('active');
+  }
+
+  window.tfRetake = function() {
+    answers = {};
+    currentStep = 1;
+    document.querySelectorAll('.tf-option').forEach(function(b) {
+      b.classList.remove('selected');
+      b.setAttribute('aria-checked', 'false');
+    });
+    progressWrap.style.display = '';
+    showStep(1);
+  };
+})();
+</script>
+"""
+
+TOOL_FINDER_CSS = """
+/* ═══════════════════════════════════════════════════════════════
+   TOOL FINDER QUIZ
+   ═══════════════════════════════════════════════════════════════ */
+.tf-wrap { max-width:680px; margin:0 auto; padding:clamp(48px,6vw,80px) 0 clamp(64px,8vw,96px) }
+.tf-progress { position:relative; height:4px; background:var(--bg4); border-radius:var(--rpill); margin-bottom:48px; overflow:visible }
+.tf-progress-bar { height:100%; background:linear-gradient(90deg, var(--cyan), var(--violet)); border-radius:var(--rpill); transition:width .4s var(--ease) }
+.tf-progress-steps { position:absolute; top:-10px; left:0; right:0; display:flex; justify-content:space-between; pointer-events:none }
+.tf-step { width:24px; height:24px; border-radius:50%; background:var(--bg4); border:2px solid var(--bdr2); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:.58rem; font-weight:600; color:var(--ink4); transition:all .3s var(--ease) }
+.tf-step.active { background:var(--cyan); border-color:var(--cyan); color:#060810; box-shadow:0 0 0 4px var(--cyan-d) }
+.tf-step.completed { background:var(--cyan); border-color:var(--cyan); color:#060810 }
+.tf-screen { display:none; animation:tfFadeIn .35s var(--ease) }
+.tf-screen.active { display:block }
+@keyframes tfFadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.tf-question-wrap { margin-bottom:32px }
+.tf-step-label { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:12px; display:flex; align-items:center; gap:8px }
+.tf-step-label::before { content:''; width:16px; height:1px; background:var(--cyan) }
+.tf-question { font-family:var(--font-display); font-size:clamp(1.6rem,3.5vw,2.4rem); font-weight:800; letter-spacing:-.05em; color:var(--ink); line-height:1.1; margin-bottom:10px }
+.tf-hint { font-size:.9rem; color:var(--ink3); line-height:1.65 }
+.tf-options { display:grid; grid-template-columns:1fr 1fr; gap:10px }
+.tf-options-narrow { grid-template-columns:1fr 1fr }
+.tf-option { display:flex; align-items:center; gap:14px; padding:18px 20px; background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); font-family:var(--font-body); font-size:.92rem; font-weight:500; color:var(--ink2); text-align:left; cursor:pointer; transition:all .2s var(--ease); position:relative; overflow:hidden }
+.tf-option::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,var(--cyan-d),transparent); opacity:0; transition:opacity .2s }
+.tf-option:hover { border-color:var(--bdr2); transform:translateY(-2px); box-shadow:var(--sh1) }
+.tf-option:hover::before { opacity:1 }
+.tf-option.selected { border-color:var(--cyan); background:var(--cyan-d); color:var(--ink); box-shadow:var(--shc) }
+.tf-option.selected::after { content:'\\2713'; position:absolute; top:10px; right:12px; font-size:.72rem; color:var(--cyan); font-weight:700 }
+.tf-opt-icon { font-size:1.4rem; flex-shrink:0; position:relative; z-index:1 }
+.tf-opt-text { position:relative; z-index:1 }
+.tf-loader { width:40px; height:40px; border:3px solid var(--bdr2); border-top-color:var(--cyan); border-radius:50%; margin:0 auto; animation:tfSpin .8s linear infinite }
+@keyframes tfSpin { to{transform:rotate(360deg)} }
+.tf-results-grid { display:flex; flex-direction:column; gap:14px; margin-bottom:32px }
+.tf-result-card { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); padding:24px; position:relative; transition:transform .25s var(--spring),box-shadow .25s }
+.tf-result-card:hover { transform:translateY(-3px); box-shadow:var(--sh2) }
+.tf-result-card.tf-top-pick { border-color:var(--green-g); box-shadow:0 0 0 1px var(--green-g),var(--shg) }
+.tf-result-card.tf-top-pick::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--green); border-radius:var(--r3) var(--r3) 0 0 }
+.tf-res-rank { position:absolute; top:14px; right:14px; background:var(--green-d); border:1px solid var(--green-g); color:var(--green); border-radius:var(--rpill); padding:3px 11px; font-family:var(--font-mono); font-size:.58rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase }
+.tf-res-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px }
+.tf-res-info { flex:1; min-width:0 }
+.tf-res-name { font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--ink); letter-spacing:-.03em }
+.tf-res-cat { font-family:var(--font-mono); font-size:.6rem; color:var(--ink4); letter-spacing:.08em; text-transform:uppercase; margin-top:2px }
+.tf-res-score { font-family:var(--font-mono); font-size:.72rem; font-weight:600; padding:4px 12px; border-radius:var(--r1); flex-shrink:0 }
+.tf-res-verdict { font-size:.88rem; line-height:1.7; color:var(--ink3); margin-bottom:16px }
+.tf-res-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-top:14px; border-top:1px solid var(--div); flex-wrap:wrap }
+.tf-res-price { display:flex; align-items:baseline; gap:8px }
+.tf-res-price-val { font-family:var(--font-display); font-size:1.05rem; font-weight:700; color:var(--ink); letter-spacing:-.03em }
+.tf-res-price-model { font-family:var(--font-mono); font-size:.6rem; color:var(--ink4); letter-spacing:.04em; text-transform:uppercase }
+.tf-res-btns { display:flex; align-items:center; gap:8px }
+.tf-results-actions { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap }
+.tf-nav { margin-top:28px }
+.tf-back-btn { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:.74rem; color:var(--ink3); letter-spacing:.04em; padding:8px 16px; border-radius:var(--rpill); border:1px solid var(--bdr); background:var(--surf); transition:all .18s; cursor:pointer }
+.tf-back-btn:hover { color:var(--ink); border-color:var(--bdr2); background:var(--cyan-d) }
+@media (max-width:520px) {
+  .tf-options, .tf-options-narrow { grid-template-columns:1fr }
+  .tf-res-footer { flex-direction:column; align-items:flex-start }
+  .tf-res-btns { width:100% }
+  .tf-res-btns a { flex:1; text-align:center; justify-content:center }
+}
+"""
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# CSS
+# CSS  (original CSS + Tool Finder CSS appended)
 # ═══════════════════════════════════════════════════════════════════════════════
-# PERFORMANCE FIX: Removed @import url('https://fonts.googleapis.com/...')
-# Google Fonts are now loaded via <link rel="preload"> in the <head> instead.
-# @import inside CSS is render-blocking: the browser must download and parse
-# ALL CSS before it even discovers the font URL, creating a waterfall chain:
-#   HTML → CSS → Google Fonts CSS → font files
-# With <link rel="preload"> the browser discovers fonts in parallel with CSS:
-#   HTML → CSS (parallel) → Google Fonts CSS → font files
-# This typically saves 200-500ms on first paint.
 CSS = """
 :root {
   --bg:       #060810;
@@ -1128,403 +1623,103 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 
 /* ═══════════════════════════════════════════════════════════════
    TOOL REVIEW PAGE v2 — Quick Verdict, Pricing, FAQ, Alternatives
-   Added: March 2026
    ═══════════════════════════════════════════════════════════════ */
 
-/* Quick Verdict Box */
 .verdict-box {
-  background:var(--surf);
-  border:1px solid var(--bdr2);
-  border-radius:var(--r4);
-  padding:32px 36px;
-  margin-bottom:24px;
-  position:relative;
-  overflow:hidden;
-  box-shadow:var(--sh1);
+  background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--r4);
+  padding:32px 36px; margin-bottom:24px; position:relative; overflow:hidden; box-shadow:var(--sh1);
 }
 .verdict-box::before {
-  content:'';
-  position:absolute;
-  top:0; left:0; right:0;
-  height:3px;
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
   background:linear-gradient(90deg, var(--green), var(--cyan), var(--violet));
 }
-.verdict-box-grid {
-  display:grid;
-  grid-template-columns:auto 1fr auto;
-  gap:28px;
-  align-items:center;
-}
+.verdict-box-grid { display:grid; grid-template-columns:auto 1fr auto; gap:28px; align-items:center; }
 .vb-score-ring {
-  width:100px; height:100px;
-  border-radius:50%;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  flex-shrink:0;
-  position:relative;
+  width:100px; height:100px; border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  flex-shrink:0; position:relative;
 }
-.vb-score-ring::before {
-  content:'';
-  position:absolute; inset:0;
-  border-radius:50%;
-  border:3px solid var(--bdr);
-}
+.vb-score-ring::before { content:''; position:absolute; inset:0; border-radius:50%; border:3px solid var(--bdr); }
 .vb-score-ring::after {
-  content:'';
-  position:absolute; inset:0;
-  border-radius:50%;
-  border:3px solid transparent;
-  border-top-color:currentColor;
-  border-right-color:currentColor;
+  content:''; position:absolute; inset:0; border-radius:50%;
+  border:3px solid transparent; border-top-color:currentColor; border-right-color:currentColor;
   transform:rotate(-45deg);
 }
-.vb-score-num {
-  font-family:var(--font-display);
-  font-size:2.4rem;
-  font-weight:800;
-  letter-spacing:-.06em;
-  line-height:1;
-}
-.vb-score-max {
-  font-family:var(--font-mono);
-  font-size:.58rem;
-  color:var(--ink4);
-  letter-spacing:.06em;
-  margin-top:2px;
-}
+.vb-score-num { font-family:var(--font-display); font-size:2.4rem; font-weight:800; letter-spacing:-.06em; line-height:1; }
+.vb-score-max { font-family:var(--font-mono); font-size:.58rem; color:var(--ink4); letter-spacing:.06em; margin-top:2px; }
 .vb-content { min-width:0 }
-.vb-label {
-  font-family:var(--font-mono);
-  font-size:.62rem;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--cyan);
-  margin-bottom:8px;
-  display:flex; align-items:center; gap:6px;
-}
+.vb-label { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
 .vb-label::before { content:'//'; opacity:.5 }
-.vb-verdict {
-  font-family:var(--font-display);
-  font-size:1.15rem;
-  font-weight:600;
-  color:var(--ink);
-  line-height:1.5;
-  margin-bottom:14px;
-  letter-spacing:-.02em;
-}
-.vb-meta-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px 20px;
-}
-.vb-meta-item {
-  display:flex; align-items:center; gap:8px;
-  font-size:.84rem; color:var(--ink3); line-height:1.5;
-}
-.vb-meta-label {
-  font-family:var(--font-mono);
-  font-size:.62rem;
-  color:var(--ink4);
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  flex-shrink:0;
-  min-width:72px;
-}
+.vb-verdict { font-family:var(--font-display); font-size:1.15rem; font-weight:600; color:var(--ink); line-height:1.5; margin-bottom:14px; letter-spacing:-.02em; }
+.vb-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+.vb-meta-item { display:flex; align-items:center; gap:8px; font-size:.84rem; color:var(--ink3); line-height:1.5; }
+.vb-meta-label { font-family:var(--font-mono); font-size:.62rem; color:var(--ink4); letter-spacing:.06em; text-transform:uppercase; flex-shrink:0; min-width:72px; }
 .vb-meta-value { color:var(--ink2); font-weight:500 }
-.vb-cta-col {
-  display:flex; flex-direction:column;
-  align-items:stretch; gap:10px;
-  flex-shrink:0; min-width:180px;
-}
+.vb-cta-col { display:flex; flex-direction:column; align-items:stretch; gap:10px; flex-shrink:0; min-width:180px; }
 
-/* Pros & Cons v2 */
 .pc-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:0;
-  background:var(--surf);
-  border:1px solid var(--bdr);
-  border-radius:var(--r3);
-  overflow:hidden;
-  margin-bottom:24px;
-  box-shadow:var(--sh0);
+  display:grid; grid-template-columns:1fr 1fr; gap:0;
+  background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3);
+  overflow:hidden; margin-bottom:24px; box-shadow:var(--sh0);
 }
 .pc-col { padding:24px 28px }
 .pc-col + .pc-col { border-left:1px solid var(--div) }
-.pc-col-title {
-  font-family:var(--font-mono);
-  font-size:.62rem;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  margin-bottom:16px;
-  display:flex; align-items:center; gap:8px;
-}
+.pc-col-title { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
 .pc-col-title.pro-title { color:var(--green) }
 .pc-col-title.con-title { color:var(--rose) }
 .pc-col-title::before { content:''; width:14px; height:1px; background:currentColor }
 
-/* Pricing Breakdown */
-.pricing-section {
-  background:var(--surf);
-  border:1px solid var(--bdr);
-  border-radius:var(--r3);
-  overflow:hidden;
-  margin-bottom:24px;
-  box-shadow:var(--sh0);
-}
-.pricing-section-hdr {
-  padding:20px 28px;
-  border-bottom:1px solid var(--div);
-  display:flex; align-items:center; justify-content:space-between;
-}
-.pricing-table {
-  width:100%;
-  border-collapse:collapse;
-}
-.pricing-table th {
-  text-align:left;
-  padding:12px 20px;
-  font-family:var(--font-mono);
-  font-size:.62rem;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  color:var(--ink4);
-  background:var(--bg3);
-  border-bottom:1px solid var(--div);
-  font-weight:500;
-}
-.pricing-table td {
-  padding:14px 20px;
-  font-size:.88rem;
-  color:var(--ink3);
-  border-bottom:1px solid var(--div);
-  vertical-align:top;
-}
+.pricing-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); overflow:hidden; margin-bottom:24px; box-shadow:var(--sh0); }
+.pricing-section-hdr { padding:20px 28px; border-bottom:1px solid var(--div); display:flex; align-items:center; justify-content:space-between; }
+.pricing-table { width:100%; border-collapse:collapse; }
+.pricing-table th { text-align:left; padding:12px 20px; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink4); background:var(--bg3); border-bottom:1px solid var(--div); font-weight:500; }
+.pricing-table td { padding:14px 20px; font-size:.88rem; color:var(--ink3); border-bottom:1px solid var(--div); vertical-align:top; }
 .pricing-table tr:last-child td { border-bottom:none }
-.pricing-table td:first-child {
-  font-weight:600;
-  color:var(--ink);
-  white-space:nowrap;
-}
-.pricing-verified {
-  font-family:var(--font-mono);
-  font-size:.58rem;
-  color:var(--ink5);
-  letter-spacing:.04em;
-  display:flex; align-items:center; gap:6px;
-}
-.pricing-verified::before {
-  content:'';
-  width:5px; height:5px;
-  border-radius:50%;
-  background:var(--green);
-  flex-shrink:0;
-}
+.pricing-table td:first-child { font-weight:600; color:var(--ink); white-space:nowrap; }
+.pricing-verified { font-family:var(--font-mono); font-size:.58rem; color:var(--ink5); letter-spacing:.04em; display:flex; align-items:center; gap:6px; }
+.pricing-verified::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); flex-shrink:0; }
 
-/* Who Should Use This */
-.who-section {
-  background:var(--surf);
-  border:1px solid var(--bdr);
-  border-radius:var(--r3);
-  padding:28px;
-  margin-bottom:24px;
-  box-shadow:var(--sh0);
-}
-.who-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:24px;
-}
+.who-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); padding:28px; margin-bottom:24px; box-shadow:var(--sh0); }
+.who-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
 .who-list { list-style:none; display:flex; flex-direction:column; gap:10px }
-.who-list li {
-  font-size:.88rem;
-  line-height:1.65;
-  color:var(--ink3);
-  padding-left:22px;
-  position:relative;
-}
-.who-list.who-yes li::before {
-  content:'✓';
-  position:absolute; left:0;
-  color:var(--green);
-  font-weight:700;
-}
-.who-list.who-no li::before {
-  content:'→';
-  position:absolute; left:0;
-  color:var(--amber);
-  font-family:var(--font-mono);
-  font-size:.72rem;
-}
+.who-list li { font-size:.88rem; line-height:1.65; color:var(--ink3); padding-left:22px; position:relative; }
+.who-list.who-yes li::before { content:'✓'; position:absolute; left:0; color:var(--green); font-weight:700; }
+.who-list.who-no li::before { content:'→'; position:absolute; left:0; color:var(--amber); font-family:var(--font-mono); font-size:.72rem; }
 
-/* FAQ Section */
-.faq-section {
-  background:var(--surf);
-  border:1px solid var(--bdr);
-  border-radius:var(--r3);
-  overflow:hidden;
-  margin-bottom:24px;
-  box-shadow:var(--sh0);
-}
-.faq-section-hdr {
-  padding:20px 28px;
-  border-bottom:1px solid var(--div);
-}
-.faq-item {
-  border-bottom:1px solid var(--div);
-}
+.faq-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); overflow:hidden; margin-bottom:24px; box-shadow:var(--sh0); }
+.faq-section-hdr { padding:20px 28px; border-bottom:1px solid var(--div); }
+.faq-item { border-bottom:1px solid var(--div); }
 .faq-item:last-child { border-bottom:none }
-.faq-q {
-  width:100%;
-  text-align:left;
-  padding:18px 28px;
-  font-family:var(--font-display);
-  font-size:1rem;
-  font-weight:600;
-  color:var(--ink);
-  letter-spacing:-.02em;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-  cursor:pointer;
-  background:none;
-  border:none;
-  transition:background .15s, color .15s;
-}
+.faq-q { width:100%; text-align:left; padding:18px 28px; font-family:var(--font-display); font-size:1rem; font-weight:600; color:var(--ink); letter-spacing:-.02em; display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; background:none; border:none; transition:background .15s, color .15s; }
 .faq-q:hover { background:var(--cyan-d) }
-.faq-chevron {
-  width:18px; height:18px;
-  stroke:var(--ink4);
-  fill:none;
-  stroke-width:2;
-  flex-shrink:0;
-  transition:transform .25s var(--ease);
-}
+.faq-chevron { width:18px; height:18px; stroke:var(--ink4); fill:none; stroke-width:2; flex-shrink:0; transition:transform .25s var(--ease); }
 .faq-item.open .faq-chevron { transform:rotate(180deg) }
-.faq-a {
-  display:none;
-  padding:0 28px 20px;
-  font-size:.9rem;
-  line-height:1.78;
-  color:var(--ink3);
-}
+.faq-a { display:none; padding:0 28px 20px; font-size:.9rem; line-height:1.78; color:var(--ink3); }
 .faq-item.open .faq-a { display:block }
 
-/* Alternatives Section */
-.alts-section {
-  background:var(--surf);
-  border:1px solid var(--bdr);
-  border-radius:var(--r3);
-  padding:28px;
-  margin-bottom:24px;
-  box-shadow:var(--sh0);
-}
-.alt-card {
-  display:flex;
-  align-items:center;
-  gap:16px;
-  padding:16px 0;
-  border-bottom:1px solid var(--div);
-}
+.alts-section { background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3); padding:28px; margin-bottom:24px; box-shadow:var(--sh0); }
+.alt-card { display:flex; align-items:center; gap:16px; padding:16px 0; border-bottom:1px solid var(--div); }
 .alt-card:last-child { border-bottom:none }
 .alt-card:first-child { padding-top:0 }
 .alt-info { flex:1; min-width:0 }
-.alt-name {
-  font-family:var(--font-display);
-  font-size:1rem;
-  font-weight:700;
-  color:var(--ink);
-  letter-spacing:-.02em;
-}
-.alt-desc {
-  font-size:.84rem;
-  color:var(--ink3);
-  margin-top:3px;
-  line-height:1.6;
-}
-.alt-links {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-shrink:0;
-}
-.alt-link {
-  font-family:var(--font-mono);
-  font-size:.66rem;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-  padding:6px 12px;
-  border-radius:var(--r1);
-  border:1px solid var(--bdr);
-  color:var(--ink3);
-  transition:all .18s;
-  white-space:nowrap;
-}
-.alt-link:hover {
-  background:var(--cyan-d);
-  border-color:var(--bdr2);
-  color:var(--cyan);
-}
-.alt-score {
-  font-family:var(--font-mono);
-  font-size:.72rem;
-  font-weight:600;
-  padding:4px 10px;
-  border-radius:var(--r1);
-  flex-shrink:0;
-}
+.alt-name { font-family:var(--font-display); font-size:1rem; font-weight:700; color:var(--ink); letter-spacing:-.02em; }
+.alt-desc { font-size:.84rem; color:var(--ink3); margin-top:3px; line-height:1.6; }
+.alt-links { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.alt-link { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.04em; text-transform:uppercase; padding:6px 12px; border-radius:var(--r1); border:1px solid var(--bdr); color:var(--ink3); transition:all .18s; white-space:nowrap; }
+.alt-link:hover { background:var(--cyan-d); border-color:var(--bdr2); color:var(--cyan); }
+.alt-score { font-family:var(--font-mono); font-size:.72rem; font-weight:600; padding:4px 10px; border-radius:var(--r1); flex-shrink:0; }
 
-/* Bottom CTA bar */
-.bottom-cta {
-  background:var(--surf);
-  border:1px solid var(--bdr2);
-  border-radius:var(--r3);
-  padding:28px 32px;
-  margin-bottom:24px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  flex-wrap:wrap;
-  box-shadow:var(--sh1);
-}
-.bottom-cta-text {
-  flex:1; min-width:200px;
-}
-.bottom-cta-name {
-  font-family:var(--font-display);
-  font-size:1.2rem;
-  font-weight:700;
-  color:var(--ink);
-  letter-spacing:-.03em;
-}
-.bottom-cta-sub {
-  font-size:.86rem;
-  color:var(--ink3);
-  margin-top:4px;
-}
+.bottom-cta { background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--r3); padding:28px 32px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; box-shadow:var(--sh1); }
+.bottom-cta-text { flex:1; min-width:200px; }
+.bottom-cta-name { font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--ink); letter-spacing:-.03em; }
+.bottom-cta-sub { font-size:.86rem; color:var(--ink3); margin-top:4px; }
 
-/* Review page section headers */
-.review-section-hdr {
-  font-family:var(--font-mono);
-  font-size:.62rem;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--cyan);
-  margin-bottom:16px;
-  display:flex; align-items:center; gap:6px;
-}
+.review-section-hdr { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); margin-bottom:16px; display:flex; align-items:center; gap:6px; }
 .review-section-hdr::before { content:'//'; opacity:.5 }
 
-/* Responsive tweaks for review v2 */
 @media (max-width:768px) {
   .verdict-box { padding:24px 20px }
-  .verdict-box-grid {
-    grid-template-columns:1fr;
-    gap:20px;
-    text-align:center;
-  }
+  .verdict-box-grid { grid-template-columns:1fr; gap:20px; text-align:center; }
   .vb-score-ring { margin:0 auto }
   .vb-meta-grid { grid-template-columns:1fr; text-align:left }
   .vb-cta-col { min-width:100% }
@@ -1538,20 +1733,12 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 @media (max-width:520px) {
   .vb-meta-grid { grid-template-columns:1fr }
 }
-"""
+""" + TOOL_FINDER_CSS
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BASE HTML TEMPLATE
-# ═══════════════════════════════════════════════════════════════════════════════
-# PERFORMANCE CHANGES IN THIS TEMPLATE:
-# 1. Google Fonts: moved from CSS @import to <link rel="preload"> (eliminates
-#    render-blocking chain). Using font-display=swap so text shows immediately
-#    with fallback fonts, then swaps when custom fonts load.
-# 2. Google Analytics: added 'defer' to gtag.js script (was already async,
-#    but the inline config script now defers too — no render blocking).
-# 3. All <img> tags: added loading="lazy" via the img CSS default (height:auto
-#    added to prevent CLS). Individual templates should add width/height attrs.
 # ═══════════════════════════════════════════════════════════════════════════════
 BASE = """<!DOCTYPE html>
 <html lang="en" class="">
@@ -1575,42 +1762,24 @@ BASE = """<!DOCTYPE html>
 <meta name="twitter:description" content="{{ desc[:200] }}">
 <meta name="twitter:image" content="{{ og_image }}">
 <meta name="theme-color" content="#060810">
-<!-- Structured Data: WebSite (sitewide) -->
 <script type="application/ld+json">{{ ws_schema|safe }}</script>
-<!-- Structured Data: BreadcrumbList -->
 {% if bcs %}<script type="application/ld+json">{{ bcs|safe }}</script>{% endif %}
-<!-- Structured Data: Page-specific -->
 {% if schema %}<script type="application/ld+json">{{ schema|safe }}</script>{% endif %}
 {% if schema2 %}<script type="application/ld+json">{{ schema2|safe }}</script>{% endif %}
-
-<!-- PERF FIX: Google Fonts loaded via <link> instead of CSS @import.
-     @import blocks rendering until the entire CSS is parsed AND the font CSS
-     is fetched. <link rel="preconnect"> + <link rel="stylesheet"> lets the
-     browser discover and fetch fonts in parallel with the main CSS.
-     font-display=swap ensures text is visible immediately with fallback fonts. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap">
-
-<!-- Theme: applied before paint to prevent flash -->
 <script>
 (function(){
   try {
     var saved = localStorage.getItem('mfwai-theme');
     var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
     var isLight = saved === 'light' || (saved === null && preferLight);
-    if (isLight) {
-      document.documentElement.classList.add('light');
-    }
+    if (isLight) { document.documentElement.classList.add('light'); }
   } catch(e) {}
 })();
 </script>
-
 <style>{{ css|safe }}</style>
-
-<!-- PERF FIX: Google Analytics — gtag.js already has async. The inline config
-     script is tiny and non-blocking. No changes needed here, but added a
-     comment for clarity. GA does NOT block rendering. -->
 <meta name="google-site-verification" content="U4OV71VLG-_zLDoFNbwH9ghMzxs-fQEPOkrKresvHOU" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TBH27VXH8M"></script>
 <script>
@@ -1622,7 +1791,6 @@ BASE = """<!DOCTYPE html>
 </head>
 <body>
 
-<!-- Ticker -->
 <div class="ticker" aria-hidden="true" role="presentation">
   <div class="ticker-track">
     {% for _ in range(2) %}
@@ -1650,7 +1818,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Navigation -->
 <header class="nav" id="sitenav" role="banner">
   <div class="nav-in">
     <a href="/" class="nav-logo" aria-label="Moving Forward With AI — Home">
@@ -1660,6 +1827,7 @@ BASE = """<!DOCTYPE html>
 
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="/">Home</a>
+      <a href="/tool-finder">Tool Finder</a>
       <a href="/tools">All Tools</a>
       <div class="nav-drop" id="drop-compare">
         <button class="nav-drop-btn" type="button" aria-expanded="false" aria-haspopup="true" id="btn-drop-compare">
@@ -1692,7 +1860,6 @@ BASE = """<!DOCTYPE html>
     </nav>
 
     <div class="nav-right">
-      <!-- Desktop search -->
       <div class="nav-search" role="search">
         <svg class="search-ico" viewBox="0 0 16 16" aria-hidden="true">
           <circle cx="6.5" cy="6.5" r="4.5"/>
@@ -1701,8 +1868,6 @@ BASE = """<!DOCTYPE html>
         <input type="search" id="search-input" placeholder="Search tools…" autocomplete="off"
           aria-label="Search AI tools" aria-controls="sov" aria-expanded="false">
       </div>
-
-      <!-- Desktop theme toggle -->
       <button class="nav-icon-btn" id="theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
@@ -1712,8 +1877,6 @@ BASE = """<!DOCTYPE html>
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
-
-      <!-- Mobile theme toggle (shown only on mobile, next to hamburger) -->
       <button id="mob-theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="mob-ico-sun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"/>
@@ -1723,7 +1886,6 @@ BASE = """<!DOCTYPE html>
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
-
       <button id="hbg" aria-label="Open navigation menu" aria-expanded="false" type="button">
         <span></span><span></span><span></span>
       </button>
@@ -1731,11 +1893,11 @@ BASE = """<!DOCTYPE html>
   </div>
 </header>
 
-<!-- Mobile Menu -->
 <div id="mob" role="dialog" aria-modal="true" aria-label="Navigation menu">
   <div class="mob-section">
     <nav class="mob-primary-links" aria-label="Mobile primary navigation">
       <a href="/" class="mob-link">Home</a>
+      <a href="/tool-finder" class="mob-link">Tool Finder</a>
       <a href="/tools" class="mob-link">All Tools</a>
       <a href="/compare" class="mob-link">Compare</a>
       <a href="/blog" class="mob-link">Guides</a>
@@ -1764,12 +1926,10 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Page Content -->
 <main id="main-content" tabindex="-1">
 {{ content|safe }}
 </main>
 
-<!-- Footer -->
 <footer class="footer" role="contentinfo">
   <div class="footer-in">
     <div class="footer-top">
@@ -1784,6 +1944,7 @@ BASE = """<!DOCTYPE html>
       <div class="f-col">
         <div class="f-col-title">Explore</div>
         <a href="/">Home</a>
+        <a href="/tool-finder">Tool Finder</a>
         <a href="/tools">All Tools</a>
         <a href="/compare">Compare</a>
         <a href="/blog">Guides</a>
@@ -1810,7 +1971,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </footer>
 
-<!-- Search Overlay -->
 <div id="sov" role="dialog" aria-modal="true" aria-label="Search results">
   <div class="sov-panel">
     <div class="sov-hdr">
@@ -1822,7 +1982,6 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Cookie Consent -->
 <div id="ckbar" role="dialog" aria-label="Cookie consent">
   <div class="ck-text">
     // We use essential cookies &amp; affiliate tracking.
@@ -1834,21 +1993,11 @@ BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- PERF: All JS moved to end of body (was already here — confirmed no
-     render-blocking JS in <head> except the tiny theme-detection snippet
-     which MUST stay in <head> to prevent flash of wrong theme). -->
 <script>
-/* ======================================================
-   SHARED THEME LOGIC
-====================================================== */
 (function () {
   var html = document.documentElement;
-
   function syncAllIcons(isLight) {
-    var pairs = [
-      ['ico-sun',     'ico-moon'],
-      ['mob-ico-sun', 'mob-ico-moon']
-    ];
+    var pairs = [['ico-sun','ico-moon'],['mob-ico-sun','mob-ico-moon']];
     pairs.forEach(function(p) {
       var sun  = document.getElementById(p[0]);
       var moon = document.getElementById(p[1]);
@@ -1861,289 +2010,130 @@ BASE = """<!DOCTYPE html>
       if (b) b.setAttribute('aria-label', label);
     });
   }
-
   function applyTheme(isLight) {
-    if (isLight) {
-      html.classList.add('light');
-    } else {
-      html.classList.remove('light');
-    }
+    if (isLight) { html.classList.add('light'); } else { html.classList.remove('light'); }
     try { localStorage.setItem('mfwai-theme', isLight ? 'light' : 'dark'); } catch(e) {}
     syncAllIcons(isLight);
-    html.style.display = 'none';
-    void html.offsetHeight;
-    html.style.display = '';
+    html.style.display = 'none'; void html.offsetHeight; html.style.display = '';
   }
-
   syncAllIcons(html.classList.contains('light'));
-
   ['theme-btn', 'mob-theme-btn'].forEach(function(id) {
     var btn = document.getElementById(id);
-    if (btn) {
-      btn.addEventListener('click', function() {
-        applyTheme(!html.classList.contains('light'));
-      });
-    }
+    if (btn) { btn.addEventListener('click', function() { applyTheme(!html.classList.contains('light')); }); }
   });
 })();
 
-/* ======================================================
-   STICKY NAV SHADOW
-====================================================== */
 window.addEventListener('scroll', function () {
   var nav = document.getElementById('sitenav');
   if (nav) nav.classList.toggle('scrolled', window.scrollY > 24);
 }, { passive: true });
 
-/* ======================================================
-   HAMBURGER MENU
-====================================================== */
 (function () {
   var btn  = document.getElementById('hbg');
   var menu = document.getElementById('mob');
   if (!btn || !menu) return;
-
   function openMenu() {
-    menu.classList.add('open');
-    btn.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-    btn.setAttribute('aria-label', 'Close navigation menu');
+    menu.classList.add('open'); btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Close navigation menu');
     document.body.style.overflow = 'hidden';
   }
-
   function closeMenu() {
-    menu.classList.remove('open');
-    btn.classList.remove('open');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.setAttribute('aria-label', 'Open navigation menu');
+    menu.classList.remove('open'); btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Open navigation menu');
     document.body.style.overflow = '';
   }
-
-  btn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); }
-  });
-
-  menu.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () { closeMenu(); });
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && menu.classList.contains('open')) {
-      closeMenu(); btn.focus();
-    }
-  });
-
+  btn.addEventListener('click', function (e) { e.stopPropagation(); if (menu.classList.contains('open')) { closeMenu(); } else { openMenu(); } });
+  menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { closeMenu(); }); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.classList.contains('open')) { closeMenu(); btn.focus(); } });
   document.addEventListener('click', function (e) {
-    if (menu.classList.contains('open') &&
-        !menu.contains(e.target) &&
-        e.target !== btn &&
-        !btn.contains(e.target)) {
-      closeMenu();
-    }
+    if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) { closeMenu(); }
   });
 })();
 
-/* ======================================================
-   DESKTOP DROPDOWN MENUS
-====================================================== */
 (function () {
   var dropIds = ['drop-compare', 'drop-roles'];
-
   function closeAll() {
     dropIds.forEach(function(id) {
-      var drop = document.getElementById(id);
-      if (!drop) return;
+      var drop = document.getElementById(id); if (!drop) return;
       drop.classList.remove('open');
-      var btn = drop.querySelector('.nav-drop-btn');
-      if (btn) btn.setAttribute('aria-expanded', 'false');
+      var btn = drop.querySelector('.nav-drop-btn'); if (btn) btn.setAttribute('aria-expanded', 'false');
     });
   }
-
   dropIds.forEach(function(id) {
-    var drop = document.getElementById(id);
-    if (!drop) return;
-    var btn = drop.querySelector('.nav-drop-btn');
-    if (!btn) return;
-
+    var drop = document.getElementById(id); if (!drop) return;
+    var btn = drop.querySelector('.nav-drop-btn'); if (!btn) return;
     btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var isOpen = drop.classList.contains('open');
-      closeAll();
-      if (!isOpen) {
-        drop.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
-      }
+      e.stopPropagation(); var isOpen = drop.classList.contains('open'); closeAll();
+      if (!isOpen) { drop.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
     });
   });
-
   document.addEventListener('click', function(e) {
-    var insideDrop = dropIds.some(function(id) {
-      var drop = document.getElementById(id);
-      return drop && drop.contains(e.target);
-    });
+    var insideDrop = dropIds.some(function(id) { var drop = document.getElementById(id); return drop && drop.contains(e.target); });
     if (!insideDrop) closeAll();
   });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAll();
-  });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAll(); });
 })();
 
-/* ======================================================
-   SCROLL REVEAL
-====================================================== */
 (function () {
   if (!('IntersectionObserver' in window)) return;
   document.body.classList.add('rv-ready');
   var els = document.querySelectorAll('.rv');
   if (!els.length) return;
   var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
-      }
-    });
+    entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('visible'); io.unobserve(entry.target); } });
   }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-  els.forEach(function (el, i) {
-    el.style.transitionDelay = (i % 4 * 0.07) + 's';
-    io.observe(el);
-  });
+  els.forEach(function (el, i) { el.style.transitionDelay = (i % 4 * 0.07) + 's'; io.observe(el); });
 })();
 
-/* ======================================================
-   SEARCH OVERLAY
-====================================================== */
 (function() {
-  var allTools   = null;
-  var loading    = false;
-  var sov        = document.getElementById('sov');
-  var sovCount   = document.getElementById('sov-count');
-  var sovRes     = document.getElementById('sov-results');
-  var searchInput = document.getElementById('search-input');
+  var allTools = null, loading = false;
+  var sov = document.getElementById('sov'), sovCount = document.getElementById('sov-count');
+  var sovRes = document.getElementById('sov-results'), searchInput = document.getElementById('search-input');
   var searchTimer;
-
   if (!sov || !searchInput) return;
-
   function loadTools(cb) {
     if (allTools !== null) { cb(); return; }
-    if (loading) return;
-    loading = true;
-    fetch('/api/tools')
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        allTools = d.tools || [];
-        loading = false;
-        cb();
-      })
-      .catch(function(){
-        allTools = [];
-        loading = false;
-        cb();
-      });
+    if (loading) return; loading = true;
+    fetch('/api/tools').then(function(r){ return r.json(); }).then(function(d){ allTools = d.tools || []; loading = false; cb(); }).catch(function(){ allTools = []; loading = false; cb(); });
   }
-
-  function closeSov() {
-    sov.classList.remove('open');
-    document.body.style.overflow = '';
-    if (searchInput) searchInput.setAttribute('aria-expanded', 'false');
-  }
-
+  function closeSov() { sov.classList.remove('open'); document.body.style.overflow = ''; if (searchInput) searchInput.setAttribute('aria-expanded', 'false'); }
   function miniCard(t) {
-    var sc   = t.score;
-    var isHi = sc >= 88;
-    var bg   = isHi ? 'var(--green-d)' : 'var(--cyan-d)';
-    var bdr  = isHi ? 'var(--green-g)' : 'var(--cyan-g)';
-    var col  = isHi ? 'var(--green)'   : 'var(--cyan)';
-    return `<div class="tool-card" style="cursor:pointer" onclick="location.href='/tool/${t.slug}'">
-  <div class="tc-accent-bar"></div>
-  <div class="tc-body">
-    <div class="tc-meta">
-      <div class="tc-cat">${t.category || ''}</div>
-      <div class="tc-score" style="background:${bg};border:1px solid ${bdr};color:${col}">${sc}</div>
-    </div>
-    <a href="/tool/${t.slug}" class="tc-name">${t.name}</a>
-    <p class="tc-tagline">${t.tagline || ''}</p>
-  </div>
-  <div class="tc-footer">
-    <div class="tc-pricing"><span class="tc-price">${t.starting_price || ''}</span></div>
-  </div>
-</div>`;
+    var sc = t.score, isHi = sc >= 88;
+    var bg = isHi ? 'var(--green-d)' : 'var(--cyan-d)', bdr = isHi ? 'var(--green-g)' : 'var(--cyan-g)', col = isHi ? 'var(--green)' : 'var(--cyan)';
+    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'\'"><div class="tc-accent-bar"></div><div class="tc-body"><div class="tc-meta"><div class="tc-cat">'+(t.category||'')+'</div><div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div></div><a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a><p class="tc-tagline">'+(t.tagline||'')+'</p></div><div class="tc-footer"><div class="tc-pricing"><span class="tc-price">'+(t.starting_price||'')+'</span></div></div></div>';
   }
-
   function runSearch(q) {
     if (!q || q.length < 2) { closeSov(); return; }
     loadTools(function() {
-      var ql   = q.toLowerCase();
-      var hits = allTools.filter(function(t) {
-        return (t.name     || '').toLowerCase().includes(ql)
-            || (t.category || '').toLowerCase().includes(ql)
-            || (t.tagline  || '').toLowerCase().includes(ql)
-            || (t.tags     || []).join(' ').toLowerCase().includes(ql);
-      });
-      sovCount.textContent = '// ' + hits.length + ' result' + (hits.length !== 1 ? 's' : '') + ' for "' + q + '"';
-      sovRes.innerHTML = hits.length
-        ? hits.map(miniCard).join('')
-        : '<div class="sov-empty">// No tools found for "' + q + '"</div>';
-      sov.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      searchInput.setAttribute('aria-expanded', 'true');
+      var ql = q.toLowerCase();
+      var hits = allTools.filter(function(t) { return (t.name||'').toLowerCase().includes(ql)||(t.category||'').toLowerCase().includes(ql)||(t.tagline||'').toLowerCase().includes(ql)||(t.tags||[]).join(' ').toLowerCase().includes(ql); });
+      sovCount.textContent = '// '+hits.length+' result'+(hits.length!==1?'s':'')+' for "'+q+'"';
+      sovRes.innerHTML = hits.length ? hits.map(miniCard).join('') : '<div class="sov-empty">// No tools found for "'+q+'"</div>';
+      sov.classList.add('open'); document.body.style.overflow = 'hidden'; searchInput.setAttribute('aria-expanded', 'true');
     });
   }
-
-  searchInput.addEventListener('input', function(e) {
-    clearTimeout(searchTimer);
-    var q = e.target.value.trim();
-    searchTimer = setTimeout(function() { runSearch(q); }, 160);
-  });
-
-  searchInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { closeSov(); searchInput.value = ''; }
-  });
-
+  searchInput.addEventListener('input', function(e) { clearTimeout(searchTimer); var q = e.target.value.trim(); searchTimer = setTimeout(function() { runSearch(q); }, 160); });
+  searchInput.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeSov(); searchInput.value = ''; } });
   document.getElementById('sov-close').addEventListener('click', closeSov);
-
   sov.addEventListener('click', function(e) { if (e.target === sov) closeSov(); });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSov();
-  });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSov(); });
 })();
 
-/* ======================================================
-   COOKIE BANNER
-====================================================== */
 (function () {
-  var KEY = 'mfwai_consent_v2';
-  var bar = document.getElementById('ckbar');
-  try {
-    if (!localStorage.getItem(KEY)) {
-      setTimeout(function () { bar.classList.add('show'); }, 1800);
-    }
-  } catch (e) { bar.classList.add('show'); }
-  function dismiss(v) {
-    try { localStorage.setItem(KEY, v); } catch (e) {}
-    bar.classList.remove('show');
-  }
+  var KEY = 'mfwai_consent_v2', bar = document.getElementById('ckbar');
+  try { if (!localStorage.getItem(KEY)) { setTimeout(function () { bar.classList.add('show'); }, 1800); } } catch (e) { bar.classList.add('show'); }
+  function dismiss(v) { try { localStorage.setItem(KEY, v); } catch (e) {} bar.classList.remove('show'); }
   document.getElementById('ck-ok').addEventListener('click',  function () { dismiss('all'); });
   document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
 })();
 
-/* ======================================================
-   EMAIL FORM
-====================================================== */
 var ef = document.getElementById('email-form');
 if (ef) {
   ef.addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn = ef.querySelector('button[type="submit"]');
-    var em  = ef.querySelector('input[type="email"]');
+    var btn = ef.querySelector('button[type="submit"]'), em = ef.querySelector('input[type="email"]');
     if (!em || !em.value) return;
-    btn.textContent = 'Subscribed!';
-    btn.style.background = 'var(--green)';
-    btn.disabled = true;
-    em.disabled  = true;
+    btn.textContent = 'Subscribed!'; btn.style.background = 'var(--green)'; btn.disabled = true; em.disabled = true;
   });
 }
 </script>
@@ -2226,7 +2216,6 @@ def tool_card(t, delay=0):
 
 
 def email_capture():
-    """Simplified newsletter section — no guide promises, just a clean signup."""
     return """<section class="email-sec" aria-labelledby="newsletter-heading">
   <div class="email-inner">
     <div class="email-left">
@@ -2238,14 +2227,8 @@ def email_capture():
     </div>
     <div class="email-right">
       <form id="email-form" novalidate style="display:contents">
-        <input
-          class="email-input"
-          type="email"
-          placeholder="your@email.com"
-          required
-          aria-label="Your email address"
-          autocomplete="email"
-        >
+        <input class="email-input" type="email" placeholder="your@email.com" required
+          aria-label="Your email address" autocomplete="email">
         <button type="submit" class="btn-email">Subscribe</button>
       </form>
       <p class="email-notice">// No spam. Unsubscribe any time.</p>
@@ -2282,15 +2265,13 @@ def build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b):
     selector_html = f"""
 <div class="page" style="padding-top:32px;padding-bottom:28px">
   <div class="sec-eyebrow">Custom comparison · Any two tools</div>
-  <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;
-             letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
+  <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
     Compare any two <em style="color:var(--cyan);font-style:normal">AI tools</em>
   </h1>
   <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:520px;line-height:1.75;margin-bottom:28px">
     Select any two tools from our reviewed collection and get an instant side-by-side comparison.
   </p>
-  <div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r3);
-              padding:24px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;box-shadow:var(--sh1)">
+  <div style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r3);padding:24px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;box-shadow:var(--sh1)">
     <div style="flex:1;min-width:180px">
       <label for="sel-a" style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);display:block;margin-bottom:8px">Tool A</label>
       <select id="sel-a" name="a" style="width:100%;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:11px 14px;color:var(--ink);font-family:var(--font-body);font-size:.88rem;outline:none;appearance:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--bdr2)'">
@@ -2368,33 +2349,12 @@ def build_custom_compare_page(sorted_tools, ta, tb, verdict, slug_a, slug_b):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ROUTES — with Flask-Caching decorators
-# ═══════════════════════════════════════════════════════════════════════════════
-# CACHING STRATEGY:
-#   - Homepage: 10 minutes (most visited, changes with new tools/posts)
-#   - Tool directory: 10 minutes (paginated, changes with new tools)
-#   - Individual tool reviews: 30 minutes (changes infrequently)
-#   - Comparisons: 30 minutes (changes infrequently)
-#   - Role pages: 15 minutes (changes when tools update)
-#   - Blog index: 10 minutes (changes with new posts)
-#   - Blog posts: 60 minutes (rarely changes after publish)
-#   - Legal pages: 60 minutes (almost never changes)
-#   - API: not cached (lightweight JSON, always fresh)
-#   - Sitemap/robots: 60 minutes (rarely changes)
-#
-# HOW TO CLEAR THE CACHE:
-#   Option 1: Restart the Render service (clears all cache)
-#   Option 2: Hit GET /api/cache-clear (clears all cache, returns JSON)
-#   Option 3: Deploy a new version (Render restarts → cache clears)
-#
-# The cache key includes the full request URL, so /tools?page=1 and
-# /tools?page=2 are cached separately.
+# ROUTES
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/')
 @cache.cached(timeout=600, query_string=True)
 def home():
-    # ── Panel data (unchanged) ───────────────────────────────────────────────
     panel_tools = sorted(TOOLS, key=lambda t: -t['score'])[:4]
     panel_items = ''
     for i, t in enumerate(panel_tools):
@@ -2416,27 +2376,23 @@ def home():
         <div class="hero-eyebrow-dot" aria-hidden="true"></div>
         Independent AI Tool Reviews · Updated 2026
       </div>
-
       <h1 class="hero-h1" id="hero-heading">
         Independent <em>AI tool reviews</em>
         <span class="serif-accent">Cut through the noise. Find what works.</span>
       </h1>
-
       <p class="hero-sub">
         Hundreds of AI tools, impossible to evaluate them all — we do it for you.
         Transparent scores, honest verdicts, zero paid placements. Built for
         freelancers, marketers, and business owners who need answers, not hype.
       </p>
-
       <div class="hero-ctas">
-        <a href="#tool-finder" class="btn-primary">
+        <a href="/tool-finder" class="btn-primary">
           Find my tool stack
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
         <a href="/tools" class="btn-ghost">Browse all {len(TOOLS)} tools</a>
       </div>
     </div>
-
     <aside class="hero-panel" aria-label="Top rated tools leaderboard">
       <div class="panel-hdr">
         <div class="panel-title">Top-rated tools</div>
@@ -2449,15 +2405,7 @@ def home():
 </div>"""
 
     trust_bar = f"""<div class="page" style="padding-top:0;padding-bottom:0" role="note" aria-label="Site statistics">
-  <div style="
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-wrap:wrap;
-    gap:0;
-    padding:18px 0 24px;
-    border-bottom:1px solid var(--div);
-  ">
+  <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;padding:18px 0 24px;border-bottom:1px solid var(--div);">
     <div style="display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--div)">
       <span style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;letter-spacing:-.05em;color:var(--cyan)">{len(TOOLS)}+</span>
       <span style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)">tools<br>reviewed</span>
@@ -2483,20 +2431,7 @@ def home():
     )
 
     tool_finder = f"""<div class="page" id="tool-finder">
-  <section style="
-    background:var(--surf);
-    border:1px solid var(--bdr2);
-    border-radius:var(--r4);
-    padding:36px 40px;
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:32px;
-    align-items:center;
-    box-shadow:var(--sh1);
-    position:relative;
-    overflow:hidden;
-    margin-top:clamp(40px,5vw,64px);
-  " aria-labelledby="finder-heading">
+  <section style="background:var(--surf);border:1px solid var(--bdr2);border-radius:var(--r4);padding:36px 40px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;box-shadow:var(--sh1);position:relative;overflow:hidden;margin-top:clamp(40px,5vw,64px);" aria-labelledby="finder-heading">
     <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan),var(--violet))"></div>
     <div>
       <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:8px">
@@ -2508,31 +2443,14 @@ def home():
       </h2>
       <p style="font-size:.9rem;color:var(--ink3);line-height:1.7;max-width:420px">
         Tell us your role and we'll show you the exact tools our reviewers recommend — scored and ranked.
+        Or <a href="/tool-finder" style="color:var(--cyan)">take the full quiz →</a>
       </p>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
       <div style="display:flex;flex-direction:column;gap:6px">
         <label for="role-finder-select" style="font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4)">I am a&hellip;</label>
         <select id="role-finder-select"
-          style="
-            background:var(--bg3);
-            border:1px solid var(--bdr2);
-            border-radius:var(--r2);
-            padding:12px 44px 12px 16px;
-            color:var(--ink);
-            font-family:var(--font-body);
-            font-size:.92rem;
-            font-weight:500;
-            outline:none;
-            cursor:pointer;
-            appearance:none;
-            -webkit-appearance:none;
-            min-width:240px;
-            background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%237c8db5' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\");
-            background-repeat:no-repeat;
-            background-position:right 14px center;
-            transition:border-color .2s,box-shadow .2s;
-          "
+          style="background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r2);padding:12px 44px 12px 16px;color:var(--ink);font-family:var(--font-body);font-size:.92rem;font-weight:500;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;min-width:240px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%237c8db5' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;transition:border-color .2s,box-shadow .2s;"
           onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px var(--cyan-d)'"
           onblur="this.style.borderColor='var(--bdr2)';this.style.boxShadow='none'"
           aria-label="Select your role">
@@ -2541,9 +2459,7 @@ def home():
         </select>
       </div>
       <div style="padding-top:22px">
-        <button
-          type="button"
-          class="btn-primary"
+        <button type="button" class="btn-primary"
           onclick="var v=document.getElementById('role-finder-select').value;if(v)window.location.href=v;"
           aria-label="Go to my recommended tool stack">
           Show my stack
@@ -2565,10 +2481,8 @@ def home():
     roles_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="roles-heading">
     <div class="sec-top">
-      <div>
-        <div class="sec-eyebrow">Built for your role</div>
-        <h2 class="sec-h2" id="roles-heading">Find your <em>perfect stack</em></h2>
-      </div>
+      <div><div class="sec-eyebrow">Built for your role</div>
+      <h2 class="sec-h2" id="roles-heading">Find your <em>perfect stack</em></h2></div>
       <a href="/tools" class="sec-link">All tools →</a>
     </div>
     <div class="roles-grid">{role_cards}</div>
@@ -2580,10 +2494,8 @@ def home():
     tools_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="featured-heading">
     <div class="sec-top">
-      <div>
-        <div class="sec-eyebrow">Highest rated · Featured picks</div>
-        <h2 class="sec-h2" id="featured-heading">Top <em>AI tools</em> right now</h2>
-      </div>
+      <div><div class="sec-eyebrow">Highest rated · Featured picks</div>
+      <h2 class="sec-h2" id="featured-heading">Top <em>AI tools</em> right now</h2></div>
       <a href="/tools" class="sec-link">All {len(TOOLS)} tools →</a>
     </div>
     <div class="tools-grid">{cards_html}</div>
@@ -2603,28 +2515,19 @@ def home():
     comp_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="compare-heading">
     <div class="sec-top">
-      <div>
-        <div class="sec-eyebrow">Head to head · High intent</div>
-        <h2 class="sec-h2" id="compare-heading"><em>Compare</em> tools side by side</h2>
-      </div>
+      <div><div class="sec-eyebrow">Head to head · High intent</div>
+      <h2 class="sec-h2" id="compare-heading"><em>Compare</em> tools side by side</h2></div>
       <a href="/compare" class="sec-link">All {len(COMPARISONS)} comparisons →</a>
     </div>
     <div class="comp-grid">{comp_cards}</div>
   </section>
 </div>"""
 
-    posts = sorted(
-        [{**v, 'slug': k} for k, v in BLOG_POSTS.items()],
-        key=lambda x: x['date'], reverse=True
-    )
-    blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv"
-        aria-label="Guide: {p['title']}">
+    posts = sorted([{**v, 'slug': k} for k, v in BLOG_POSTS.items()], key=lambda x: x['date'], reverse=True)
+    blog_cards = '\n'.join(f"""<a href="/blog/{p['slug']}" class="blog-card rv" aria-label="Guide: {p['title']}">
       <div class="blog-card-accent"></div>
       <div class="blog-card-body">
-        <div class="blog-eyebrow">
-          {datetime.datetime.strptime(p['date'],'%Y-%m-%d').strftime('%d %b %Y')}
-          &nbsp;·&nbsp;{p.get('category','Guide')}
-        </div>
+        <div class="blog-eyebrow">{datetime.datetime.strptime(p['date'],'%Y-%m-%d').strftime('%d %b %Y')} &nbsp;·&nbsp;{p.get('category','Guide')}</div>
         <div class="blog-title">{p['title']}</div>
         <div class="blog-desc">{p.get('description','')}</div>
         <div class="blog-link" aria-hidden="true">Read guide →</div>
@@ -2634,10 +2537,8 @@ def home():
     blog_sec = f"""<div class="page">
   <section class="sec" aria-labelledby="guides-heading">
     <div class="sec-top">
-      <div>
-        <div class="sec-eyebrow">Guides · Analysis · How-tos</div>
-        <h2 class="sec-h2" id="guides-heading">Latest <em>guides</em></h2>
-      </div>
+      <div><div class="sec-eyebrow">Guides · Analysis · How-tos</div>
+      <h2 class="sec-h2" id="guides-heading">Latest <em>guides</em></h2></div>
       <a href="/blog" class="sec-link">All guides →</a>
     </div>
     <div class="blog-grid">{blog_cards}</div>
@@ -2645,26 +2546,53 @@ def home():
 </div>"""
 
     content = (
-        hero
-        + trust_bar
-        + affil_strip()
-        + tool_finder
-        + roles_sec
-        + tools_sec
-        + comp_sec
-        + blog_sec
-        + email_capture()
+        hero + trust_bar + affil_strip() + tool_finder + roles_sec
+        + tools_sec + comp_sec + blog_sec + email_capture()
         + '<div style="height:56px"></div>'
     )
 
     return render(
         title='Independent AI Tool Reviews 2026 — Moving Forward With AI',
-        desc=(
-            f'Independent reviews of {len(TOOLS)}+ AI tools with transparent scores. '
-            'No paid placements. Built for freelancers, marketers, and business owners.'
-        ),
+        desc=f'Independent reviews of {len(TOOLS)}+ AI tools with transparent scores. No paid placements. Built for freelancers, marketers, and business owners.',
         content=content,
         bcs=bc_schema([('Home', '/')]))
+
+
+@app.route('/tool-finder')
+@cache.cached(timeout=600)
+def tool_finder_page():
+    bc_html = breadcrumb_html([('Home', '/'), ('Tool Finder', '/tool-finder')])
+    content = render_template_string(
+        TOOL_FINDER_TEMPLATE,
+        breadcrumb=bc_html
+    )
+    return render(
+        title='AI Tool Finder Quiz 2026 — Find Your Perfect Stack | MFWAI',
+        desc='Answer 4 quick questions and get personalised AI tool recommendations based on your role, goals, budget, and skill level.',
+        content=content,
+        bcs=bc_schema([('Home', '/'), ('Tool Finder', '/tool-finder')])
+    )
+
+
+@app.route('/api/tool-finder')
+def api_tool_finder():
+    role   = request.args.get('role', '')
+    goal   = request.args.get('goal', '')
+    budget = request.args.get('budget', '')
+    skill  = request.args.get('skill', '')
+
+    matched = match_tools_for_quiz(role, goal, budget, skill, TOOLS)
+
+    return jsonify({'tools': [{
+        'slug':           t['slug'],
+        'name':           t['name'],
+        'category':       t['category'],
+        'score':          t['score'],
+        'verdict':        t['verdict'][:160],
+        'starting_price': t['starting_price'],
+        'pricing_model':  t['pricing_model'],
+        'affiliate_url':  t['affiliate_url'],
+    } for t in matched]})
 
 
 @app.route('/tools')
@@ -2917,20 +2845,11 @@ def tool_detail(slug):
     faqs = t.get('faqs', [])
     if not faqs:
         faqs = [
-            (f'Is {name} worth it in 2026?',
-             f'{name} scores {sc}/100 in our independent review. {t["verdict"]}'),
-            (f'What is {name} best for?',
-             'Based on our testing, ' + '; '.join(t['best_for'][:3]) + '.'),
-            (f'How much does {name} cost?',
-             f'{name} starts at {t["starting_price"]} ({t["pricing_model"]}). '
-             + ('A free tier is available.' if t.get('free_tier') else 'No free tier is available.')),
-            (f'Does {name} offer a free trial?',
-             (f'Yes \u2014 {name} offers a {t.get("trial_days","")}-day free trial.'
-              if t.get('free_trial')
-              else f'Currently, {name} does not offer a free trial.'
-                   + (' However, it does have a free tier.' if t.get('free_tier') else ''))),
-            (f'What are the main downsides of {name}?',
-             'The key limitations are: ' + '; '.join(t['cons'][:3]) + '.'),
+            (f'Is {name} worth it in 2026?', f'{name} scores {sc}/100 in our independent review. {t["verdict"]}'),
+            (f'What is {name} best for?', 'Based on our testing, ' + '; '.join(t['best_for'][:3]) + '.'),
+            (f'How much does {name} cost?', f'{name} starts at {t["starting_price"]} ({t["pricing_model"]}). ' + ('A free tier is available.' if t.get('free_tier') else 'No free tier is available.')),
+            (f'Does {name} offer a free trial?', (f'Yes \u2014 {name} offers a {t.get("trial_days","")}-day free trial.' if t.get('free_trial') else f'Currently, {name} does not offer a free trial.' + (' However, it does have a free tier.' if t.get('free_tier') else ''))),
+            (f'What are the main downsides of {name}?', 'The key limitations are: ' + '; '.join(t['cons'][:3]) + '.'),
         ]
     else:
         faqs = [(f['q'], f['a']) for f in faqs]
@@ -2938,8 +2857,7 @@ def tool_detail(slug):
     faq_items = ''
     for i, (q, a) in enumerate(faqs):
         faq_items += f"""<div class="faq-item" id="faq-{i}">
-          <button class="faq-q" type="button" aria-expanded="false"
-                  aria-controls="faq-a-{i}"
+          <button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-{i}"
                   onclick="this.parentElement.classList.toggle('open');this.setAttribute('aria-expanded',this.parentElement.classList.contains('open'))">
             {q}
             <svg class="faq-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
@@ -3007,10 +2925,8 @@ def tool_detail(slug):
           {' \u00b7 ' + str(t.get('trial_days','')) + '-day free trial' if t.get('free_trial') else ''}
         </div>
       </div>
-      <a href="{t['affiliate_url']}" target="_blank"
-         rel="nofollow sponsored noopener noreferrer"
-         class="btn-td-cta" style="width:auto;flex-shrink:0"
-         aria-label="Try {name} \u2014 opens in new tab">
+      <a href="{t['affiliate_url']}" target="_blank" rel="nofollow sponsored noopener noreferrer"
+         class="btn-td-cta" style="width:auto;flex-shrink:0" aria-label="Try {name} \u2014 opens in new tab">
         Try {name}
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -3059,6 +2975,7 @@ def tool_detail(slug):
         schema2=faq_sd,
         bcs=bc_schema([('Home', '/'), ('Tools', '/tools'), (t['name'], f'/tool/{slug}')]),
         og_type='article')
+
 
 @app.route('/compare')
 @cache.cached(timeout=600)
@@ -3354,9 +3271,6 @@ def api_tools():
         'featured': t.get('featured', False)} for t in TOOLS]})
 
 
-# ── Cache management endpoint ────────────────────────────────────────────────
-# Hit this URL to clear all cached pages after updating content.
-# Example: curl https://www.movingforwardwithai.com/api/cache-clear
 @app.route('/api/cache-clear')
 def cache_clear():
     cache.clear()
@@ -3376,10 +3290,11 @@ def robots():
 def sitemap():
     today = datetime.date.today().isoformat()
     urls  = [
-        (SITE_URL + '/',        today, '1.0', 'weekly'),
-        (SITE_URL + '/tools',   today, '0.9', 'weekly'),
-        (SITE_URL + '/compare', today, '0.9', 'weekly'),
-        (SITE_URL + '/blog',    today, '0.8', 'weekly'),
+        (SITE_URL + '/',               today, '1.0', 'weekly'),
+        (SITE_URL + '/tools',          today, '0.9', 'weekly'),
+        (SITE_URL + '/tool-finder',    today, '0.8', 'weekly'),
+        (SITE_URL + '/compare',        today, '0.9', 'weekly'),
+        (SITE_URL + '/blog',           today, '0.8', 'weekly'),
     ]
     for t in TOOLS:
         urls.append((f'{SITE_URL}/tool/{t["slug"]}',    t.get('date_added', today), '0.8', 'monthly'))
