@@ -2100,7 +2100,7 @@ window.addEventListener('scroll', function () {
     function miniCard(t) {
     var sc = t.score, isHi = sc >= 88;
     var bg = isHi ? 'var(--green-d)' : 'var(--cyan-d)', bdr = isHi ? 'var(--green-g)' : 'var(--cyan-g)', col = isHi ? 'var(--green)' : 'var(--cyan)';
-    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'\'"><div class="tc-accent-bar"></div><div class="tc-body"><div class="tc-meta"><div class="tc-cat">'+(t.category||'')+'</div><div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div></div><a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a><p class="tc-tagline">'+(t.tagline||'')+'</p></div><div class="tc-footer"><div class="tc-pricing"><span class="tc-price">'+(t.starting_price||'')+'</span></div></div></div>';
+    return '<div class="tool-card" style="cursor:pointer" onclick="location.href=\'/tool/'+t.slug+'"><div class="tc-accent-bar"></div><div class="tc-body"><div class="tc-meta"><div class="tc-cat">'+(t.category||'')+'</div><div class="tc-score" style="background:'+bg+';border:1px solid '+bdr+';color:'+col+'">'+sc+'</div></div><a href="/tool/'+t.slug+'" class="tc-name">'+t.name+'</a><p class="tc-tagline">'+(t.tagline||'')+'</p></div><div class="tc-footer"><div class="tc-pricing"><span class="tc-price">'+(t.starting_price||'')+'</span></div></div></div>';
   }
   function runSearch(q) {
     if (!q || q.length < 2) { closeSov(); return; }
