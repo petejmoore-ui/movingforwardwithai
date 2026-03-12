@@ -2870,7 +2870,7 @@ def tool_detail(slug):
     if not faqs:
         faqs = [
             (f'Is {name} worth it in 2026?', f'{name} scores {sc}/100 in our independent review. {t["verdict"]}'),
-            (f'What is {name} best for?', 'Based on our testing, ' + '; '.join(t['best_for'][:3]) + '.'),
+            (f'What is {name} best for?', 'Claude Pro output indicates, ' + '; '.join(t['best_for'][:3]) + '.'),
             (f'How much does {name} cost?', f'{name} starts at {t["starting_price"]} ({t["pricing_model"]}). ' + ('A free tier is available.' if t.get('free_tier') else 'No free tier is available.')),
             (f'Does {name} offer a free trial?', (f'Yes \u2014 {name} offers a {t.get("trial_days","")}-day free trial.' if t.get('free_trial') else f'Currently, {name} does not offer a free trial.' + (' However, it does have a free tier.' if t.get('free_tier') else ''))),
             (f'What are the main downsides of {name}?', 'The key limitations are: ' + '; '.join(t['cons'][:3]) + '.'),
