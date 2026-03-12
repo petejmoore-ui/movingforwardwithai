@@ -101,7 +101,7 @@ def website_schema():
         "@type": "WebSite",
         "name": SITE_NAME,
         "url": SITE_URL + "/",
-        "description": "Independent AI tool reviews with transparent scores for freelancers, marketers, and builders.",
+        "description": "AI tool reviews with transparent scores for freelancers, marketers, and builders.",
         "publisher": {"@type": "Organization", "name": SITE_NAME, "url": SITE_URL + "/"},
         "potentialAction": {
             "@type": "SearchAction",
