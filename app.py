@@ -13,11 +13,6 @@ app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 cache = Cache(app)
 
-if os.environ.get("STAGING") == "true":
-    @app.after_request
-    def add_header(response):
-        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
-        return response
 
 
 SITE_URL   = "https://www.movingforwardwithai.com"
