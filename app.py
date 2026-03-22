@@ -2143,6 +2143,7 @@ window.addEventListener('scroll', function () {
 
 // Attach click handler safely via JS
 document.addEventListener('click', function(e){
+  if (e.target.closest('a')) return;  // don't intercept real links
   const card = e.target.closest('.tool-card');
   if(card) location.href = '/tool/' + encodeURIComponent(card.dataset.slug);
 });
