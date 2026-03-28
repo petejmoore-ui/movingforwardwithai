@@ -2447,7 +2447,6 @@ Best,
         'verdict': '[PETE TO ADD \u2014 one or two sentences on which tool won this task and why. Which email would you actually send?]',
         'winner': '[PETE TO FILL IN \u2014 Claude Pro / ChatGPT / Writesonic]',
         'related_tools': ['claude', 'chatgpt', 'writesonic'],
-    }
-    
-] 
+ },
+} 
     
