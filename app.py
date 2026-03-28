@@ -3374,6 +3374,201 @@ def sitemap():
         xml += f'  <url><loc>{url}</loc><lastmod>{lm}</lastmod><changefreq>{cf}</changefreq><priority>{pri}</priority></url>\n'
     return Response(xml + '</urlset>', mimetype='application/xml')
 
+    # ═══════════════════════════════════════════════════════════════════════════════
+# SHOWDOWN ROUTES — paste into app.py before "if __name__ == '__main__':"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def showdown_article_schema(sd):
+    """Article schema JSON-LD for a showdown page."""
+    tool_names = [t['name'] for t in sd.get('tools', [])]
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": sd['title'],
+        "description": sd.get('meta_description', sd['description']),
+        "datePublished": sd['date'],
+        "dateModified": sd['date'],
+        "author": {
+            "@type": "Organization",
+            "name": SITE_NAME,
+            "url": SITE_URL + "/"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": SITE_NAME,
+            "url": SITE_URL + "/"
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": SITE_URL + "/showdowns/" + sd['slug']
+        },
+        "about": [
+            {"@type": "SoftwareApplication", "name": name}
+            for name in tool_names
+        ]
+    })
+
+
+def build_showdown_tool_section(tool_entry):
+    """Build the HTML for a single tool's output section within a showdown."""
+    name = tool_entry['name']
+    slug = tool_entry.get('slug', '')
+    output = tool_entry['output']
+    commentary = tool_entry.get('commentary', '')
+    note = tool_entry.get('note', '')
+
+    review_link = ''
+    if slug:
+        t = get_tool(slug)
+        if t:
+            review_link = f'<a href="/tool/{slug}" class="sd-tool-link">Full review \u2192</a>'
+
+    note_html = ''
+    if note:
+        note_html = f'<div class="sd-tool-note">{note}</div>'
+
+    commentary_html = ''
+    if commentary:
+        commentary_html = f"""<div class="sd-commentary">
+      <div class="sd-commentary-label">Our take</div>
+      <p class="sd-commentary-text">{commentary}</p>
+    </div>"""
+
+    return f"""<section class="sd-tool-section rv" aria-labelledby="sd-tool-{slug}">
+  <div class="sd-tool-header">
+    <h2 class="sd-tool-name" id="sd-tool-{slug}">{name}</h2>
+    {review_link}
+  </div>
+  {note_html}
+  <div class="sd-output-block">
+    <div class="sd-output-label">Raw output</div>
+    <div class="sd-output-text">{output}</div>
+  </div>
+  {commentary_html}
+</section>"""
+
+
+@app.route('/showdowns')
+@cache.cached(timeout=600)
+def showdowns_index():
+    all_showdowns = sorted(
+        [sd for sd in SHOWDOWNS.values()],
+        key=lambda x: x['date'],
+        reverse=True
+    )
+
+    cards = '\n'.join(f"""<a href="/showdowns/{sd['slug']}" class="sd-card rv">
+      <div class="sd-card-eyebrow">{sd.get('category', 'Showdown')} \u00b7 {datetime.datetime.strptime(sd['date'], '%Y-%m-%d').strftime('%d %b %Y')}</div>
+      <div class="sd-card-title">{sd['title']}</div>
+      <div class="sd-card-tools">
+        {''.join(f'<span class="sd-card-tool-tag">{t["name"]}</span>' for t in sd.get("tools", []))}
+      </div>
+      <div class="sd-card-desc">{sd['description'][:160]}</div>
+      <div class="sd-card-link">Read showdown \u2192</div>
+    </a>""" for sd in all_showdowns)
+
+    content = f"""
+    {breadcrumb_html([('Home', '/'), ('Showdowns', '/showdowns')])}
+    <div class="page" style="padding-top:32px;padding-bottom:28px">
+      <div class="sec-eyebrow">Tool showdowns \u00b7 Same prompt, real outputs</div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
+        AI Tool <em style="color:var(--amber);font-style:normal">Showdowns</em>
+      </h1>
+      <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:540px;line-height:1.75;margin-bottom:28px">
+        We run the same prompt through multiple AI tools and show you the unedited results side by side.
+        No cherry-picking, no editing \u2014 just the raw output and our honest take.
+      </p>
+    </div>
+    <div class="page">
+      <div class="comp-grid">{cards}</div>
+    </div>"""
+
+    return render(
+        title='AI Tool Showdowns 2026 \u2014 Same Prompt, Real Outputs | MFWAI',
+        desc='We test AI tools head-to-head with the same prompt. See unedited outputs side by side with honest verdicts.',
+        content=content,
+        bcs=bc_schema([('Home', '/'), ('Showdowns', '/showdowns')])
+    )
+
+
+@app.route('/showdowns/<slug>')
+@cache.cached(timeout=1800)
+def showdown_detail(slug):
+    sd = SHOWDOWNS.get(slug)
+    if not sd:
+        abort(404)
+
+    dt = datetime.datetime.strptime(sd['date'], '%Y-%m-%d').strftime('%d %B %Y')
+
+    # Build prompt block
+    prompt_html = f"""<div class="sd-prompt-block rv">
+  <div class="sd-prompt-label">The prompt we used</div>
+  <div class="sd-prompt-text">{sd['prompt']}</div>
+</div>"""
+
+    # Build tool output sections
+    tool_sections = '\n'.join(
+        build_showdown_tool_section(t) for t in sd.get('tools', [])
+    )
+
+    # Build verdict block
+    verdict_html = ''
+    if sd.get('verdict'):
+        winner_tag = ''
+        if sd.get('winner') and not sd['winner'].startswith('['):
+            winner_tag = f'<div class="sd-winner-tag">\u2713 Winner: {sd["winner"]}</div>'
+        verdict_html = f"""<div class="sd-verdict-block rv">
+  <div class="sd-verdict-label">Our verdict</div>
+  <p class="sd-verdict-text">{sd['verdict']}</p>
+  {winner_tag}
+</div>"""
+
+    # Related tool cards
+    related_slugs = sd.get('related_tools', [])
+    related_tools = [get_tool(s) for s in related_slugs if get_tool(s)]
+    rel_cards = '\n'.join(tool_card(t) for t in related_tools)
+
+    related_section = ''
+    if rel_cards:
+        related_section = f"""<div class="page">
+  <section class="sec" aria-labelledby="sd-related-heading">
+    <div class="sec-top">
+      <div>
+        <div class="sec-eyebrow">Tools tested in this showdown</div>
+        <h2 class="sec-h2" id="sd-related-heading">Full <em>reviews</em></h2>
+      </div>
+    </div>
+    <div class="tools-grid">{rel_cards}</div>
+  </section>
+</div>"""
+
+    content = f"""
+    {breadcrumb_html([('Home', '/'), ('Showdowns', '/showdowns'), (sd['title'][:50] + '\u2026', f'/showdowns/{slug}')])}
+    <div class="page-narrow" style="padding-top:32px">
+      <div class="sec-eyebrow" style="margin-bottom:18px">{dt} \u00b7 {sd.get('category', 'Showdown')}</div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4.5vw,3rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1.06;margin-bottom:16px">
+        {sd['title']}
+      </h1>
+      <p style="font-size:1.02rem;line-height:1.8;color:var(--ink3);margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid var(--div)">
+        {sd['description']}
+      </p>
+      {prompt_html}
+      {tool_sections}
+      {verdict_html}
+    </div>
+    {related_section}
+    {email_capture()}"""
+
+    return render(
+        title=f'{sd["title"]} | MFWAI',
+        desc=sd.get('meta_description', sd['description'])[:155],
+        content=content,
+        schema=showdown_article_schema(sd),
+        bcs=bc_schema([('Home', '/'), ('Showdowns', '/showdowns'), (sd['title'], f'/showdowns/{slug}')]),
+        og_type='article'
+    )
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
