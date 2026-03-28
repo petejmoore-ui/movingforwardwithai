@@ -1808,15 +1808,6 @@ window.addEventListener('load', function() {
   'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
   })(window,document,'script','dataLayer','GTM-M3VRXKN5');
 
-  // GA4
-  var ga = document.createElement('script');
-  ga.async = true;
-  ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-TBH27VXH8M';
-  document.head.appendChild(ga);
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-TBH27VXH8M');
 
   // Clarity
   (function(c,l,a,r,i,t,y){
