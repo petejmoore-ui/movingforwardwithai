@@ -980,9 +980,9 @@ body::after {
 .ticker-item {
   display:inline-flex; align-items:center; gap:0;
   font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--ink4); padding:0 18px;
+  text-transform:uppercase; color:var(--ink3); padding:0 18px;
 }
-.ticker-item.accent { color:var(--cyan); opacity:.9 }
+.ticker-item.accent { color:var(--cyan); opacity:1 }
 .ticker-sep { color:var(--ink5); padding:0 4px; font-size:.5rem; }
 @keyframes ticker-move { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
@@ -1899,7 +1899,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <path d="M10 10l3.5 3.5"/>
         </svg>
         <input type="search" id="search-input" placeholder="Search tools…" autocomplete="off"
-          aria-label="Search AI tools" aria-controls="sov" aria-expanded="false">
+          aria-label="Search AI tools" aria-controls="sov" role="combobox" aria-expanded="false" aria-autocomplete="list">
       </div>
       <button class="nav-icon-btn" id="theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
@@ -2455,7 +2455,7 @@ def home():
         <div class="panel-title">Top-rated tools</div>
         <div class="panel-live" aria-label="Updated recently">updated</div>
       </div>
-      <div class="panel-list" role="list">{panel_items}</div>
+      <div class="panel-list">{panel_items}</div>
       <a href="/tools" class="panel-footer">View all {len(TOOLS)} reviewed tools →</a>
     </aside>
   </section>
