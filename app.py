@@ -1,5 +1,5 @@
 import os, json, re, datetime
-from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
+from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES, SHOWDOWNS
 from flask import Flask, render_template_string, request, abort, Response, jsonify
 from flask_caching import Cache
 from dotenv import load_dotenv
@@ -12,7 +12,6 @@ app        = Flask(__name__)
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 cache = Cache(app)
-
 
 
 SITE_URL   = "https://www.movingforwardwithai.com"
@@ -808,6 +807,150 @@ TOOL_FINDER_CSS = """
   .tf-res-btns a { flex:1; text-align:center; justify-content:center }
 }
 """
+SHOWDOWN_CSS = """
+/* ═══════════════════════════════════════════════════════════════
+   SHOWDOWNS
+   ═══════════════════════════════════════════════════════════════ */
+.sd-prompt-block {
+  background:var(--bg3); border:1px solid var(--bdr2); border-radius:var(--r3);
+  padding:24px 28px; margin-bottom:32px; position:relative; overflow:hidden;
+}
+.sd-prompt-block::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--amber), var(--cyan));
+}
+.sd-prompt-label {
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--amber); margin-bottom:14px;
+  display:flex; align-items:center; gap:8px;
+}
+.sd-prompt-label::before { content:''; width:16px; height:1px; background:var(--amber) }
+.sd-prompt-text {
+  font-family:var(--font-mono); font-size:.84rem; line-height:1.85;
+  color:var(--ink2); white-space:pre-wrap; word-break:break-word;
+}
+ 
+.sd-tool-section {
+  background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3);
+  overflow:hidden; margin-bottom:20px; box-shadow:var(--sh0);
+  transition:transform .3s var(--spring), box-shadow .3s;
+}
+.sd-tool-section:hover { transform:translateY(-2px); box-shadow:var(--sh1) }
+.sd-tool-header {
+  padding:20px 28px; border-bottom:1px solid var(--div);
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.sd-tool-name {
+  font-family:var(--font-display); font-size:1.15rem; font-weight:700;
+  color:var(--ink); letter-spacing:-.03em;
+}
+.sd-tool-link {
+  font-family:var(--font-mono); font-size:.64rem; letter-spacing:.06em;
+  text-transform:uppercase; padding:6px 14px; border-radius:var(--rpill);
+  border:1px solid var(--bdr); color:var(--ink3); transition:all .18s; white-space:nowrap;
+}
+.sd-tool-link:hover { background:var(--cyan-d); border-color:var(--bdr2); color:var(--cyan) }
+.sd-tool-note {
+  padding:12px 28px; background:var(--amber-d); border-bottom:1px solid var(--amber-g);
+  font-family:var(--font-mono); font-size:.72rem; color:var(--amber); line-height:1.6;
+  display:flex; align-items:flex-start; gap:8px;
+}
+.sd-tool-note::before { content:'ℹ'; flex-shrink:0; font-size:.82rem }
+.sd-output-block {
+  padding:24px 28px; border-bottom:1px solid var(--div);
+}
+.sd-output-label {
+  font-family:var(--font-mono); font-size:.58rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--cyan); margin-bottom:14px;
+  display:flex; align-items:center; gap:6px;
+}
+.sd-output-label::before { content:'//'; opacity:.5 }
+.sd-output-text {
+  font-size:.9rem; line-height:1.85; color:var(--ink2);
+  white-space:pre-wrap; word-break:break-word;
+  padding:20px 24px; background:var(--bg3); border:1px solid var(--bdr);
+  border-radius:var(--r2); font-family:var(--font-body);
+}
+.sd-commentary {
+  padding:20px 28px;
+}
+.sd-commentary-label {
+  font-family:var(--font-mono); font-size:.58rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink4); margin-bottom:10px;
+  display:flex; align-items:center; gap:6px;
+}
+.sd-commentary-label::before { content:'//'; opacity:.5 }
+.sd-commentary-text {
+  font-size:.88rem; line-height:1.75; color:var(--ink3); font-style:italic;
+}
+ 
+.sd-verdict-block {
+  background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--r3);
+  padding:28px 32px; margin-bottom:24px; position:relative; overflow:hidden;
+  box-shadow:var(--sh1);
+}
+.sd-verdict-block::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--green), var(--cyan), var(--violet));
+}
+.sd-verdict-label {
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--green); margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.sd-verdict-label::before { content:''; width:16px; height:1px; background:var(--green) }
+.sd-verdict-text { font-size:.96rem; line-height:1.8; color:var(--ink2) }
+.sd-winner-tag {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--green-d); border:1px solid var(--green-g); color:var(--green);
+  border-radius:var(--rpill); padding:4px 14px; margin-top:14px;
+  font-family:var(--font-mono); font-size:.62rem; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase;
+}
+ 
+/* Showdown hub cards — reuses comp-card pattern */
+.sd-card {
+  background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3);
+  padding:24px; display:flex; flex-direction:column; gap:12px;
+  transition:transform .3s var(--spring), box-shadow .3s, border-color .25s;
+  color:inherit;
+}
+.sd-card:hover { transform:translateY(-3px); box-shadow:var(--sh2); border-color:var(--bdr2) }
+.sd-card-eyebrow {
+  font-family:var(--font-mono); font-size:.6rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--amber); display:flex; align-items:center; gap:6px;
+}
+.sd-card-eyebrow::before { content:'⚡'; font-size:.7rem }
+.sd-card-title {
+  font-family:var(--font-display); font-size:1.1rem; font-weight:700;
+  color:var(--ink); letter-spacing:-.03em; line-height:1.3;
+}
+.sd-card-tools {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.sd-card-tool-tag {
+  font-family:var(--font-mono); font-size:.58rem; color:var(--ink3);
+  background:var(--bg3); border:1px solid var(--bdr); border-radius:var(--rpill);
+  padding:3px 10px; letter-spacing:.06em;
+}
+.sd-card-desc { font-size:.86rem; color:var(--ink3); line-height:1.65; flex:1 }
+.sd-card-link {
+  font-family:var(--font-mono); font-size:.68rem; color:var(--amber);
+  display:inline-flex; align-items:center; gap:5px; letter-spacing:.04em;
+  text-transform:uppercase; border-bottom:1px solid var(--amber-g);
+  padding-bottom:2px; width:fit-content; transition:gap .2s, border-color .2s;
+}
+.sd-card:hover .sd-card-link { gap:9px; border-bottom-color:var(--amber) }
+ 
+@media (max-width:768px) {
+  .sd-prompt-block { padding:18px 20px }
+  .sd-tool-header { padding:16px 20px; flex-direction:column; align-items:flex-start }
+  .sd-output-block { padding:18px 20px }
+  .sd-output-text { padding:14px 16px }
+  .sd-commentary { padding:16px 20px }
+  .sd-verdict-block { padding:22px 20px }
+}
+"""
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -980,9 +1123,9 @@ body::after {
 .ticker-item {
   display:inline-flex; align-items:center; gap:0;
   font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--ink3); padding:0 18px;
+  text-transform:uppercase; color:var(--ink4); padding:0 18px;
 }
-.ticker-item.accent { color:var(--cyan); opacity:1 }
+.ticker-item.accent { color:var(--cyan); opacity:.9 }
 .ticker-sep { color:var(--ink5); padding:0 4px; font-size:.5rem; }
 @keyframes ticker-move { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
@@ -1748,7 +1891,7 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 @media (max-width:520px) {
   .vb-meta-grid { grid-template-columns:1fr }
 }
-""" + TOOL_FINDER_CSS
+""" + TOOL_FINDER_CSS + SHOWDOWN_CSS
 
 
 
@@ -1783,10 +1926,7 @@ BASE = """<!DOCTYPE html>
 {% if schema2 %}<script type="application/ld+json">{{ schema2|safe }}</script>{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://c.clarity.ms">
-<link rel="dns-prefetch" href="https://www.googletagmanager.com">
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap">
 <script>
 (function(){
   try {
@@ -1797,25 +1937,29 @@ BASE = """<!DOCTYPE html>
   } catch(e) {}
 })();
 </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-M3VRXKN5');</script>
+<!-- End Google Tag Manager -->
+</script>
 <style>{{ css|safe }}</style>
 <meta name="google-site-verification" content="U4OV71VLG-_zLDoFNbwH9ghMzxs-fQEPOkrKresvHOU" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBH27VXH8M"></script>
 <script>
-window.addEventListener('load', function() {
-  // GTM
-  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-M3VRXKN5');
-
-
-  // Clarity
-  (function(c,l,a,r,i,t,y){
-    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-  })(window, document, "clarity", "script", "w2re1o5146");
-});
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBH27VXH8M');
+</script>
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "w2re1o5146");
 </script>
 </head>
 <body>
@@ -1823,7 +1967,6 @@ window.addEventListener('load', function() {
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M3VRXKN5"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-
 <div class="ticker" aria-hidden="true" role="presentation">
   <div class="ticker-track">
     {% for _ in range(2) %}
@@ -1876,6 +2019,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </a>
         </div>
       </div>
+      <a href="/showdowns">Showdowns</a>
       <a href="/blog">Guides</a>
       <div class="nav-drop" id="drop-roles">
         <button class="nav-drop-btn" type="button" aria-expanded="false" aria-haspopup="true" id="btn-drop-roles">
@@ -1899,7 +2043,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <path d="M10 10l3.5 3.5"/>
         </svg>
         <input type="search" id="search-input" placeholder="Search tools…" autocomplete="off"
-          aria-label="Search AI tools" aria-controls="sov" role="combobox" aria-expanded="false" aria-autocomplete="list">
+          aria-label="Search AI tools" aria-controls="sov" aria-expanded="false">
       </div>
       <button class="nav-icon-btn" id="theme-btn" aria-label="Toggle light/dark theme" type="button">
         <svg id="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
@@ -1933,6 +2077,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <a href="/tool-finder" class="mob-link">Tool Finder</a>
       <a href="/tools" class="mob-link">All Tools</a>
       <a href="/compare" class="mob-link">Compare</a>
+      <a href="/showdowns" class="mob-link">Showdowns</a>
       <a href="/blog" class="mob-link">Guides</a>
     </nav>
   </div>
@@ -1980,6 +2125,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/tool-finder">Tool Finder</a>
         <a href="/tools">All Tools</a>
         <a href="/compare">Compare</a>
+        <a href="/showdowns">Showdowns</a>
         <a href="/blog">Guides</a>
       </div>
       <div class="f-col">
@@ -2455,7 +2601,7 @@ def home():
         <div class="panel-title">Top-rated tools</div>
         <div class="panel-live" aria-label="Updated recently">updated</div>
       </div>
-      <div class="panel-list">{panel_items}</div>
+      <div class="panel-list" role="list">{panel_items}</div>
       <a href="/tools" class="panel-footer">View all {len(TOOLS)} reviewed tools →</a>
     </aside>
   </section>
@@ -3351,6 +3497,7 @@ def sitemap():
         (SITE_URL + '/tools',          today, '0.9', 'weekly'),
         (SITE_URL + '/tool-finder',    today, '0.8', 'weekly'),
         (SITE_URL + '/compare',        today, '0.9', 'weekly'),
+        (SITE_URL + '/showdowns',      today, '0.8', 'weekly'),
         (SITE_URL + '/blog',           today, '0.8', 'weekly'),
     ]
     for t in TOOLS:
@@ -3359,6 +3506,8 @@ def sitemap():
         urls.append((f'{SITE_URL}/for/{r["slug"]}',     today, '0.8', 'weekly'))
     for c in COMPARISONS:
         urls.append((f'{SITE_URL}/compare/{c["slug"]}', c.get('date', today), '0.8', 'monthly'))
+    for sd_slug, sd in SHOWDOWNS.items():
+        urls.append((f'{SITE_URL}/showdowns/{sd_slug}', sd.get('date', today), '0.7', 'monthly'))
     for slug, post in BLOG_POSTS.items():
         urls.append((f'{SITE_URL}/blog/{slug}',         post.get('date', today), '0.7', 'monthly'))
     cats = list({slugify(t['category']) for t in TOOLS})
@@ -3368,6 +3517,201 @@ def sitemap():
     for url, lm, pri, cf in sorted(urls):
         xml += f'  <url><loc>{url}</loc><lastmod>{lm}</lastmod><changefreq>{cf}</changefreq><priority>{pri}</priority></url>\n'
     return Response(xml + '</urlset>', mimetype='application/xml')
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+# SHOWDOWN ROUTES — paste into app.py before "if __name__ == '__main__':"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def showdown_article_schema(sd):
+    """Article schema JSON-LD for a showdown page."""
+    tool_names = [t['name'] for t in sd.get('tools', [])]
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": sd['title'],
+        "description": sd.get('meta_description', sd['description']),
+        "datePublished": sd['date'],
+        "dateModified": sd['date'],
+        "author": {
+            "@type": "Organization",
+            "name": SITE_NAME,
+            "url": SITE_URL + "/"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": SITE_NAME,
+            "url": SITE_URL + "/"
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": SITE_URL + "/showdowns/" + sd['slug']
+        },
+        "about": [
+            {"@type": "SoftwareApplication", "name": name}
+            for name in tool_names
+        ]
+    })
+
+
+def build_showdown_tool_section(tool_entry):
+    """Build the HTML for a single tool's output section within a showdown."""
+    name = tool_entry['name']
+    slug = tool_entry.get('slug', '')
+    output = tool_entry['output']
+    commentary = tool_entry.get('commentary', '')
+    note = tool_entry.get('note', '')
+
+    review_link = ''
+    if slug:
+        t = get_tool(slug)
+        if t:
+            review_link = f'<a href="/tool/{slug}" class="sd-tool-link">Full review \u2192</a>'
+
+    note_html = ''
+    if note:
+        note_html = f'<div class="sd-tool-note">{note}</div>'
+
+    commentary_html = ''
+    if commentary:
+        commentary_html = f"""<div class="sd-commentary">
+      <div class="sd-commentary-label">Our take</div>
+      <p class="sd-commentary-text">{commentary}</p>
+    </div>"""
+
+    return f"""<section class="sd-tool-section rv" aria-labelledby="sd-tool-{slug}">
+  <div class="sd-tool-header">
+    <h2 class="sd-tool-name" id="sd-tool-{slug}">{name}</h2>
+    {review_link}
+  </div>
+  {note_html}
+  <div class="sd-output-block">
+    <div class="sd-output-label">Raw output</div>
+    <div class="sd-output-text">{output}</div>
+  </div>
+  {commentary_html}
+</section>"""
+
+
+@app.route('/showdowns')
+@cache.cached(timeout=600)
+def showdowns_index():
+    all_showdowns = sorted(
+        [sd for sd in SHOWDOWNS.values()],
+        key=lambda x: x['date'],
+        reverse=True
+    )
+
+    cards = '\n'.join(f"""<a href="/showdowns/{sd['slug']}" class="sd-card rv">
+      <div class="sd-card-eyebrow">{sd.get('category', 'Showdown')} \u00b7 {datetime.datetime.strptime(sd['date'], '%Y-%m-%d').strftime('%d %b %Y')}</div>
+      <div class="sd-card-title">{sd['title']}</div>
+      <div class="sd-card-tools">
+        {''.join(f'<span class="sd-card-tool-tag">{t["name"]}</span>' for t in sd.get("tools", []))}
+      </div>
+      <div class="sd-card-desc">{sd['description'][:160]}</div>
+      <div class="sd-card-link">Read showdown \u2192</div>
+    </a>""" for sd in all_showdowns)
+
+    content = f"""
+    {breadcrumb_html([('Home', '/'), ('Showdowns', '/showdowns')])}
+    <div class="page" style="padding-top:32px;padding-bottom:28px">
+      <div class="sec-eyebrow">Tool showdowns \u00b7 Same prompt, real outputs</div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1;margin-top:8px;margin-bottom:8px">
+        AI Tool <em style="color:var(--amber);font-style:normal">Showdowns</em>
+      </h1>
+      <p style="font-size:.96rem;color:var(--ink3);margin-top:12px;max-width:540px;line-height:1.75;margin-bottom:28px">
+        We run the same prompt through multiple AI tools and show you the unedited results side by side.
+        No cherry-picking, no editing \u2014 just the raw output and our honest take.
+      </p>
+    </div>
+    <div class="page">
+      <div class="comp-grid">{cards}</div>
+    </div>"""
+
+    return render(
+        title='AI Tool Showdowns 2026 \u2014 Same Prompt, Real Outputs | MFWAI',
+        desc='We test AI tools head-to-head with the same prompt. See unedited outputs side by side with honest verdicts.',
+        content=content,
+        bcs=bc_schema([('Home', '/'), ('Showdowns', '/showdowns')])
+    )
+
+
+@app.route('/showdowns/<slug>')
+@cache.cached(timeout=1800)
+def showdown_detail(slug):
+    sd = SHOWDOWNS.get(slug)
+    if not sd:
+        abort(404)
+
+    dt = datetime.datetime.strptime(sd['date'], '%Y-%m-%d').strftime('%d %B %Y')
+
+    # Build prompt block
+    prompt_html = f"""<div class="sd-prompt-block rv">
+  <div class="sd-prompt-label">The prompt we used</div>
+  <div class="sd-prompt-text">{sd['prompt']}</div>
+</div>"""
+
+    # Build tool output sections
+    tool_sections = '\n'.join(
+        build_showdown_tool_section(t) for t in sd.get('tools', [])
+    )
+
+    # Build verdict block
+    verdict_html = ''
+    if sd.get('verdict'):
+        winner_tag = ''
+        if sd.get('winner') and not sd['winner'].startswith('['):
+            winner_tag = f'<div class="sd-winner-tag">\u2713 Winner: {sd["winner"]}</div>'
+        verdict_html = f"""<div class="sd-verdict-block rv">
+  <div class="sd-verdict-label">Our verdict</div>
+  <p class="sd-verdict-text">{sd['verdict']}</p>
+  {winner_tag}
+</div>"""
+
+    # Related tool cards
+    related_slugs = sd.get('related_tools', [])
+    related_tools = [get_tool(s) for s in related_slugs if get_tool(s)]
+    rel_cards = '\n'.join(tool_card(t) for t in related_tools)
+
+    related_section = ''
+    if rel_cards:
+        related_section = f"""<div class="page">
+  <section class="sec" aria-labelledby="sd-related-heading">
+    <div class="sec-top">
+      <div>
+        <div class="sec-eyebrow">Tools tested in this showdown</div>
+        <h2 class="sec-h2" id="sd-related-heading">Full <em>reviews</em></h2>
+      </div>
+    </div>
+    <div class="tools-grid">{rel_cards}</div>
+  </section>
+</div>"""
+
+    content = f"""
+    {breadcrumb_html([('Home', '/'), ('Showdowns', '/showdowns'), (sd['title'][:50] + '\u2026', f'/showdowns/{slug}')])}
+    <div class="page-narrow" style="padding-top:32px">
+      <div class="sec-eyebrow" style="margin-bottom:18px">{dt} \u00b7 {sd.get('category', 'Showdown')}</div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4.5vw,3rem);font-weight:800;letter-spacing:-.05em;color:var(--ink);line-height:1.06;margin-bottom:16px">
+        {sd['title']}
+      </h1>
+      <p style="font-size:1.02rem;line-height:1.8;color:var(--ink3);margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid var(--div)">
+        {sd['description']}
+      </p>
+      {prompt_html}
+      {tool_sections}
+      {verdict_html}
+    </div>
+    {related_section}
+    {email_capture()}"""
+
+    return render(
+        title=f'{sd["title"]} | MFWAI',
+        desc=sd.get('meta_description', sd['description'])[:155],
+        content=content,
+        schema=showdown_article_schema(sd),
+        bcs=bc_schema([('Home', '/'), ('Showdowns', '/showdowns'), (sd['title'], f'/showdowns/{slug}')]),
+        og_type='article'
+    )
 
 
 if __name__ == '__main__':
