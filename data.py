@@ -2318,6 +2318,7 @@ ROLES = [
         "tool_slugs": ["claude-pro", "perplexity-pro", "frase", "surfer-seo", "grammarly", "koala-ai", "quillbot"],
         "top_pick": "claude-pro",
     },
+]
 
     # ═══════════════════════════════════════════════════════════════════════════════
 # SHOWDOWNS DATA — paste this into data.py
