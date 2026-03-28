@@ -2248,7 +2248,7 @@ def tool_card(t, delay=0):
     if not t.get('free_tier') and not t.get('free_trial'):
         badges.append('<span class="badge b-paid">Paid only</span>')
     if t.get('featured'): badges.append('<span class="badge b-top">Featured</span>')
-    return f"""<article class="tool-card rv" aria-label="{t['name']} — {t['category']} tool">
+    return f"""<article class="tool-card rv" data-slug="{t['slug']}" aria-label="{t['name']} — {t['category']} tool">
   <div class="tc-accent-bar" aria-hidden="true"></div>
   <div class="tc-body">
     <div class="tc-meta">
