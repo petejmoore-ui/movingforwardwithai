@@ -1,5 +1,5 @@
 import os, json, re, datetime
-from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES
+from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES, SHOWDOWNS
 from flask import Flask, render_template_string, request, abort, Response, jsonify
 from flask_caching import Cache
 from dotenv import load_dotenv
@@ -811,6 +811,150 @@ TOOL_FINDER_CSS = """
   .tf-res-footer { flex-direction:column; align-items:flex-start }
   .tf-res-btns { width:100% }
   .tf-res-btns a { flex:1; text-align:center; justify-content:center }
+}
+"""
+SHOWDOWN_CSS = """
+/* ═══════════════════════════════════════════════════════════════
+   SHOWDOWNS
+   ═══════════════════════════════════════════════════════════════ */
+.sd-prompt-block {
+  background:var(--bg3); border:1px solid var(--bdr2); border-radius:var(--r3);
+  padding:24px 28px; margin-bottom:32px; position:relative; overflow:hidden;
+}
+.sd-prompt-block::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--amber), var(--cyan));
+}
+.sd-prompt-label {
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--amber); margin-bottom:14px;
+  display:flex; align-items:center; gap:8px;
+}
+.sd-prompt-label::before { content:''; width:16px; height:1px; background:var(--amber) }
+.sd-prompt-text {
+  font-family:var(--font-mono); font-size:.84rem; line-height:1.85;
+  color:var(--ink2); white-space:pre-wrap; word-break:break-word;
+}
+ 
+.sd-tool-section {
+  background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3);
+  overflow:hidden; margin-bottom:20px; box-shadow:var(--sh0);
+  transition:transform .3s var(--spring), box-shadow .3s;
+}
+.sd-tool-section:hover { transform:translateY(-2px); box-shadow:var(--sh1) }
+.sd-tool-header {
+  padding:20px 28px; border-bottom:1px solid var(--div);
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.sd-tool-name {
+  font-family:var(--font-display); font-size:1.15rem; font-weight:700;
+  color:var(--ink); letter-spacing:-.03em;
+}
+.sd-tool-link {
+  font-family:var(--font-mono); font-size:.64rem; letter-spacing:.06em;
+  text-transform:uppercase; padding:6px 14px; border-radius:var(--rpill);
+  border:1px solid var(--bdr); color:var(--ink3); transition:all .18s; white-space:nowrap;
+}
+.sd-tool-link:hover { background:var(--cyan-d); border-color:var(--bdr2); color:var(--cyan) }
+.sd-tool-note {
+  padding:12px 28px; background:var(--amber-d); border-bottom:1px solid var(--amber-g);
+  font-family:var(--font-mono); font-size:.72rem; color:var(--amber); line-height:1.6;
+  display:flex; align-items:flex-start; gap:8px;
+}
+.sd-tool-note::before { content:'ℹ'; flex-shrink:0; font-size:.82rem }
+.sd-output-block {
+  padding:24px 28px; border-bottom:1px solid var(--div);
+}
+.sd-output-label {
+  font-family:var(--font-mono); font-size:.58rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--cyan); margin-bottom:14px;
+  display:flex; align-items:center; gap:6px;
+}
+.sd-output-label::before { content:'//'; opacity:.5 }
+.sd-output-text {
+  font-size:.9rem; line-height:1.85; color:var(--ink2);
+  white-space:pre-wrap; word-break:break-word;
+  padding:20px 24px; background:var(--bg3); border:1px solid var(--bdr);
+  border-radius:var(--r2); font-family:var(--font-body);
+}
+.sd-commentary {
+  padding:20px 28px;
+}
+.sd-commentary-label {
+  font-family:var(--font-mono); font-size:.58rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink4); margin-bottom:10px;
+  display:flex; align-items:center; gap:6px;
+}
+.sd-commentary-label::before { content:'//'; opacity:.5 }
+.sd-commentary-text {
+  font-size:.88rem; line-height:1.75; color:var(--ink3); font-style:italic;
+}
+ 
+.sd-verdict-block {
+  background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--r3);
+  padding:28px 32px; margin-bottom:24px; position:relative; overflow:hidden;
+  box-shadow:var(--sh1);
+}
+.sd-verdict-block::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--green), var(--cyan), var(--violet));
+}
+.sd-verdict-label {
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--green); margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.sd-verdict-label::before { content:''; width:16px; height:1px; background:var(--green) }
+.sd-verdict-text { font-size:.96rem; line-height:1.8; color:var(--ink2) }
+.sd-winner-tag {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--green-d); border:1px solid var(--green-g); color:var(--green);
+  border-radius:var(--rpill); padding:4px 14px; margin-top:14px;
+  font-family:var(--font-mono); font-size:.62rem; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase;
+}
+ 
+/* Showdown hub cards — reuses comp-card pattern */
+.sd-card {
+  background:var(--surf); border:1px solid var(--bdr); border-radius:var(--r3);
+  padding:24px; display:flex; flex-direction:column; gap:12px;
+  transition:transform .3s var(--spring), box-shadow .3s, border-color .25s;
+  color:inherit;
+}
+.sd-card:hover { transform:translateY(-3px); box-shadow:var(--sh2); border-color:var(--bdr2) }
+.sd-card-eyebrow {
+  font-family:var(--font-mono); font-size:.6rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--amber); display:flex; align-items:center; gap:6px;
+}
+.sd-card-eyebrow::before { content:'⚡'; font-size:.7rem }
+.sd-card-title {
+  font-family:var(--font-display); font-size:1.1rem; font-weight:700;
+  color:var(--ink); letter-spacing:-.03em; line-height:1.3;
+}
+.sd-card-tools {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.sd-card-tool-tag {
+  font-family:var(--font-mono); font-size:.58rem; color:var(--ink3);
+  background:var(--bg3); border:1px solid var(--bdr); border-radius:var(--rpill);
+  padding:3px 10px; letter-spacing:.06em;
+}
+.sd-card-desc { font-size:.86rem; color:var(--ink3); line-height:1.65; flex:1 }
+.sd-card-link {
+  font-family:var(--font-mono); font-size:.68rem; color:var(--amber);
+  display:inline-flex; align-items:center; gap:5px; letter-spacing:.04em;
+  text-transform:uppercase; border-bottom:1px solid var(--amber-g);
+  padding-bottom:2px; width:fit-content; transition:gap .2s, border-color .2s;
+}
+.sd-card:hover .sd-card-link { gap:9px; border-bottom-color:var(--amber) }
+ 
+@media (max-width:768px) {
+  .sd-prompt-block { padding:18px 20px }
+  .sd-tool-header { padding:16px 20px; flex-direction:column; align-items:flex-start }
+  .sd-output-block { padding:18px 20px }
+  .sd-output-text { padding:14px 16px }
+  .sd-commentary { padding:16px 20px }
+  .sd-verdict-block { padding:22px 20px }
 }
 """
 
@@ -1753,7 +1897,7 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 @media (max-width:520px) {
   .vb-meta-grid { grid-template-columns:1fr }
 }
-""" + TOOL_FINDER_CSS
+""" + TOOL_FINDER_CSS + SHOWDOWN_CSS
 
 
 
@@ -1881,6 +2025,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </a>
         </div>
       </div>
+      <a href="/showdowns">Showdowns</a>
       <a href="/blog">Guides</a>
       <div class="nav-drop" id="drop-roles">
         <button class="nav-drop-btn" type="button" aria-expanded="false" aria-haspopup="true" id="btn-drop-roles">
@@ -1938,6 +2083,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <a href="/tool-finder" class="mob-link">Tool Finder</a>
       <a href="/tools" class="mob-link">All Tools</a>
       <a href="/compare" class="mob-link">Compare</a>
+      <a href="/showdowns" class="mob-link">Showdowns</a>
       <a href="/blog" class="mob-link">Guides</a>
     </nav>
   </div>
@@ -1985,6 +2131,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/tool-finder">Tool Finder</a>
         <a href="/tools">All Tools</a>
         <a href="/compare">Compare</a>
+        <a href="/showdowns">Showdowns</a>
         <a href="/blog">Guides</a>
       </div>
       <div class="f-col">
@@ -3356,6 +3503,7 @@ def sitemap():
         (SITE_URL + '/tools',          today, '0.9', 'weekly'),
         (SITE_URL + '/tool-finder',    today, '0.8', 'weekly'),
         (SITE_URL + '/compare',        today, '0.9', 'weekly'),
+        (SITE_URL + '/showdowns',      today, '0.8', 'weekly'),
         (SITE_URL + '/blog',           today, '0.8', 'weekly'),
     ]
     for t in TOOLS:
@@ -3364,6 +3512,8 @@ def sitemap():
         urls.append((f'{SITE_URL}/for/{r["slug"]}',     today, '0.8', 'weekly'))
     for c in COMPARISONS:
         urls.append((f'{SITE_URL}/compare/{c["slug"]}', c.get('date', today), '0.8', 'monthly'))
+    for sd_slug, sd in SHOWDOWNS.items():
+        urls.append((f'{SITE_URL}/showdowns/{sd_slug}', sd.get('date', today), '0.7', 'monthly'))
     for slug, post in BLOG_POSTS.items():
         urls.append((f'{SITE_URL}/blog/{slug}',         post.get('date', today), '0.7', 'monthly'))
     cats = list({slugify(t['category']) for t in TOOLS})
