@@ -2318,5 +2318,135 @@ ROLES = [
         "tool_slugs": ["claude-pro", "perplexity-pro", "frase", "surfer-seo", "grammarly", "koala-ai", "quillbot"],
         "top_pick": "claude-pro",
     },
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+# SHOWDOWNS DATA — paste this into data.py
+# ═══════════════════════════════════════════════════════════════════════════════
+
+SHOWDOWNS = {
+    'cold-outreach-email-test': {
+        'title': 'Cold Outreach Email Test — Claude Pro vs ChatGPT vs Writesonic',
+        'slug': 'cold-outreach-email-test',
+        'date': '2026-03-28',
+        'category': 'AI Writing',
+        'description': 'We gave three AI writing tools the same cold outreach brief — a UK freelance content writer contacting a SaaS company whose blog has gone quiet. Same prompt, same constraints, no editing. Here\u2019s what each tool produced.',
+        'meta_description': 'We tested Claude Pro, ChatGPT, and Writesonic with the same cold outreach email brief. Same prompt, no editing. See the real outputs and our verdict.',
+        'prompt': 'Write a cold outreach email from a UK freelance content writer to a SaaS company. The writer has noticed the company\u2019s blog hasn\u2019t been updated in 4 months and their competitor just launched a content hub. Keep it under 150 words. One clear ask at the end. Do not use the words \u2018synergy\u2019, \u2018leverage\u2019, or \u2018touch base\u2019. Do not open with \u2018I hope this email finds you well\u2019.',
+        'tools': [
+            {
+                'name': 'Claude Pro',
+                'slug': 'claude',
+                'output': '''Subject: Your blog \u2014 and what [Competitor] just did
+
+Hi [Name],
+
+I noticed [Company]\u2019s blog has been quiet for a few months \u2014 and that [Competitor] just launched a full content hub.
+
+Content gaps like this have a way of compounding. Organic traffic drifts, and the competitor builds authority that\u2019s genuinely hard to claw back.
+
+I\u2019m a UK-based freelance content writer who works with SaaS companies to produce clear, search-optimised articles that actually bring in the right readers \u2014 not just page views.
+
+No fluff, no jargon, no content-by-committee. Just well-researched pieces that do a job.
+
+I\u2019d love to put together one article on spec so you can see the quality before committing to anything.
+
+Would a short call this week work for you?
+
+[Your name]''',
+                'commentary': '[PETE TO ADD \u2014 did it sound human? Would you send it? What stood out?]',
+                'note': '',
+            },
+            {
+                'name': 'ChatGPT',
+                'slug': 'chatgpt',
+                'output': '''Hi [Name],
+
+I was reading through [Company]\u2019s blog and noticed the last post was about four months ago. At the same time, I saw that [Competitor] has just launched a new content hub around the same space.
+
+It felt like a missed opportunity \u2014 especially since your product has plenty of topics that could attract the same audience through search and thought-leadership pieces.
+
+I\u2019m a UK-based freelance SaaS content writer, and I help teams turn quiet blogs into consistent lead-generating resources (articles, comparison pages, and product-led guides).
+
+If it helps, I\u2019m happy to send over three quick content ideas tailored to [Company].
+
+Would you be open to a short 15-minute call next week to see if it\u2019s useful?
+
+Best,
+[Your Name]''',
+                'commentary': '[PETE TO ADD \u2014 did it sound human? Would you send it? What stood out?]',
+                'note': '',
+            },
+            {
+                'name': 'Writesonic',
+                'slug': 'writesonic',
+                'output': '''Variation 1 \u2014 Direct Problem-Solution:
+
+Subject: Your blog\u2019s been quiet while competitors are making noise
+
+Hi [First Name],
+
+I noticed your blog hasn\u2019t had fresh content since November, whilst [Competitor Name] just launched their new content hub last week.
+
+As a UK-based content writer specialising in SaaS, I\u2019ve helped companies like yours turn dormant blogs into lead generation engines. When prospects can\u2019t find recent insights on your site, they\u2019re likely finding them elsewhere.
+
+I recently helped a fintech startup increase their organic traffic by 340% in six months by creating strategic content that actually converts visitors into trials.
+
+Your expertise deserves better visibility than a stale blog suggests.
+
+Would you be open to a brief 15-minute call this week to discuss how fresh content could help you reclaim that search real estate?
+
+Best regards,
+[Your Name]
+
+\u2014\u2014\u2014
+
+Variation 2 \u2014 Competitive Intelligence:
+
+Subject: [Competitor Name] just made a smart move
+
+Hello [First Name],
+
+Spotted that [Competitor Name] launched their content hub this month while your blog\u2019s been quiet since November. They\u2019re clearly making a play for the thought leadership space in your market.
+
+I\u2019m a UK content writer who helps SaaS companies stay ahead of moves like this. When competitors start publishing consistently, it usually means they\u2019ve spotted an opportunity in the content gap.
+
+Last quarter, I helped a project management tool reclaim their position after a competitor tried similar tactics. We published 12 strategic pieces that resulted in 45 new enterprise leads.
+
+The window to respond is still open, but it\u2019s closing.
+
+Fancy a quick chat about turning your blog into a competitive advantage rather than letting it become a liability?
+
+Cheers,
+[Your Name]
+
+\u2014\u2014\u2014
+
+Variation 3 \u2014 Opportunity-Focused:
+
+Subject: Quick question about your content strategy
+
+Hi [First Name],
+
+Your last blog post was in November, and I\u2019m curious if content marketing is still a priority for [Company Name]?
+
+I ask because your competitor just launched a content hub, and there\u2019s a real opportunity here. When established companies go quiet on content, it creates space for others to claim that authority.
+
+As a freelance writer focused on SaaS companies, I\u2019ve seen this pattern before. The companies that respond quickly to competitive moves often end up stronger than before.
+
+I recently worked with a CRM startup facing similar pressure. Six months later, they\u2019re ranking above their competitor for key terms and generating 60% more qualified leads through content.
+
+Are you interested in exploring how we could turn this situation into an advantage for [Company Name]?
+
+Best,
+[Your Name]''',
+                'commentary': '[PETE TO ADD \u2014 which variation was strongest? Did the unasked-for stats feel credible or made up? Would a real freelancer use any of these?]',
+                'note': 'Writesonic produced 3 variations rather than one. We\u2019ve included all three as it\u2019s worth knowing this is how the tool responds to a single brief.',
+            },
+        ],
+        'verdict': '[PETE TO ADD \u2014 one or two sentences on which tool won this task and why. Which email would you actually send?]',
+        'winner': '[PETE TO FILL IN \u2014 Claude Pro / ChatGPT / Writesonic]',
+        'related_tools': ['claude', 'chatgpt', 'writesonic'],
+    },
+    
 ] 
     
