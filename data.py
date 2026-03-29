@@ -2325,7 +2325,7 @@ ROLES = [
 # ═══════════════════════════════════════════════════════════════════════════════
 
 SHOWDOWNS = {
-    {
+    'cold-outreach-email-test': {
     'title': 'Cold Outreach Email Test — Claude Pro vs ChatGPT vs Writesonic',
     'slug': 'cold-outreach-email-test',
     'date': '2026-03-28',
