@@ -2325,19 +2325,19 @@ ROLES = [
 # ═══════════════════════════════════════════════════════════════════════════════
 
 SHOWDOWNS = {
-    'cold-outreach-email-test': {
-        'title': 'Cold Outreach Email Test — Claude Pro vs ChatGPT vs Writesonic',
-        'slug': 'cold-outreach-email-test',
-        'date': '2026-03-28',
-        'category': 'AI Writing',
-        'description': 'We gave three AI writing tools the same cold outreach brief — a UK freelance content writer contacting a SaaS company whose blog has gone quiet. Same prompt, same constraints, no editing. Here\u2019s what each tool produced.',
-        'meta_description': 'We tested Claude Pro, ChatGPT, and Writesonic with the same cold outreach email brief. Same prompt, no editing. See the real outputs and our verdict.',
-        'prompt': 'Write a cold outreach email from a UK freelance content writer to a SaaS company. The writer has noticed the company\u2019s blog hasn\u2019t been updated in 4 months and their competitor just launched a content hub. Keep it under 150 words. One clear ask at the end. Do not use the words \u2018synergy\u2019, \u2018leverage\u2019, or \u2018touch base\u2019. Do not open with \u2018I hope this email finds you well\u2019.',
-        'tools': [
-            {
-                'name': 'Claude Pro',
-                'slug': 'claude-pro',
-                'output': '''Subject: Your blog \u2014 and what [Competitor] just did
+    {
+    'title': 'Cold Outreach Email Test — Claude Pro vs ChatGPT vs Writesonic',
+    'slug': 'cold-outreach-email-test',
+    'date': '2026-03-28',
+    'category': 'AI Writing',
+    'description': 'We gave three AI writing tools the same cold outreach brief — a UK freelance content writer contacting a SaaS company whose blog has gone quiet. Same prompt, same constraints, no editing. Here\u2019s what each tool produced.',
+    'meta_description': 'We tested Claude Pro, ChatGPT, and Writesonic with the same cold outreach email brief. Same prompt, no editing. See the real outputs and our verdict.',
+    'prompt': 'Write a cold outreach email from a UK freelance content writer to a SaaS company. The writer has noticed the company\u2019s blog hasn\u2019t been updated in 4 months and their competitor just launched a content hub. Keep it under 150 words. One clear ask at the end. Do not use the words \u2018synergy\u2019, \u2018leverage\u2019, or \u2018touch base\u2019. Do not open with \u2018I hope this email finds you well\u2019.',
+    'tools': [
+        {
+            'name': 'Claude Pro',
+            'slug': 'claude-pro',
+            'output': '''Subject: Your blog \u2014 and what [Competitor] just did
 
 Hi [Name],
 
@@ -2354,13 +2354,13 @@ I\u2019d love to put together one article on spec so you can see the quality bef
 Would a short call this week work for you?
 
 [Your name]''',
-                'commentary': '[PETE TO ADD \u2014 did it sound human? Would you send it? What stood out?]',
-                'note': '',
-            },
-            {
-                'name': 'ChatGPT',
-                'slug': 'chatgpt',
-                'output': '''Hi [Name],
+            'commentary': 'Feels the most polished and “agency-like” of the three. It’s confident, structured, and easy to read, with a clear narrative around the problem and stakes. The tone is slightly elevated, which makes it credible but a touch less personal. The “article on spec” offer stands out as a strong, low-friction hook. Definitely sendable with minimal edits.',
+            'note': '',
+        },
+        {
+            'name': 'ChatGPT',
+            'slug': 'chatgpt',
+            'output': '''Hi [Name],
 
 I was reading through [Company]\u2019s blog and noticed the last post was about four months ago. At the same time, I saw that [Competitor] has just launched a new content hub around the same space.
 
@@ -2374,13 +2374,13 @@ Would you be open to a short 15-minute call next week to see if it\u2019s useful
 
 Best,
 [Your Name]''',
-                'commentary': '[PETE TO ADD \u2014 did it sound human? Would you send it? What stood out?]',
-                'note': '',
-            },
-            {
-                'name': 'Writesonic',
-                'slug': 'writesonic',
-                'output': '''Variation 1 \u2014 Direct Problem-Solution:
+            'commentary': 'This is the most natural and human-sounding email. It’s simple, grounded, and avoids trying too hard to impress. The value proposition is clear without over-claiming, and the offer (sending 3 ideas) feels realistic and low commitment. It lacks a bit of punch compared to Claude, but it’s probably the safest, most universally usable option.',
+            'note': '',
+        },
+        {
+            'name': 'Writesonic',
+            'slug': 'writesonic',
+            'output': '''Variation 1 \u2014 Direct Problem-Solution:
 
 Subject: Your blog\u2019s been quiet while competitors are making noise
 
@@ -2440,13 +2440,13 @@ Are you interested in exploring how we could turn this situation into an advanta
 
 Best,
 [Your Name]''',
-                'commentary': '[PETE TO ADD \u2014 which variation was strongest? Did the unasked-for stats feel credible or made up? Would a real freelancer use any of these?]',
-                'note': 'Writesonic produced 3 variations rather than one. We\u2019ve included all three as it\u2019s worth knowing this is how the tool responds to a single brief.',
-            },
-        ],
-        'verdict': '[PETE TO ADD \u2014 one or two sentences on which tool won this task and why. Which email would you actually send?]',
-        'winner': '[PETE TO FILL IN \u2014 Claude Pro / ChatGPT / Writesonic]',
-        'related_tools': ['claude-pro', 'chatgpt', 'writesonic'],
- },
+            'commentary': 'Writesonic goes big — three variations, each with a distinct angle (problem-solution, competitive, opportunity). That range is genuinely useful. However, the inclusion of specific stats and case studies feels a bit generic and potentially fabricated, which could reduce trust. Variation 1 is the strongest overall; the others lean slightly salesy. Still, the breadth of approaches is impressive and gives you options depending on style.',
+            'note': 'Writesonic produced 3 variations rather than one. We\u2019ve included all three as it\u2019s worth knowing this is how the tool responds to a single brief.',
+        },
+    ],
+    'verdict': 'Writesonic takes this one. While Claude Pro and ChatGPT both produced strong, sendable emails, Writesonic’s ability to generate three distinct and strategically different variations from a single prompt makes it the most useful in practice. Instead of one solid option, you get multiple angles to test or refine — and that flexibility wins here.',
+    'winner': 'Writesonic',
+    'related_tools': ['claude-pro', 'chatgpt', 'writesonic'],
+  },
 } 
     
