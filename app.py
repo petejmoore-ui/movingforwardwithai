@@ -1785,6 +1785,30 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 ::selection { background:var(--cyan-d); color:var(--cyan2) }
 :focus-visible { outline:2px solid var(--cyan); outline-offset:2px; border-radius:var(--r1); }
 
+/* ── Tool Finder homepage card: mobile fix ─────────────────── */
+@media (max-width:768px) {
+  #tool-finder > section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    padding: 24px 20px !important;
+  }
+  #tool-finder > section > div:last-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+  }
+  #tool-finder #role-finder-select {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  #tool-finder .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    TOOL REVIEW PAGE v2 — Quick Verdict, Pricing, FAQ, Alternatives
    ═══════════════════════════════════════════════════════════════ */
