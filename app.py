@@ -181,12 +181,31 @@ def extract_faq_from_blog(post):
 def auto_link_tools(content, current_slug=None):
     """Auto-link first mention of each tool name to its review page with tooltip."""
     linked = set()
-    for t in sorted(TOOLS, key=lambda x: -len(x['name'])):
-        name = t['name']
-        slug = t['slug']
+    
+    # Add shorthand aliases here — 'alias': 'actual-tool-slug'
+    aliases = {
+        'Perplexity': 'perplexity-pro',
+        'Gemini':     'gemini',
+        'ChatGPT':    'chatgpt',
+        'Copilot':    'github-copilot',
+    }
+
+    # Build a combined list: real tools + aliases
+    targets = []
+    for t in TOOLS:
+        targets.append((t['name'], t['slug'], t))
+    for alias, slug in aliases.items():
+        t = get_tool(slug)
+        if t:
+            targets.append((alias, slug, t))
+
+    # Sort longest name first so "GitHub Copilot" matches before "Copilot"
+    targets.sort(key=lambda x: -len(x[0]))
+
+    for name, slug, t in targets:
         if slug == current_slug:
             continue
-        if name in linked:
+        if slug in linked:
             continue
         pattern = r'(?<!["\'/=>a-zA-Z0-9\-])(' + re.escape(name) + r')(?!["\'\-a-zA-Z0-9]|[^<]*?>)'
         replacement = (
@@ -195,7 +214,7 @@ def auto_link_tools(content, current_slug=None):
             f'<span class="tool-mention-tooltip" aria-hidden="true">'
             f'<span class="tmt-inner">'
             f'<span class="tmt-label">MFWAI Review</span>'
-            f'<span class="tmt-name">{name}</span>'
+            f'<span class="tmt-name">{t["name"]}</span>'
             f'<span class="tmt-score" data-score="{t["score"]}">{t["score"]}/100</span>'
             f'<span class="tmt-desc">{t["tagline"][:60]}{"…" if len(t["tagline"]) > 60 else ""}</span>'
             f'<span class="tmt-cta">Read full review →</span>'
@@ -207,7 +226,7 @@ def auto_link_tools(content, current_slug=None):
         new_content, count = re.subn(pattern, replacement, content, count=1)
         if count:
             content = new_content
-            linked.add(name)
+            linked.add(slug)
     return content
 
 
