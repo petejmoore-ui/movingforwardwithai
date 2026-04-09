@@ -178,6 +178,39 @@ def extract_faq_from_blog(post):
     return pairs[:5]
 
 
+def auto_link_tools(content, current_slug=None):
+    """Auto-link first mention of each tool name to its review page with tooltip."""
+    linked = set()
+    for t in sorted(TOOLS, key=lambda x: -len(x['name'])):
+        name = t['name']
+        slug = t['slug']
+        if slug == current_slug:
+            continue
+        if name in linked:
+            continue
+        pattern = r'(?<!["\'/=>a-zA-Z0-9\-])(' + re.escape(name) + r')(?!["\'\-a-zA-Z0-9]|[^<]*?>)'
+        replacement = (
+            f'<span class="tool-mention" data-slug="{slug}">'
+            f'<a href="/tool/{slug}" class="tool-mention-link">{name}'
+            f'<span class="tool-mention-tooltip" aria-hidden="true">'
+            f'<span class="tmt-inner">'
+            f'<span class="tmt-label">MFWAI Review</span>'
+            f'<span class="tmt-name">{name}</span>'
+            f'<span class="tmt-score" data-score="{t["score"]}">{t["score"]}/100</span>'
+            f'<span class="tmt-desc">{t["tagline"][:60]}{"…" if len(t["tagline"]) > 60 else ""}</span>'
+            f'<span class="tmt-cta">Read full review →</span>'
+            f'</span>'
+            f'</span>'
+            f'</a>'
+            f'</span>'
+        )
+        new_content, count = re.subn(pattern, replacement, content, count=1)
+        if count:
+            content = new_content
+            linked.add(name)
+    return content
+
+
 def tool_meta_title(t):
     name = t['name']
     cat = t['category']
@@ -1785,6 +1818,125 @@ body.rv-ready .rv.visible { opacity:1; transform:translateY(0); }
 ::selection { background:var(--cyan-d); color:var(--cyan2) }
 :focus-visible { outline:2px solid var(--cyan); outline-offset:2px; border-radius:var(--r1); }
 
+/* ═══════════════════════════════════════════════════════════════
+   TOOL MENTION TOOLTIPS — blog auto-links
+   ═══════════════════════════════════════════════════════════════ */
+.tool-mention {
+  position: relative;
+  display: inline;
+}
+.tool-mention-link {
+  color: var(--cyan);
+  border-bottom: 1px solid var(--cyan-g);
+  transition: border-color .2s, color .2s;
+  cursor: pointer;
+  position: relative;
+}
+.tool-mention-link:hover {
+  border-bottom-color: var(--cyan);
+  color: var(--cyan2);
+}
+.tool-mention-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: 220px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+  z-index: 400;
+}
+.tool-mention:hover .tool-mention-tooltip,
+.tool-mention:focus-within .tool-mention-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.tmt-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--surf2);
+  border: 1px solid var(--bdr2);
+  border-radius: var(--r3);
+  padding: 14px 16px;
+  box-shadow: var(--sh3);
+  position: relative;
+}
+.tmt-inner::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bdr2);
+}
+.tmt-inner::before {
+  content: '';
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--surf2);
+  z-index: 1;
+}
+.tmt-label {
+  font-family: var(--font-mono);
+  font-size: .56rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tmt-label::before {
+  content: '//';
+  opacity: .5;
+}
+.tmt-name {
+  font-family: var(--font-display);
+  font-size: .98rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -.03em;
+  line-height: 1.2;
+}
+.tmt-score {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--r1);
+  width: fit-content;
+  background: var(--cyan-d);
+  border: 1px solid var(--cyan-g);
+  color: var(--cyan);
+}
+.tmt-desc {
+  font-size: .78rem;
+  line-height: 1.55;
+  color: var(--ink3);
+}
+.tmt-cta {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  color: var(--amber);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding-top: 4px;
+  border-top: 1px solid var(--div);
+  margin-top: 2px;
+}
+@media (max-width: 768px) {
+  .tool-mention-tooltip {
+    display: none;
+  }
+}
+
 /* ── Tool Finder homepage card: mobile fix ─────────────────── */
 @media (max-width:768px) {
   #tool-finder > section {
@@ -2360,6 +2512,24 @@ document.addEventListener('click', function(e){
   document.getElementById('ck-ok').addEventListener('click',  function () { dismiss('all'); });
   document.getElementById('ck-ess').addEventListener('click', function () { dismiss('ess'); });
 })();
+
+// Tool mention tooltip score colours
+document.querySelectorAll('.tmt-score[data-score]').forEach(function(el) {
+  var s = parseInt(el.getAttribute('data-score'), 10);
+  if (s >= 88) {
+    el.style.background = 'var(--green-d)';
+    el.style.borderColor = 'var(--green-g)';
+    el.style.color = 'var(--green)';
+  } else if (s >= 78) {
+    el.style.background = 'var(--cyan-d)';
+    el.style.borderColor = 'var(--cyan-g)';
+    el.style.color = 'var(--cyan)';
+  } else {
+    el.style.background = 'var(--amber-d)';
+    el.style.borderColor = 'var(--amber-g)';
+    el.style.color = 'var(--amber)';
+  }
+});
 
 var ef = document.getElementById('email-form');
 if (ef) {
@@ -3405,7 +3575,7 @@ def blog_detail(slug):
       <p style="font-size:1.02rem;line-height:1.8;color:var(--ink3);margin-bottom:44px;padding-bottom:36px;border-bottom:1px solid var(--div)">
         {post.get('description','')}
       </p>
-      <div class="prose">{post.get('content','')}</div>
+      <div class="prose">{auto_link_tools(post.get('content',''), current_slug=slug)}</div>
       {role_cta}
     </div>
     {'<div class="page"><section class="sec" aria-labelledby="blog-tools-heading"><div class="sec-top"><div><div class="sec-eyebrow">Mentioned in this guide</div><h2 class="sec-h2" id="blog-tools-heading">Related <em>tools</em></h2></div></div><div class="tools-grid">'+rel_cards+'</div></section></div>' if rel_cards else ''}
