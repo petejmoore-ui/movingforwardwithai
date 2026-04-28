@@ -20,7 +20,7 @@ if os.environ.get("STAGING") == "true":
         return response
 
 
-SITE_URL   = "https://www.movingforwardwithai.com"
+SITE_URL   = "https://movingforwardwithai.com"
 SITE_NAME  = "Moving Forward With AI"
 OG_IMAGE   = SITE_URL + "/static/og-default.png"
 
