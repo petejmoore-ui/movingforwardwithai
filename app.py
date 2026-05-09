@@ -1,6 +1,6 @@
 import os, json, re, datetime
 from data import TOOLS, COMPARISONS, BLOG_POSTS, LEAD_MAGNET, ROLES, SHOWDOWNS
-from flask import Flask, render_template_string, request, abort, Response, jsonify
+from flask import Flask, render_template_string, request, abort, Response, jsonify, redirect
 from flask_caching import Cache
 from dotenv import load_dotenv
 
@@ -12,6 +12,12 @@ app        = Flask(__name__)
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
 cache = Cache(app)
+
+@app.before_request
+def redirect_www():
+    if request.host.startswith('www.'):
+        url = request.url.replace('://www.', '://', 1)
+        return redirect(url, code=301)
 
 if os.environ.get("STAGING") == "true":
     @app.after_request
